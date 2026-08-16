@@ -28,6 +28,7 @@ Thumbs.db
 data/extracted/
 data/manifests/
 data/metadata/
+data/raw/
 
 # Python tooling
 .pytest_cache/
