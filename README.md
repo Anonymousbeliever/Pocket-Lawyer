@@ -20,6 +20,12 @@ Make reliable legal knowledge accessible to every Kenyan.
 - Human lawyers remain essential
 - AI assists with legal information; it does not replace advocates
 
+## Project plan
+
+Phases, current position, and progress are tracked in [`docs/project-plan.md`](docs/project-plan.md).
+
+Legal source inventory: [`docs/legal-data/sources.md`](docs/legal-data/sources.md).
+
 ## Technology
 
 ### Backend
