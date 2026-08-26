@@ -20,7 +20,7 @@ COLLECTION_NAME = "pocket_lawyer_legal"
 
 EMBEDDING_MODEL = "BAAI/bge-m3"
 
-DEFAULT_TOP_K = 5
+DEFAULT_TOP_K = 15
 
 
 class LegalRetriever:
@@ -152,7 +152,7 @@ def main():
 
     results = retriever.retrieve(
         query=query,
-        top_k=5,
+        top_k=15,
     )
 
     print(f"Results: {len(results)}")
