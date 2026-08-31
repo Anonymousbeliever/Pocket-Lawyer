@@ -1,21 +1,8 @@
-from pathlib import Path
 import sys
 
-# ---------------------------------------------------------
-# PROJECT PATH
-# ---------------------------------------------------------
-
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-
-# Allow imports from backend/app
-APP_DIR = PROJECT_ROOT / "backend" / "app"
-
-if str(APP_DIR) not in sys.path:
-    sys.path.insert(0, str(APP_DIR))
-
-
-from ai.retriever import LegalRetriever
-from ai.reranker import LegalReranker
+from backend.app.ai.retriever import LegalRetriever
+from backend.app.ai.reranker import LegalReranker
+from backend.app.ai.llm import LegalLLM
 
 
 # ---------------------------------------------------------
@@ -28,211 +15,148 @@ RERANK_TOP_K = 5
 
 class LegalRAG:
     """
-    Orchestrates the retrieval and reranking stages
-    of the Pocket Lawyer RAG system.
+    Orchestrates the Pocket Lawyer RAG pipeline.
 
-    Current pipeline:
+    Flow:
 
-        Question
-            ↓
-        BGE-M3 embedding
-            ↓
-        Qdrant retrieval
-            ↓
-        Top 15 candidates
-            ↓
-        BGE reranker
-            ↓
-        Top 5 legal sources
-
-    The LLM answer-generation stage will be added later.
+        User Question
+              ↓
+        Semantic Retrieval
+              ↓
+        Qdrant
+              ↓
+        Reranking
+              ↓
+        LLM
+              ↓
+        Grounded Answer
     """
 
-    def __init__(
-        self,
-        retrieval_top_k: int = RETRIEVAL_TOP_K,
-        rerank_top_k: int = RERANK_TOP_K,
-    ):
-        if retrieval_top_k < 1:
-            raise ValueError(
-                "retrieval_top_k must be at least 1."
-            )
-
-        if rerank_top_k < 1:
-            raise ValueError(
-                "rerank_top_k must be at least 1."
-            )
-
-        if rerank_top_k > retrieval_top_k:
-            raise ValueError(
-                "rerank_top_k cannot be greater than "
-                "retrieval_top_k."
-            )
-
-        self.retrieval_top_k = retrieval_top_k
-        self.rerank_top_k = rerank_top_k
-
+    def __init__(self):
         print("Initializing Pocket Lawyer RAG...")
         print()
 
+        # -------------------------------------------------
+        # RETRIEVER
+        # -------------------------------------------------
+
         print("Loading retriever...")
+
         self.retriever = LegalRetriever()
 
         print()
 
+        # -------------------------------------------------
+        # RERANKER
+        # -------------------------------------------------
+
         print("Loading reranker...")
+
         self.reranker = LegalReranker()
+
+        print()
+
+        # -------------------------------------------------
+        # LLM
+        # -------------------------------------------------
+
+        print("Loading LLM...")
+
+        self.llm = LegalLLM()
 
         print()
         print("[PASS] RAG components initialized")
 
     # -----------------------------------------------------
-    # RAG RETRIEVAL PIPELINE
+    # RAG PIPELINE
     # -----------------------------------------------------
 
-    def retrieve_context(
+    def answer(
         self,
-        query: str,
-    ) -> list[dict]:
-        """
-        Retrieve and rerank legal sources for a question.
-
-        Returns the highest-ranked legal chunks that
-        will eventually be supplied to the LLM.
-        """
-
-        if not query.strip():
-            raise ValueError(
-                "Query cannot be empty."
-            )
-
-        # -------------------------------------------------
-        # STEP 1 — SEMANTIC RETRIEVAL
-        # -------------------------------------------------
-
-        retrieved_documents = self.retriever.retrieve(
-            query=query,
-            top_k=self.retrieval_top_k,
-        )
-
-        if not retrieved_documents:
-            return []
-
-        # -------------------------------------------------
-        # STEP 2 — RERANK
-        # -------------------------------------------------
-
-        reranked_documents = self.reranker.rerank(
-            query=query,
-            documents=retrieved_documents,
-            top_k=self.rerank_top_k,
-        )
-
-        return reranked_documents
-
-    # -----------------------------------------------------
-    # BUILD LLM CONTEXT
-    # -----------------------------------------------------
-
-    def build_context(
-        self,
-        documents: list[dict],
-    ) -> str:
-        """
-        Convert retrieved legal documents into a context
-        string that can later be supplied to an LLM.
-        """
-
-        if not documents:
-            return ""
-
-        context_parts = []
-
-        for index, document in enumerate(
-            documents,
-            start=1,
-        ):
-            chapter = document.get("chapter") or {}
-            article = document.get("article") or {}
-            source = document.get("source") or {}
-
-            chapter_number = chapter.get(
-                "number",
-                "Unknown",
-            )
-
-            chapter_title = chapter.get(
-                "title",
-                "Unknown",
-            )
-
-            article_number = article.get(
-                "number",
-                "Unknown",
-            )
-
-            article_title = article.get(
-                "title",
-                "Unknown",
-            )
-
-            source_name = source.get(
-                "name",
-                "Unknown",
-            )
-
-            content = document.get(
-                "content",
-                "",
-            ).strip()
-
-            context_parts.append(
-                f"""SOURCE {index}
-Document: {document.get("title", "Unknown")}
-Chapter: {chapter_number} — {chapter_title}
-Article: {article_number} — {article_title}
-Source: {source_name}
-Chunk ID: {document.get("chunk_id", "Unknown")}
-
-Content:
-{content}
-"""
-            )
-
-        return "\n\n".join(context_parts)
-
-    # -----------------------------------------------------
-    # COMPLETE CURRENT PIPELINE
-    # -----------------------------------------------------
-
-    def run(
-        self,
-        query: str,
+        question: str,
     ) -> dict:
         """
-        Execute the current RAG pipeline.
+        Run the complete RAG pipeline.
 
-        At this stage this method retrieves and reranks
-        sources but does not generate an answer yet.
+        Returns both the generated answer and the
+        sources used to generate it.
         """
 
-        if not query.strip():
+        if not question.strip():
             raise ValueError(
-                "Query cannot be empty."
+                "Question cannot be empty."
             )
 
-        documents = self.retrieve_context(
-            query=query,
+        # -------------------------------------------------
+        # STEP 1 — RETRIEVAL
+        # -------------------------------------------------
+
+        print()
+        print("Retrieving legal sources...")
+
+        retrieved = self.retriever.retrieve(
+            query=question,
+            top_k=RETRIEVAL_TOP_K,
         )
 
-        context = self.build_context(
-            documents,
+        print(
+            f"[PASS] Retrieved {len(retrieved)} "
+            f"candidate sources"
         )
+
+        if not retrieved:
+            return {
+                "answer": (
+                    "I don't have enough reliable "
+                    "information to answer this confidently. "
+                    "Please consult a qualified advocate."
+                ),
+                "sources": [],
+            }
+
+        # -------------------------------------------------
+        # STEP 2 — RERANKING
+        # -------------------------------------------------
+
+        print("Reranking legal sources...")
+
+        reranked = self.reranker.rerank(
+            query=question,
+            documents=retrieved,
+            top_k=RERANK_TOP_K,
+        )
+
+        print(
+            f"[PASS] Reranked to {len(reranked)} "
+            f"final sources"
+        )
+
+        if not reranked:
+            return {
+                "answer": (
+                    "I don't have enough reliable "
+                    "information to answer this confidently. "
+                    "Please consult a qualified advocate."
+                ),
+                "sources": [],
+            }
+
+        # -------------------------------------------------
+        # STEP 3 — LLM GENERATION
+        # -------------------------------------------------
+
+        print("Generating grounded answer...")
+
+        answer = self.llm.generate(
+            question=question,
+            sources=reranked,
+        )
+
+        print("[PASS] Answer generated")
 
         return {
-            "query": query,
-            "retrieved_documents": documents,
-            "context": context,
+            "answer": answer,
+            "sources": reranked,
         }
 
 
@@ -240,55 +164,94 @@ Content:
 # CLI TEST
 # ---------------------------------------------------------
 
+
 def main():
     print("=" * 60)
     print("POCKET LAWYER — RAG PIPELINE")
     print("=" * 60)
     print()
 
-    rag = LegalRAG()
+    try:
+        rag = LegalRAG()
+
+    except Exception as error:
+        print()
+        print("[ERROR] Failed to initialize RAG pipeline")
+        print()
+        print(error)
+        sys.exit(1)
 
     print()
-    query = input(
+
+    question = input(
         "Enter your legal question: "
     ).strip()
 
-    if not query:
+    if not question:
         print("No question provided.")
         sys.exit(1)
 
     print()
     print("=" * 60)
-    print("RAG RETRIEVAL PIPELINE")
+    print("POCKET LAWYER — RAG")
     print("=" * 60)
     print()
 
-    print(f"Question: {query}")
+    print(f"Question: {question}")
     print()
 
-    result = rag.run(query)
+    try:
+        result = rag.answer(question)
 
-    documents = result["retrieved_documents"]
+    except Exception as error:
+        print()
+        print("[ERROR] RAG pipeline failed")
+        print()
+        print(error)
+        sys.exit(1)
 
-    print(
-        f"Final sources: {len(documents)}"
-    )
+    # -----------------------------------------------------
+    # FINAL ANSWER
+    # -----------------------------------------------------
 
     print()
+    print("=" * 60)
+    print("FINAL ANSWER")
+    print("=" * 60)
+    print()
 
-    for index, document in enumerate(
-        documents,
+    print(result["answer"])
+
+    # -----------------------------------------------------
+    # SOURCES
+    # -----------------------------------------------------
+
+    print()
+    print("=" * 60)
+    print("SOURCES USED")
+    print("=" * 60)
+    print()
+
+    for index, source in enumerate(
+        result["sources"],
         start=1,
     ):
-        chapter = document.get("chapter") or {}
-        article = document.get("article") or {}
-
-        print("-" * 60)
-        print(f"FINAL SOURCE #{index}")
+        chapter = source.get("chapter") or {}
+        article = source.get("article") or {}
 
         print(
-            f"Rerank score: "
-            f"{document.get('rerank_score', 0):.4f}"
+            f"SOURCE {index}"
+        )
+
+        print(
+            f"Document: "
+            f"{source.get('title')}"
+        )
+
+        print(
+            f"Chapter: "
+            f"{chapter.get('number')} — "
+            f"{chapter.get('title')}"
         )
 
         print(
@@ -298,29 +261,24 @@ def main():
         )
 
         print(
+            f"Rerank score: "
+            f"{source.get('rerank_score', 0):.4f}"
+        )
+
+        print(
+            f"Source: "
+            f"{source.get('source')}"
+        )
+
+        print(
             f"Chunk ID: "
-            f"{document.get('chunk_id')}"
+            f"{source.get('chunk_id')}"
         )
 
         print()
-        print("Content:")
-        print(
-            document.get(
-                "content",
-                "",
-            )
-        )
-
-    print()
-    print("=" * 60)
-    print("LLM CONTEXT")
-    print("=" * 60)
-    print()
-
-    print(result["context"])
 
     print("=" * 60)
-    print("RAG retrieval pipeline completed.")
+    print("RAG pipeline completed.")
     print("=" * 60)
 
 
