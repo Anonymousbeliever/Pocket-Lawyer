@@ -1,5 +1,11 @@
 from openai import OpenAI
 
+from backend.app.ai.answer import (
+    ANSWER_SCHEMA,
+    LegalAnswer,
+    render,
+    verify_citations,
+)
 from backend.app.core.config import OPENAI_API_KEY, OPENAI_MODEL
 
 
@@ -124,18 +130,59 @@ Do not cite sources that were not provided.
 ANSWER STRUCTURE
 ============================================================
 
-When the sources sufficiently answer the question, prefer:
+You return a structured object, not prose. Fill each field:
 
-Direct answer
+sufficient
+  true only if the retrieved sources genuinely contain enough
+  information to answer. If they do not, set it to false and use
+  `explanation` to say what is missing. Do not fill the gap with
+  outside knowledge.
 
-Relevant legal rules
+question_type
+  "polar"      a yes/no question — "Can police...?", "Must I...?",
+               "Is it legal to...?", "Am I allowed to...?"
+  "open"       asks what or which — "What are my rights?"
+  "procedural" asks for steps or a process
 
-Important qualifications or exceptions
+verdict
+  For a polar question, answer the question AS ASKED.
 
-Sources
+  Read carefully when the question asks whether something is
+  permitted and the law prohibits it. The verdict then is "no".
 
-When the sources are insufficient, clearly explain the
-limitation instead of filling the gap with outside knowledge.
+  Worked example:
+    Question: "Can police arrest me without telling me why?"
+    Law:      an arrested person has the right to be informed
+              promptly of the reason for the arrest.
+    The question asks whether police MAY do this. The law says
+    they may not.
+    verdict = "no"
+
+  Use "not_applicable" for open or procedural questions, and
+  whenever sufficient is false.
+
+explanation
+  The legal explanation in plain language.
+
+  Do NOT begin it with "Yes" or "No" — the verdict field already
+  carries the direct answer, and it is presented to the user
+  before this text. Starting with a polarity word produces a
+  contradictory answer.
+
+  State what the law says and how it bears on the question.
+  Preserve the source's own wording for anything that carries
+  legal weight. If a provision says "promptly", do not restate
+  it as "immediately" or "at the exact moment" — those are
+  different legal standards.
+
+qualifications
+  Important limits, exceptions or conditions that appear in the
+  sources. Empty list if there are none. Do not invent them.
+
+cited_chunk_ids
+  The exact Chunk ID values of the sources you relied on, copied
+  character for character from the context. Never invent one, and
+  never cite a source that was not provided.
 
 Remember:
 
@@ -245,10 +292,13 @@ Legal Text:
         self,
         question: str,
         sources: list[dict],
-    ) -> str:
+    ) -> LegalAnswer:
         """
         Generate a grounded legal answer using only the
         retrieved legal sources.
+
+        Returns a structured LegalAnswer, with its citations already
+        checked against the sources that were actually provided.
         """
 
         if not question.strip():
@@ -300,16 +350,29 @@ retrieved sources.
             model=self.model_name,
             instructions=SYSTEM_PROMPT,
             input=user_prompt,
+            text={
+                "format": {
+                    "type": "json_schema",
+                    "name": "legal_answer",
+                    "schema": ANSWER_SCHEMA,
+                    "strict": True,
+                }
+            },
         )
 
-        answer = response.output_text.strip()
+        raw = response.output_text.strip()
 
-        if not answer:
+        if not raw:
             raise RuntimeError(
                 "The LLM returned an empty response."
             )
 
-        return answer
+        answer = LegalAnswer.from_json(raw)
+
+        # Deterministic citation check: anything the model cited that
+        # was not among the retrieved chunks is removed rather than
+        # shown to a user as a real authority.
+        return verify_citations(answer, sources)
 
 
 # ---------------------------------------------------------
@@ -393,7 +456,23 @@ compelling reasons not to be released.
         sources=sources,
     )
 
-    print(answer)
+    print(render(answer))
+
+    print()
+    print("-" * 60)
+    print("STRUCTURED FIELDS")
+    print("-" * 60)
+    print(f"sufficient      : {answer.sufficient}")
+    print(f"question_type   : {answer.question_type}")
+    print(f"verdict         : {answer.verdict}")
+    print(f"qualifications  : {len(answer.qualifications)}")
+    print(f"cited_chunk_ids : {answer.cited_chunk_ids}")
+
+    if answer.unverified_citations:
+        print(
+            f"[WARN] fabricated citations removed: "
+            f"{answer.unverified_citations}"
+        )
 
     print()
     print("=" * 60)

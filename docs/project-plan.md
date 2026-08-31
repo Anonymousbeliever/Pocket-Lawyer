@@ -317,8 +317,8 @@ Meaning matches even when wording differs. A user asking *"Can cops arrest me wi
 
 - [x] First RAG pipeline
 - [x] Reranking
-- [ ] Citation generation
-- [ ] Citation verification
+- [x] Citation generation
+- [ ] Citation verification — *identity half done, entailment outstanding*
 - [ ] Evaluation
 
 ### What was actually built
@@ -368,45 +368,54 @@ Citation verification
 USER
 ```
 
-### Known response-quality issues
+### Response-quality issues
 
-Both reproduced again on 2026-08-31 after the ingestion refactor. Neither is a
+Both reproduced on 2026-08-31 after the ingestion refactor. Neither was a
 retrieval or grounding failure — the correct article was retrieved and cited
 both times. They are *response layer* problems.
 
-**1. Question polarity.** For *"Can police arrest me without telling me why?"*
-the system answered *"Yes, the police cannot arrest you without telling you
-why."* — self-contradictory. It addressed the embedded proposition rather than
-the yes/no question. The natural answer is **"No."**
+**1. Question polarity — FIXED.** For *"Can police arrest me without telling me
+why?"* the system answered *"Yes, the police cannot arrest you without telling
+you why."* — self-contradictory. It addressed the embedded proposition rather
+than the yes/no question.
 
 Polar questions with a negative framing require the model to extract the rule,
-map it to yes/no, then *invert*. Free-form generation gives it no reason to
+map it to yes/no, then *invert*. Free-form generation gave it no reason to
 commit to a polarity before writing prose.
 
-*Fix — prevention, not detection:* schema-constrained output with `verdict` as a
-discrete enum field the model must fill before writing any explanation, and the
-final sentence rendered by code rather than the LLM. A contradiction then
-becomes structurally impossible. A second verification call is the wrong tool
-here: it detects after the fact, and doubles latency and cost.
+Fixed by prevention rather than detection: `verdict` is now a discrete enum the
+model must fill, and the opening word is written by `render()` in code. The
+stated verdict and the explanation can no longer disagree. A second verification
+call was considered and rejected — it detects after the fact and doubles latency
+and cost, for a problem that can be designed out.
 
-**2. Claim fidelity — the more serious of the two.** The same answer concluded
-*"it's legally required for the police to inform you of the reason for your
-arrest **at the time of arrest**"*. Article 49(1)(a) says **"promptly"**. The
-model strengthened the law beyond its source. "Promptly" and "at the moment of
-arrest" are different legal standards.
+Verified: the same question now answers **"No. An arrested person has the right
+to be informed promptly of the reason for the arrest..."**
 
-The citation was correct and no source was invented, so grounding held — but
-fidelity slipped, and this is the exact drift warned about above.
+**2. Claim fidelity — STILL OPEN.** The original answer concluded *"it's legally
+required for the police to inform you of the reason for your arrest **at the
+time of arrest**"*. Article 49(1)(a) says **"promptly"**. The model strengthened
+the law beyond its source; those are different legal standards.
 
-*Fix — detection, because schemas cannot prevent it:* a free-text explanation
-can always overstate. This needs span-grounded citation (require the model to
-quote the words it relies on) plus entailment checking of each claim against its
-cited passage. That is the Citation verification item in this phase.
+Prompt guidance was added instructing the model to preserve legally-weighted
+wording, and the drift did not recur on retest — "promptly" survived. **That is
+one sample, not a fix.** Nothing structurally prevents it: a free-text
+`explanation` can always overstate.
 
-### Planned answer schema
+A residual instance remains even in the improved answer, which says *"police
+cannot arrest someone without telling them why"* — Article 49(1)(a) actually
+contemplates arrest followed by *prompt* notification, so the timing is
+compressed. That nuance belongs in `qualifications`, which came back empty.
 
-Recording the contract now, because FastAPI and Flutter will both depend on it —
-defining it after building an API around free text means rewriting both.
+*Real fix, because schemas cannot prevent it:* span-grounded citation (require
+the model to quote the words it relies on) plus entailment checking of each
+claim against its cited passage. That is the outstanding half of Citation
+verification.
+
+### Answer schema
+
+Implemented in `backend/app/ai/answer.py`. Recorded here because FastAPI and
+Flutter both inherit it as a contract.
 
 ```json
 {
@@ -419,16 +428,24 @@ defining it after building an API around free text means rewriting both.
 }
 ```
 
-Beyond fixing polarity this earns two things:
+Beyond fixing polarity this earned three things:
 
-- **The refusal stops being a magic string.** `sufficient: false` is a field to
-  branch on, instead of the hardcoded "I don't have enough reliable
-  information..." text currently duplicated between `llm.py` and `rag.py`.
+- **The refusal stopped being a magic string.** `sufficient: false` is a field
+  to branch on, and the refusal text is defined once rather than duplicated
+  between `llm.py` and `rag.py`. It also now carries a reason: the divorce
+  question returns *"The retrieved sources do not contain any information about
+  the legal process for filing for divorce in Kenya..."* instead of a bare
+  decline.
 - **Deterministic citation verification, identity half.** Code checks every
-  `cited_chunk_ids` entry against the chunks actually retrieved. A fabricated
-  citation is then caught with no LLM call and no cost. It does not verify that
-  the claim matches the text — that still needs entailment checking — but it
-  makes invented citations structurally impossible.
+  `cited_chunk_ids` entry against the chunks actually retrieved, so a fabricated
+  citation is caught with no LLM call and no cost. It does not verify that the
+  claim matches the text — that still needs entailment checking — but invented
+  citations are now structurally impossible.
+- **Cited and considered sources are separated.** Previously a refusal still
+  listed all five reranked chunks under "SOURCES USED", presenting Article 260
+  and three Sixth Schedule fragments as if they supported the answer. `sources`
+  now holds only what the answer cited; `considered` holds everything that
+  reached the LLM.
 
 ---
 
@@ -687,4 +704,5 @@ Priority order when trade-offs arise:
 - **2026-08-30** — Built `LegalLLM` on `gpt-4o-mini` via the OpenAI Responses API with a strict grounding prompt. Verified both a supported answer (Article 49) and a correct refusal (divorce). Wired the LLM into `LegalRAG.answer()`, completing retrieval → reranking → generation end to end.
 - **2026-08-31** — Full codebase and data review. Recorded verified measurements (270 chunks, 264/264 articles present, chunk size distribution, 6.3 MB embeddings file tracked in git). Corrected this plan: Phase 1 metadata and structure detection marked done; Phase 2 marked done for the first document; Phase 3 marked in progress. Documented ingestion blockers and architectural gaps, and resequenced the roadmap to put the ingestion foundation and an evaluation set ahead of corpus expansion and scenario understanding.
 - **2026-08-31** — **Ingestion foundation built.** Replaced the five per-document scripts with one generic, registry-driven pipeline (`python -m data_pipeline.run`). Renamed `data-pipeline/` to `data_pipeline/` so stages can share code; added a common document IR so chunking, embedding and storage no longer know the document type. Fixed all four ingestion blockers: deterministic `uuid5` point IDs, generic stages behind per-type adapters, streaming batched embed-and-upsert with no on-disk vectors, and one central config imported by both the pipeline and the AI layer. Collection schema moved to named vectors with a sparse slot declared for future hybrid search, and the payload now carries `version`, `effective_date`, `in_force` and `as_at`. Added the first tests (33). Constitution re-ingested: **279 chunks**, longest 3,996 characters — Schedule 6's 24,146-character chunk is now split. Re-running produced **279 → 279 points**, proving ingestion is idempotent and a second document can no longer overwrite the first. Retrieval parity confirmed (Article 49 still ranks first) and the divorce refusal still holds.
+- **2026-08-31** — **Structured answers.** The LLM now returns a schema-constrained object (`backend/app/ai/answer.py`) instead of prose: `sufficient`, `question_type`, `verdict`, `explanation`, `qualifications`, `cited_chunk_ids`. Fixes question polarity by construction — the opening word of a polar answer is written by code from the `verdict` enum, so it cannot contradict the explanation. *"Can police arrest me without telling me why?"* now answers **"No."** Citations are checked against the retrieved chunks deterministically, so fabricated ones are stripped and reported with no extra model call. The refusal became a field rather than a magic string and now explains what was missing. Cited sources are separated from considered sources, so a refusal no longer lists irrelevant chunks as if they supported it. Phase 3 Citation generation ticked; verification remains open on the entailment half. 50 tests.
 - **2026-08-31** — Attempted an absolute rerank score threshold as a sufficiency gate. It caused a false refusal on *"Can police arrest me without telling me why?"*, a question the corpus answers. Measurement showed the approach is unworkable, not merely miscalibrated — see *Measured: rerank scores are not a confidence signal*. Removed the floor; reranking now trims only relative to each query's own best match and can never refuse on its own. Sufficiency stays with the LLM's grounding prompt. Recorded the planned structured answer schema to fix question polarity by prevention rather than by a second verification call.

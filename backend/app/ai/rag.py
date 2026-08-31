@@ -1,9 +1,25 @@
 import sys
 
+from backend.app.ai.answer import (
+    LegalAnswer,
+    cited_sources,
+    render,
+)
 from backend.app.ai.retriever import LegalRetriever
 from backend.app.ai.reranker import LegalReranker
 from backend.app.ai.llm import LegalLLM
 from backend.app.core.config import RERANK_TOP_K, RETRIEVAL_TOP_K
+
+
+def _no_sources_answer(reason: str) -> LegalAnswer:
+    """The result when retrieval produced nothing to reason over."""
+
+    return LegalAnswer(
+        sufficient=False,
+        question_type="open",
+        verdict="not_applicable",
+        explanation=reason,
+    )
 
 
 class LegalRAG:
@@ -71,8 +87,11 @@ class LegalRAG:
         """
         Run the complete RAG pipeline.
 
-        Returns both the generated answer and the
-        sources used to generate it.
+        Returns:
+            answer      rendered, user-facing text
+            structured  the LegalAnswer object
+            sources     only the sources the answer actually cited
+            considered  every source that reached the LLM
         """
 
         if not question.strip():
@@ -98,13 +117,15 @@ class LegalRAG:
         )
 
         if not retrieved:
+            answer = _no_sources_answer(
+                "No legal sources were retrieved for this question."
+            )
+
             return {
-                "answer": (
-                    "I don't have enough reliable "
-                    "information to answer this confidently. "
-                    "Please consult a qualified advocate."
-                ),
+                "answer": render(answer),
+                "structured": answer,
                 "sources": [],
+                "considered": [],
             }
 
         # -------------------------------------------------
@@ -125,13 +146,15 @@ class LegalRAG:
         )
 
         if not reranked:
+            answer = _no_sources_answer(
+                "No retrieved source was relevant to this question."
+            )
+
             return {
-                "answer": (
-                    "I don't have enough reliable "
-                    "information to answer this confidently. "
-                    "Please consult a qualified advocate."
-                ),
+                "answer": render(answer),
+                "structured": answer,
                 "sources": [],
+                "considered": [],
             }
 
         # -------------------------------------------------
@@ -147,9 +170,18 @@ class LegalRAG:
 
         print("[PASS] Answer generated")
 
+        if answer.unverified_citations:
+            print(
+                f"[WARN] removed {len(answer.unverified_citations)} "
+                f"citation(s) not present in the retrieved sources: "
+                f"{answer.unverified_citations}"
+            )
+
         return {
-            "answer": answer,
-            "sources": reranked,
+            "answer": render(answer),
+            "structured": answer,
+            "sources": cited_sources(answer, reranked),
+            "considered": reranked,
         }
 
 
@@ -216,14 +248,37 @@ def main():
     print(result["answer"])
 
     # -----------------------------------------------------
+    # STRUCTURED FIELDS
+    # -----------------------------------------------------
+
+    structured = result["structured"]
+
+    print()
+    print("-" * 60)
+    print(
+        f"sufficient={structured.sufficient}  "
+        f"type={structured.question_type}  "
+        f"verdict={structured.verdict}"
+    )
+    print(
+        f"cited {len(result['sources'])} of "
+        f"{len(result['considered'])} sources considered"
+    )
+    print("-" * 60)
+
+    # -----------------------------------------------------
     # SOURCES
     # -----------------------------------------------------
 
     print()
     print("=" * 60)
-    print("SOURCES USED")
+    print("SOURCES CITED")
     print("=" * 60)
     print()
+
+    if not result["sources"]:
+        print("(none)")
+        print()
 
     for index, source in enumerate(
         result["sources"],
