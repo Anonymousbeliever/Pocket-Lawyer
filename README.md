@@ -59,5 +59,8 @@ pocket-lawyer/
 ├── mobile/
 ├── .env.example
 ├── .gitignore
+├── CLAUDE.md
+├── docker-compose.yml
 ├── README.md
 └── requirements.txt
+```
