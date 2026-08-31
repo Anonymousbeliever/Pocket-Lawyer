@@ -3,14 +3,7 @@ import sys
 from backend.app.ai.retriever import LegalRetriever
 from backend.app.ai.reranker import LegalReranker
 from backend.app.ai.llm import LegalLLM
-
-
-# ---------------------------------------------------------
-# CONFIGURATION
-# ---------------------------------------------------------
-
-RETRIEVAL_TOP_K = 15
-RERANK_TOP_K = 5
+from backend.app.core.config import RERANK_TOP_K, RETRIEVAL_TOP_K
 
 
 class LegalRAG:
@@ -236,9 +229,6 @@ def main():
         result["sources"],
         start=1,
     ):
-        chapter = source.get("chapter") or {}
-        article = source.get("article") or {}
-
         print(
             f"SOURCE {index}"
         )
@@ -249,15 +239,9 @@ def main():
         )
 
         print(
-            f"Chapter: "
-            f"{chapter.get('number')} — "
-            f"{chapter.get('title')}"
-        )
-
-        print(
-            f"Article: "
-            f"{article.get('number')} — "
-            f"{article.get('title')}"
+            f"Citation: "
+            f"{source.get('citation')} — "
+            f"{source.get('unit_title')}"
         )
 
         print(
@@ -266,8 +250,13 @@ def main():
         )
 
         print(
-            f"Source: "
-            f"{source.get('source')}"
+            f"Published by: "
+            f"{source.get('source_name')}"
+        )
+
+        print(
+            f"Current as at: "
+            f"{source.get('as_at')}"
         )
 
         print(

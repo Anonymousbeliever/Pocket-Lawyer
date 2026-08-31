@@ -1,0 +1,31 @@
+# Pocket Lawyer — document registry
+#
+# Adding a document of a type that already has adapters (cleaner /
+# structure / validator below) means adding an entry here and nothing
+# else. A genuinely new document type needs one new structure adapter.
+#
+# Fields:
+#   document_id     stable identifier; also the chunk id prefix
+#   version         edition of the law, not of this pipeline
+#   effective_date  when the law took effect (ISO date)
+#   in_force        false for repealed/superseded law — kept for
+#                   historical questions but filtered out by default
+#   cleaner /
+#   structure /
+#   validator       adapter names, resolved in data_pipeline.registry
+
+- document_id: constitution-of-kenya-2010
+  title: "Constitution of Kenya, 2010"
+  document_type: constitution
+  jurisdiction: Kenya
+  language: English
+  version: "2010"
+  effective_date: "2010-08-27"
+  in_force: true
+  source:
+    name: "Kenya Law"
+    url: null
+  raw_path: "data/raw/constitution/Constitution of Kenya.pdf"
+  cleaner: constitution
+  structure: constitution
+  validator: constitution

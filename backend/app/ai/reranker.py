@@ -1,13 +1,10 @@
 from sentence_transformers import CrossEncoder
 
-
-# ---------------------------------------------------------
-# CONFIGURATION
-# ---------------------------------------------------------
-
-RERANKER_MODEL = "BAAI/bge-reranker-v2-m3"
-
-DEFAULT_TOP_K = 5
+from backend.app.core.config import (
+    RERANK_RELATIVE_RATIO,
+    RERANK_TOP_K,
+    RERANKER_MODEL,
+)
 
 
 class LegalReranker:
@@ -40,10 +37,25 @@ class LegalReranker:
         self,
         query: str,
         documents: list[dict],
-        top_k: int = DEFAULT_TOP_K,
+        top_k: int = RERANK_TOP_K,
+        relative_ratio: float = RERANK_RELATIVE_RATIO,
     ) -> list[dict]:
         """
-        Rerank retrieved legal documents.
+        Rerank retrieved legal documents and trim the weak tail.
+
+        Retrieval always returns its full limit, so the bottom of the
+        list is usually unrelated to the question. Those are dropped
+        relative to the best match for this same query:
+
+            cut = top_score * relative_ratio
+
+        The top result always survives, so reranking never refuses on
+        its own. That is deliberate. Absolute cross-encoder scores are
+        not comparable between queries — a typo dropped Article 49
+        from 0.1344 to 0.0086 while still ranking it first, below the
+        0.0373 that an unanswerable question scored. Whether the
+        sources actually answer the question is decided by the LLM
+        under its grounding prompt, not here.
 
         Args:
             query:
@@ -53,7 +65,11 @@ class LegalReranker:
                 Legal chunks returned by the retriever.
 
             top_k:
-                Number of results to return after reranking.
+                Maximum number of results to return after reranking.
+
+            relative_ratio:
+                Fraction of the top score a result must reach to be
+                kept.
         """
 
         if not query.strip():
@@ -75,14 +91,21 @@ class LegalReranker:
         ]
 
         # Score every question/document pair.
-        scores = self.model.predict(pairs)
+        scores = [float(score) for score in self.model.predict(pairs)]
+
+        # Relative to this query's own best match, so the cut adapts to
+        # however this phrasing happened to score.
+        cut = max(scores) * relative_ratio
 
         reranked = []
 
         for document, score in zip(documents, scores):
+            if score < cut:
+                continue
+
             result = document.copy()
 
-            result["rerank_score"] = float(score)
+            result["rerank_score"] = score
 
             reranked.append(result)
 
@@ -114,10 +137,8 @@ def main():
     documents = [
         {
             "chunk_id": "constitution-article-49",
-            "article": {
-                "number": 49,
-                "title": "Rights of arrested persons",
-            },
+            "citation": "Chapter Four — Article 49",
+            "unit_title": "Rights of arrested persons",
             "content": (
                 "(1) An arrested person has the right— "
                 "(a) to be informed promptly, in a language "
@@ -129,13 +150,11 @@ def main():
         },
         {
             "chunk_id": "constitution-article-51",
-            "article": {
-                "number": 51,
-                "title": (
-                    "Rights of persons detained, held in "
-                    "custody or imprisoned"
-                ),
-            },
+            "citation": "Chapter Four — Article 51",
+            "unit_title": (
+                "Rights of persons detained, held in "
+                "custody or imprisoned"
+            ),
             "content": (
                 "A person who is detained, held in custody "
                 "or imprisoned under the law retains all "
@@ -145,10 +164,8 @@ def main():
         },
         {
             "chunk_id": "constitution-article-29",
-            "article": {
-                "number": 29,
-                "title": "Freedom and security of the person",
-            },
+            "citation": "Chapter Four — Article 29",
+            "unit_title": "Freedom and security of the person",
             "content": (
                 "Every person has the right to freedom and "
                 "security of the person, including the right "
@@ -172,23 +189,21 @@ def main():
     print()
 
     print(f"Query: {query}")
+    print(f"Relative ratio: {RERANK_RELATIVE_RATIO}")
     print()
 
     results = reranker.rerank(
         query=query,
         documents=documents,
-        top_k=3,
     )
 
-    print(f"Results: {len(results)}")
+    print(f"Results kept: {len(results)} of {len(documents)}")
     print()
 
     for index, result in enumerate(
         results,
         start=1,
     ):
-        article = result.get("article") or {}
-
         print("-" * 60)
         print(f"Result #{index}")
 
@@ -197,16 +212,8 @@ def main():
             f"{result['rerank_score']:.4f}"
         )
 
-        print(
-            f"Article: "
-            f"{article.get('number')} — "
-            f"{article.get('title')}"
-        )
-
-        print(
-            f"Chunk ID: "
-            f"{result.get('chunk_id')}"
-        )
+        print(f"Citation: {result.get('citation')}")
+        print(f"Title: {result.get('unit_title')}")
 
         print()
         print("Content:")

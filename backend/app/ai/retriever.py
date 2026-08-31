@@ -1,32 +1,25 @@
-from pathlib import Path
 import sys
 
 from qdrant_client import QdrantClient
+from qdrant_client.models import FieldCondition, Filter, MatchValue
 from sentence_transformers import SentenceTransformer
 
-
-# ---------------------------------------------------------
-# PROJECT PATH
-# ---------------------------------------------------------
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-# ---------------------------------------------------------
-# CONFIGURATION
-# ---------------------------------------------------------
-
-QDRANT_URL = "http://localhost:6333"
-COLLECTION_NAME = "pocket_lawyer_legal"
-
-EMBEDDING_MODEL = "BAAI/bge-m3"
-
-DEFAULT_TOP_K = 15
+from backend.app.core.config import (
+    COLLECTION_NAME,
+    DENSE_VECTOR_NAME,
+    EMBEDDING_MODEL,
+    QDRANT_URL,
+    RETRIEVAL_TOP_K,
+)
 
 
 class LegalRetriever:
     """
     Retrieves relevant legal chunks from Qdrant
     using BGE-M3 semantic embeddings.
+
+    The embedding model here must match the one used at ingest time.
+    Both read it from backend.app.core.config for exactly that reason.
     """
 
     def __init__(
@@ -82,10 +75,15 @@ class LegalRetriever:
     def retrieve(
         self,
         query: str,
-        top_k: int = DEFAULT_TOP_K,
+        top_k: int = RETRIEVAL_TOP_K,
+        in_force_only: bool = True,
     ) -> list[dict]:
         """
         Retrieve the most semantically relevant legal chunks.
+
+        By default only law that is currently in force is searched.
+        Answering with repealed law is the worst failure mode this
+        system has, so the filter is opt-out rather than opt-in.
         """
 
         if top_k < 1:
@@ -93,9 +91,23 @@ class LegalRetriever:
 
         query_vector = self.embed_query(query)
 
+        query_filter = None
+
+        if in_force_only:
+            query_filter = Filter(
+                must=[
+                    FieldCondition(
+                        key="in_force",
+                        match=MatchValue(value=True),
+                    )
+                ]
+            )
+
         results = self.client.query_points(
             collection_name=self.collection_name,
             query=query_vector,
+            using=DENSE_VECTOR_NAME,
+            query_filter=query_filter,
             limit=top_k,
             with_payload=True,
         ).points
@@ -105,19 +117,10 @@ class LegalRetriever:
         for result in results:
             payload = result.payload or {}
 
-            retrieved_chunks.append(
-                {
-                    "score": float(result.score),
-                    "chunk_id": payload.get("chunk_id"),
-                    "document_id": payload.get("document_id"),
-                    "document_type": payload.get("document_type"),
-                    "title": payload.get("title"),
-                    "chapter": payload.get("chapter"),
-                    "article": payload.get("article"),
-                    "content": payload.get("content"),
-                    "source": payload.get("source"),
-                }
-            )
+            chunk = dict(payload)
+            chunk["score"] = float(result.score)
+
+            retrieved_chunks.append(chunk)
 
         return retrieved_chunks
 
@@ -150,33 +153,17 @@ def main():
     print(f"Query: {query}")
     print()
 
-    results = retriever.retrieve(
-        query=query,
-        top_k=15,
-    )
+    results = retriever.retrieve(query=query)
 
     print(f"Results: {len(results)}")
     print()
 
     for index, result in enumerate(results, start=1):
-        chapter = result.get("chapter") or {}
-        article = result.get("article") or {}
-
         print("-" * 60)
         print(f"Result #{index}")
         print(f"Score: {result['score']:.4f}")
-
-        print(
-            f"Chapter: "
-            f"{chapter.get('number')} — "
-            f"{chapter.get('title')}"
-        )
-
-        print(
-            f"Article: "
-            f"{article.get('number')} — "
-            f"{article.get('title')}"
-        )
+        print(f"Citation: {result.get('citation')}")
+        print(f"Title: {result.get('unit_title')}")
 
         print()
         print("Content:")

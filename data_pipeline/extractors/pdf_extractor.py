@@ -1,9 +1,13 @@
+"""PDF text extraction. Document-type agnostic."""
+
 from pathlib import Path
 
 import pymupdf
 
 
-def extract_text(pdf_path: str, output_path: str) -> None:
+def extract_text(pdf_path: str | Path, output_path: str | Path) -> int:
+    """Extract every page of a PDF to a text file. Returns page count."""
+
     pdf = Path(pdf_path)
     output = Path(output_path)
 
@@ -26,16 +30,8 @@ def extract_text(pdf_path: str, output_path: str) -> None:
 
     output.parent.mkdir(parents=True, exist_ok=True)
 
-    output.write_text(
-        "\n".join(pages),
-        encoding="utf-8",
-    )
+    output.write_text("\n".join(pages), encoding="utf-8")
 
-    print(f"Extracted {page_count} pages → {output}")
+    print(f"       {page_count} pages -> {output.name}")
 
-
-if __name__ == "__main__":
-    extract_text(
-        "data/raw/constitution/Constitution of Kenya.pdf",
-        "data/extracted/constitution.txt",
-    )
+    return page_count

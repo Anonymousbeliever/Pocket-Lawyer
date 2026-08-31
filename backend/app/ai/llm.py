@@ -1,33 +1,6 @@
-import os
-
-from dotenv import load_dotenv
 from openai import OpenAI
 
-
-# ---------------------------------------------------------
-# ENVIRONMENT
-# ---------------------------------------------------------
-
-load_dotenv()
-
-
-# ---------------------------------------------------------
-# CONFIGURATION
-# ---------------------------------------------------------
-
-OPENAI_MODEL = os.getenv(
-    "OPENAI_MODEL",
-    "gpt-4o-mini",
-)
-
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-
-if not OPENAI_API_KEY:
-    raise RuntimeError(
-        "OPENAI_API_KEY is not configured. "
-        "Add it to your .env file."
-    )
+from backend.app.core.config import OPENAI_API_KEY, OPENAI_MODEL
 
 
 # ---------------------------------------------------------
@@ -189,6 +162,12 @@ class LegalLLM:
         self,
         model_name: str = OPENAI_MODEL,
     ):
+        if not OPENAI_API_KEY:
+            raise RuntimeError(
+                "OPENAI_API_KEY is not configured. "
+                "Add it to your .env file."
+            )
+
         self.model_name = model_name
 
         print(
@@ -226,9 +205,6 @@ class LegalLLM:
             sources,
             start=1,
         ):
-            chapter = source.get("chapter") or {}
-            article = source.get("article") or {}
-
             context_parts.append(
                 f"""
 SOURCE {index}
@@ -239,14 +215,17 @@ Document:
 Document Type:
 {source.get("document_type")}
 
-Chapter:
-{chapter.get("number")} — {chapter.get("title")}
+Citation:
+{source.get("citation")} — {source.get("unit_title")}
 
-Article:
-{article.get("number")} — {article.get("title")}
+Published by:
+{source.get("source_name")}
 
-Source:
-{source.get("source")}
+Version:
+{source.get("version")} (in force: {source.get("in_force")})
+
+Current as at:
+{source.get("as_at")}
 
 Chunk ID:
 {source.get("chunk_id")}
@@ -365,16 +344,13 @@ def main():
     sources = [
         {
             "title": "Constitution of Kenya, 2010",
-            "document_type": "Constitution",
-            "chapter": {
-                "number": "Four",
-                "title": "THE BILL OF RIGHTS",
-            },
-            "article": {
-                "number": 49,
-                "title": "Rights of arrested persons",
-            },
-            "source": "Kenya Law",
+            "document_type": "constitution",
+            "citation": "Chapter Four — Article 49",
+            "unit_title": "Rights of arrested persons",
+            "source_name": "Kenya Law",
+            "version": "2010",
+            "in_force": True,
+            "as_at": "2026-08-31",
             "chunk_id": (
                 "constitution-of-kenya-2010-"
                 "chapter-four-article-49"
