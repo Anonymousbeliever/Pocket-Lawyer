@@ -368,11 +368,67 @@ Citation verification
 USER
 ```
 
-### Known response-quality issue
+### Known response-quality issues
 
-For *"Can police arrest me without telling me why?"* the system answered *"Yes, the police cannot arrest you without informing you..."* — it addressed the embedded proposition rather than the yes/no question. The natural answer is **"No."** Question polarity and direct answers need handling in a future response layer.
+Both reproduced again on 2026-08-31 after the ingestion refactor. Neither is a
+retrieval or grounding failure — the correct article was retrieved and cited
+both times. They are *response layer* problems.
 
-Care is required in the other direction too: Article 49 says *"informed promptly"*. That must not silently become *"must be told at the exact moment of arrest"*. Do not strengthen the law beyond its source.
+**1. Question polarity.** For *"Can police arrest me without telling me why?"*
+the system answered *"Yes, the police cannot arrest you without telling you
+why."* — self-contradictory. It addressed the embedded proposition rather than
+the yes/no question. The natural answer is **"No."**
+
+Polar questions with a negative framing require the model to extract the rule,
+map it to yes/no, then *invert*. Free-form generation gives it no reason to
+commit to a polarity before writing prose.
+
+*Fix — prevention, not detection:* schema-constrained output with `verdict` as a
+discrete enum field the model must fill before writing any explanation, and the
+final sentence rendered by code rather than the LLM. A contradiction then
+becomes structurally impossible. A second verification call is the wrong tool
+here: it detects after the fact, and doubles latency and cost.
+
+**2. Claim fidelity — the more serious of the two.** The same answer concluded
+*"it's legally required for the police to inform you of the reason for your
+arrest **at the time of arrest**"*. Article 49(1)(a) says **"promptly"**. The
+model strengthened the law beyond its source. "Promptly" and "at the moment of
+arrest" are different legal standards.
+
+The citation was correct and no source was invented, so grounding held — but
+fidelity slipped, and this is the exact drift warned about above.
+
+*Fix — detection, because schemas cannot prevent it:* a free-text explanation
+can always overstate. This needs span-grounded citation (require the model to
+quote the words it relies on) plus entailment checking of each claim against its
+cited passage. That is the Citation verification item in this phase.
+
+### Planned answer schema
+
+Recording the contract now, because FastAPI and Flutter will both depend on it —
+defining it after building an API around free text means rewriting both.
+
+```json
+{
+  "sufficient":      true,
+  "question_type":   "polar",
+  "verdict":         "no",
+  "explanation":     "...",
+  "qualifications":  ["..."],
+  "cited_chunk_ids": ["constitution-of-kenya-2010-chapter-four-article-49"]
+}
+```
+
+Beyond fixing polarity this earns two things:
+
+- **The refusal stops being a magic string.** `sufficient: false` is a field to
+  branch on, instead of the hardcoded "I don't have enough reliable
+  information..." text currently duplicated between `llm.py` and `rag.py`.
+- **Deterministic citation verification, identity half.** Code checks every
+  `cited_chunk_ids` entry against the chunks actually retrieved. A fabricated
+  citation is then caught with no LLM call and no cost. It does not verify that
+  the claim matches the text — that still needs entailment checking — but it
+  makes invented citations structurally impossible.
 
 ---
 
@@ -461,13 +517,52 @@ Recorded 2026-08-31 after a full review of the codebase and generated data.
 
 ### Secondary gaps
 
-- No rerank score threshold — `rerank()` always returns `top_k` regardless of score, so a 0.2933 result is handed to the LLM as a "source" alongside a 0.9993 one.
+- Sufficiency is judged only by the LLM's grounding prompt. `rerank()` trims the weak tail relative to each query's own best match, but deliberately applies **no absolute score floor** — see *Measured: rerank scores are not a confidence signal* below.
 - No metadata filtering at query time, despite the payload carrying `document_type` and `jurisdiction`.
 - Schedule 6 is a single **24,146-character** chunk (Schedules 3 and 4 exceed 5,000). Not truncated — BGE-M3 accepts 8192 tokens — but one vector for that much unrelated text is semantically diluted and expensive to rerank and to put in context.
 - No `version` / `effective_date` / `in_force` in the Qdrant payload. The metadata JSON has them; the vectors do not. **Current law cannot be distinguished from repealed law.**
 - Sub-paragraph hierarchy is flattened: `(i)`/`(ii)`/`(iii)` collapse into the parent paragraph. Text is intact and faithful, but pinpoint citation below the paragraph level is not addressable.
 - No automated tests anywhere; `pytest` is not a dependency.
 - `.env.example` still lists a non-existent `OPENAI_MODEL=gpt-5.6-luna`.
+
+### Measured: rerank scores are not a confidence signal
+
+Recorded 2026-08-31 after attempting to add an absolute rerank threshold. It was
+implemented, it broke a working question, and it was removed. The measurements
+are kept here so the idea is not tried again without new evidence.
+
+Scores from `BAAI/bge-reranker-v2-m3` against the indexed Constitution:
+
+| Question | Best match | Score |
+|---|---|---|
+| "What are the rights of an arrested person?" | Article 49 | **0.9993** |
+| "Police arrested me and did not say why. What are my rights?" | Article 49 | **0.7552** |
+| "Can police arrest me without telling me why?" | Article 49 | **0.1344** |
+| "Can police arrest me without **teling** me why?" (typo) | Article 49 | **0.0086** |
+| "What is the legal process for filing for divorce in Kenya?" (**not in corpus**) | Article 260 | **0.0373** |
+
+Two conclusions:
+
+1. **Article 49 ranked first in every arrest phrasing, including the typo.**
+   Retrieval and reranking were never the problem. BGE-M3's subword tokenisation
+   makes dense retrieval degrade gracefully on misspellings.
+2. **The scale is not comparable across queries — it is inverted.** The *correct*
+   source for a typo'd question (0.0086) scores lower than the *best wrong*
+   source for a question the corpus cannot answer (0.0373). No fixed floor can
+   accept the first and reject the second.
+
+Cross-encoder scores order candidates *within* one query. They are not a
+calibrated confidence measure *across* queries. Gating sufficiency on them
+produced false refusals on questions the corpus answers — the failure mode that
+matters most here, since the product's value is answering correctly *and*
+knowing when it cannot.
+
+Sufficiency therefore stays with the LLM's grounding prompt, which handled it
+correctly before any threshold existed (see the Phase 3 divorce test). The
+durable fixes are the query analyser — which normalises typos and phrasing
+before retrieval — and citation verification, both already on the roadmap. Any
+future threshold must be calibrated against a labelled evaluation set, per query
+type, never hand-picked.
 
 ### Architectural gaps
 
@@ -502,8 +597,11 @@ Revised 2026-08-31. The ordering changed for two reasons: the ingestion layer mu
 3. Corpus expansion
    Each new document validates the generic pipeline.
 
-4. Thresholds / evidence sufficiency
-   A small change, not a module.
+4. Evidence sufficiency
+   NOT an absolute rerank threshold - that was tried and
+   removed; see "rerank scores are not a confidence signal".
+   Calibrate against the evaluation set, or verify claims
+   against cited passages.
 
 5. FastAPI service
    Load models once at startup. Structured answer + sources.
@@ -588,3 +686,5 @@ Priority order when trade-offs arise:
 - **2026-08-28** — Added `LegalReranker` using `BAAI/bge-reranker-v2-m3`. Top 15 → top 5. Confirmed it materially improves ordering over raw semantic retrieval.
 - **2026-08-30** — Built `LegalLLM` on `gpt-4o-mini` via the OpenAI Responses API with a strict grounding prompt. Verified both a supported answer (Article 49) and a correct refusal (divorce). Wired the LLM into `LegalRAG.answer()`, completing retrieval → reranking → generation end to end.
 - **2026-08-31** — Full codebase and data review. Recorded verified measurements (270 chunks, 264/264 articles present, chunk size distribution, 6.3 MB embeddings file tracked in git). Corrected this plan: Phase 1 metadata and structure detection marked done; Phase 2 marked done for the first document; Phase 3 marked in progress. Documented ingestion blockers and architectural gaps, and resequenced the roadmap to put the ingestion foundation and an evaluation set ahead of corpus expansion and scenario understanding.
+- **2026-08-31** — **Ingestion foundation built.** Replaced the five per-document scripts with one generic, registry-driven pipeline (`python -m data_pipeline.run`). Renamed `data-pipeline/` to `data_pipeline/` so stages can share code; added a common document IR so chunking, embedding and storage no longer know the document type. Fixed all four ingestion blockers: deterministic `uuid5` point IDs, generic stages behind per-type adapters, streaming batched embed-and-upsert with no on-disk vectors, and one central config imported by both the pipeline and the AI layer. Collection schema moved to named vectors with a sparse slot declared for future hybrid search, and the payload now carries `version`, `effective_date`, `in_force` and `as_at`. Added the first tests (33). Constitution re-ingested: **279 chunks**, longest 3,996 characters — Schedule 6's 24,146-character chunk is now split. Re-running produced **279 → 279 points**, proving ingestion is idempotent and a second document can no longer overwrite the first. Retrieval parity confirmed (Article 49 still ranks first) and the divorce refusal still holds.
+- **2026-08-31** — Attempted an absolute rerank score threshold as a sufficiency gate. It caused a false refusal on *"Can police arrest me without telling me why?"*, a question the corpus answers. Measurement showed the approach is unworkable, not merely miscalibrated — see *Measured: rerank scores are not a confidence signal*. Removed the floor; reranking now trims only relative to each query's own best match and can never refuse on its own. Sufficiency stays with the LLM's grounding prompt. Recorded the planned structured answer schema to fix question polarity by prevention rather than by a second verification call.

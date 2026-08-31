@@ -36,24 +36,45 @@ backend/app/ai/
   llm.py                   LegalLLM        — gpt-4o-mini + grounding prompt
   rag.py                   LegalRAG.answer() — chains all three
   generator.py, prompt.py  EMPTY placeholders, unused
-data-pipeline/             extract → clean → validate → structure → chunk → embed → store
+backend/app/core/config.py Single source of truth for config - BOTH sides import it
+data_pipeline/
+  run.py                   orchestrator: extract → clean → structure → chunk → store
+  documents.yaml           document registry - add a document by adding an entry
+  ir.py                    Document/Unit - the common shape every stage works on
+  registry.py              loads the registry, derives artifact paths
+  structure/<type>.py      the ONLY type-specific stage; the adapter seam
+  cleaners/, chunking/, validators/, vectorstore/
 data/                      raw / extracted / cleaned / metadata / processed
+tests/                     pytest
 docs/project-plan.md       the living plan and progress tracker
 mobile/                    empty (Flutter, not started)
 ```
 
-`data-pipeline/` currently holds one hardcoded script per stage per document
-(`constitution_*.py`). A generic registry-driven pipeline is the active work.
+The pipeline is generic and registry-driven. Adding a document of a type that
+already has adapters means **one entry in `documents.yaml` and no new code**. A
+genuinely new type (an Act, a judgment) needs one new `structure/` adapter that
+emits the IR — nothing downstream changes.
 
 ## Running things
 
 ```bash
 docker compose up -d              # Qdrant on localhost:6333
-python -m backend.app.ai.rag      # full pipeline, interactive CLI
+pytest                            # 33 tests, no Qdrant needed
+
+python -m data_pipeline.run --document constitution-of-kenya-2010
+python -m data_pipeline.run --all
+python -m data_pipeline.run --document X --from chunk   # resume a stage
+python -m data_pipeline.run --document X --recreate     # rebuild collection
+
+python -m backend.app.ai.rag         # full pipeline, interactive CLI
 python -m backend.app.ai.retriever   # retrieval only
 python -m backend.app.ai.reranker    # reranking only
 python -m backend.app.ai.llm         # generation only
 ```
+
+Ingestion is idempotent — point IDs are `uuid5(chunk_id)`, so re-running
+updates in place rather than duplicating. `--recreate` is only needed when the
+collection's vector schema changes.
 
 **Always use `python -m ...`, never `python backend/app/ai/rag.py`** — the
 latter fails with `ModuleNotFoundError: No module named 'backend'` because these
@@ -94,6 +115,13 @@ are provisioned for.
   eventually load once at startup, not per request.
 - **Avoid new dependencies** unless they solve a real problem. Don't add a module
   until it has a clear responsibility.
+- **Never gate sufficiency on an absolute rerank score.** It was tried and
+  removed. Cross-encoder scores rank candidates *within* one query; they are not
+  comparable *across* queries. A typo moved the correct source from 0.1344 to
+  0.0086 while it still ranked first — below the 0.0373 scored by a question the
+  corpus cannot answer. No fixed floor works. Deciding whether sources answer
+  the question is the LLM's job under its grounding prompt. Full measurements
+  are in `docs/project-plan.md`.
 
 ## Gotchas
 
