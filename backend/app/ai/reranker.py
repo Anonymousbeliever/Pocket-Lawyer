@@ -5,6 +5,7 @@ from backend.app.core.config import (
     RERANK_TOP_K,
     RERANKER_MODEL,
 )
+from backend.app.core.passage import contextual_text
 
 
 class LegalReranker:
@@ -81,11 +82,13 @@ class LegalReranker:
         if top_k < 1:
             raise ValueError("top_k must be at least 1.")
 
-        # Create question/document pairs.
+        # Score against the same contextual form used at ingest time:
+        # the citation and title give the cross-encoder something to
+        # judge, which bare list-shaped schedule text does not.
         pairs = [
             [
                 query,
-                document.get("content", ""),
+                contextual_text(document),
             ]
             for document in documents
         ]

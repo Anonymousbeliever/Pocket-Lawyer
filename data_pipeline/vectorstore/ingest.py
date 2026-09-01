@@ -29,6 +29,7 @@ from backend.app.core.config import (
     EMBEDDING_MODEL,
     UPSERT_BATCH_SIZE,
 )
+from backend.app.core.passage import contextual_text
 from data_pipeline.chunking.ids import point_id
 
 
@@ -89,8 +90,11 @@ def ingest_chunks(
 
     for batch in _batched(chunks, embed_batch_size):
 
+        # Embed the chunk with its document, citation and title
+        # prepended. The payload still stores the raw content, so the
+        # header never reaches the LLM.
         vectors = model.encode(
-            [chunk["content"] for chunk in batch],
+            [contextual_text(chunk) for chunk in batch],
             normalize_embeddings=True,
         )
 

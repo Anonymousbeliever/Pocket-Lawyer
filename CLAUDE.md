@@ -66,6 +66,11 @@ python -m data_pipeline.run --all
 python -m data_pipeline.run --document X --from chunk   # resume a stage
 python -m data_pipeline.run --document X --recreate     # rebuild collection
 
+python -m evaluation.run             # tier 1: retrieval only, free, no API key
+python -m evaluation.run --tier 2    # adds the LLM (refusal correctness)
+python -m evaluation.run --accept-last   # record the last run as baseline
+python -m evaluation.run --id <qid>  # one question, for debugging
+
 python -m backend.app.ai.rag         # full pipeline, interactive CLI
 python -m backend.app.ai.retriever   # retrieval only
 python -m backend.app.ai.reranker    # reranking only
@@ -109,8 +114,14 @@ are provisioned for.
   database credentials in source. `.env` is gitignored; `.env.example` is not.
 - **Prefer structured source metadata** over free-text. The backend holds
   authoritative citation data — don't rely on the LLM to format a sources list.
-- **After any AI change, re-test the whole chain:** retrieval → reranking →
-  generation → full RAG. A change that helps one stage can break another.
+- **After any AI change, run the evaluation** (`python -m evaluation.run`) and
+  check it against the baseline. Tier 1 is free and catches retrieval and
+  reranking regressions; a single manual question does not.
+- **Embed chunks with their citation context**, never the bare body. An
+  article's topic often lives only in its title - Article 16 is "Dual
+  citizenship" and its text never says "dual". Embedding content alone made it
+  rank #27; with the header it ranks #2. `backend/app/core/passage.py` builds
+  that text for the embedder and reranker; the LLM still receives raw content.
 - **Design for concurrent users**, not one CLI process per question. Models must
   eventually load once at startup, not per request.
 - **Avoid new dependencies** unless they solve a real problem. Don't add a module

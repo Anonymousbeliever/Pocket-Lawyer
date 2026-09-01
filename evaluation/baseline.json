@@ -1,0 +1,481 @@
+{
+  "metadata": {
+    "created": "2026-09-01T15:39:58",
+    "tier": 1,
+    "collection": "pocket_lawyer_legal",
+    "embedding_model": "BAAI/bge-m3",
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "retrieval_top_k": 15,
+    "rerank_top_k": 5
+  },
+  "metrics": {
+    "retrieval_hit": {
+      "passed": 41,
+      "total": 41
+    },
+    "rerank_hit": {
+      "passed": 40,
+      "total": 41
+    },
+    "rerank_top1": {
+      "passed": 33,
+      "total": 41
+    }
+  },
+  "counts": {
+    "questions": 56,
+    "answerable": 41,
+    "out_of_scope": 15,
+    "passed": 55
+  },
+  "questions": {
+    "arrest-reason": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "arrest-rights": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "arrest-court-time": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "arrest-silence": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "arrest-bail": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "fair-trial": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "state-funded-lawyer": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null
+    },
+    "detained-person-rights": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "torture": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "discrimination": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "privacy-search": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "freedom-expression": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null
+    },
+    "access-information": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "peaceful-demonstration": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "property-taken": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "trade-union": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "clean-environment": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "right-to-healthcare": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "right-to-housing": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "consumer-rights": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "access-to-justice": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "children-rights": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "disability-rights": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "rights-limitation": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null
+    },
+    "absolute-rights": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "unfair-government-decision": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null
+    },
+    "citizenship-by-birth": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "dual-citizenship": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null
+    },
+    "citizenship-revocation": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null
+    },
+    "foreigner-land": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "land-types": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "community-land": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "voter-registration": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "independent-candidate": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "election-dispute": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "court-system": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "county-government-role": {
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null
+    },
+    "governor-removal": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "unconstitutional-law": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "official-languages": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null
+    },
+    "public-officer-conduct": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null
+    },
+    "divorce-process": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    },
+    "employment-notice": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    },
+    "tenant-eviction-notice": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    },
+    "company-registration": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    },
+    "driving-licence-fine": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    },
+    "writing-a-will": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    },
+    "small-claims-filing": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    },
+    "work-permit": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    },
+    "restaurant-licence": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    },
+    "copyright-registration": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    },
+    "tax-return-deadline": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    },
+    "land-title-transfer": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    },
+    "police-complaint-procedure": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    },
+    "loan-interest-cap": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    },
+    "debt-inability": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null
+    }
+  }
+}

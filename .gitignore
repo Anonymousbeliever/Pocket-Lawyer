@@ -43,3 +43,6 @@ data/processed/*_embeddings.json
 build/
 dist/
 *.egg-info/
+
+# Transient evaluation run output; baseline.json is the tracked one
+evaluation/last_run.json

@@ -319,7 +319,7 @@ Meaning matches even when wording differs. A user asking *"Can cops arrest me wi
 - [x] Reranking
 - [x] Citation generation
 - [ ] Citation verification — *identity half done, entailment outstanding*
-- [ ] Evaluation
+- [x] Evaluation — *56-question set, baseline recorded; question set awaiting legal review*
 
 ### What was actually built
 
@@ -581,6 +581,57 @@ before retrieval — and citation verification, both already on the roadmap. Any
 future threshold must be calibrated against a labelled evaluation set, per query
 type, never hand-picked.
 
+### Measured: chunks must be embedded with their citation context
+
+Recorded 2026-09-01. The first evaluation run scored 34/41, with 7 failures.
+All 7 traced to a single cause: the pipeline embedded `chunk["content"]` — the
+bare legal text — while the article's *title* went only into the payload.
+
+An article's topic frequently lives in its title and nowhere in its body:
+
+> **Article 16 — "Dual citizenship"**
+> *"A citizen by birth does not lose citizenship by acquiring the citizenship of
+> another country."*
+
+The word "dual" never appears in the text. The article was unfindable by the
+question that most obviously describes it.
+
+Fixed by prepending document, citation and unit title to the text used for
+**embedding and reranking only** (`backend/app/core/passage.py`). The stored
+`content` is unchanged, so the header never reaches the LLM.
+
+Measured effect on true rank against the full 279-chunk corpus:
+
+| Question | Before | After |
+|---|---|---|
+| dual-citizenship | #27 | **#2** |
+| foreigner-land | #16 | **#2** |
+| court-system | #16 | **#1** |
+| torture | #6 | **#1** |
+| freedom-expression | #11 | **#1** |
+| children-rights | #6 | **#1** |
+
+And on reranking, where the effect is larger and selective — correct articles
+rise sharply while distractors fall:
+
+| Question | Correct article | Before | After |
+|---|---|---|---|
+| torture | Article 25 | 0.0014 | **0.2495** |
+| freedom-expression | Article 33 | 0.0042 | **0.6469** |
+| children-rights | Article 53 | 0.0183 | **0.9271** |
+
+**A discarded theory, kept on record.** The schedules crowding early results
+looked like cross-encoder length bias. It was measured and refuted:
+correlation between passage length and rerank score was **−0.116**, and
+passages over 3,000 characters scored *lower* on average (0.0930 vs 0.1409).
+
+What was actually happening is visible in the "before" scores above — *every*
+candidate scored near zero. The reranker was not preferring schedules; it had no
+signal at all, and the ordering among near-zero noise was arbitrary. One missing
+input starved both stages.
+
+Evaluation result: **34/41 → 40/41**, six questions improved, none regressed.
+
 ### Architectural gaps
 
 - **Case law has no structural model.** Judgments are not chapters and articles. They need holdings vs obiter, court hierarchy, and overruled/distinguished status. The corpus plan includes case law; the pipeline has no concept of it.
@@ -607,9 +658,9 @@ Revised 2026-08-31. The ordering changed for two reasons: the ingestion layer mu
    Stable IDs, batched ingest, central config,
    versioning fields, named vectors.
 
-2. Evaluation set
-   40–60 golden questions → expected authorities.
-   Cheap now; compounding value.
+2. Evaluation set                        ← DONE
+   56 questions, two tiers, baseline recorded.
+   Question set still needs legal review.
 
 3. Corpus expansion
    Each new document validates the generic pipeline.
@@ -704,5 +755,7 @@ Priority order when trade-offs arise:
 - **2026-08-30** — Built `LegalLLM` on `gpt-4o-mini` via the OpenAI Responses API with a strict grounding prompt. Verified both a supported answer (Article 49) and a correct refusal (divorce). Wired the LLM into `LegalRAG.answer()`, completing retrieval → reranking → generation end to end.
 - **2026-08-31** — Full codebase and data review. Recorded verified measurements (270 chunks, 264/264 articles present, chunk size distribution, 6.3 MB embeddings file tracked in git). Corrected this plan: Phase 1 metadata and structure detection marked done; Phase 2 marked done for the first document; Phase 3 marked in progress. Documented ingestion blockers and architectural gaps, and resequenced the roadmap to put the ingestion foundation and an evaluation set ahead of corpus expansion and scenario understanding.
 - **2026-08-31** — **Ingestion foundation built.** Replaced the five per-document scripts with one generic, registry-driven pipeline (`python -m data_pipeline.run`). Renamed `data-pipeline/` to `data_pipeline/` so stages can share code; added a common document IR so chunking, embedding and storage no longer know the document type. Fixed all four ingestion blockers: deterministic `uuid5` point IDs, generic stages behind per-type adapters, streaming batched embed-and-upsert with no on-disk vectors, and one central config imported by both the pipeline and the AI layer. Collection schema moved to named vectors with a sparse slot declared for future hybrid search, and the payload now carries `version`, `effective_date`, `in_force` and `as_at`. Added the first tests (33). Constitution re-ingested: **279 chunks**, longest 3,996 characters — Schedule 6's 24,146-character chunk is now split. Re-running produced **279 → 279 points**, proving ingestion is idempotent and a second document can no longer overwrite the first. Retrieval parity confirmed (Article 49 still ranks first) and the divorce refusal still holds.
+- **2026-09-01** — **Contextual embedding.** Chunks are now embedded and reranked with their document, citation and article title prepended (`backend/app/core/passage.py`); the stored content sent to the LLM is unchanged. Diagnosed offline before changing anything, which also refuted a length-bias theory. Evaluation went **34/41 → 40/41**, six questions improved, none regressed. See *Measured: chunks must be embedded with their citation context*. The one remaining failure, `county-government-role`, is a suspected defect in the question rather than the system — the Fourth Schedule distributes county functions and was never listed as an acceptable authority. Awaiting legal review.
+- **2026-09-01** — **Evaluation harness.** 56 questions (41 answerable, 15 out of scope) in `evaluation/questions.yaml`, scored in two tiers: tier 1 runs retrieval and reranking with no API key and no cost, tier 2 adds the LLM for refusal correctness. Retrieval and reranking are scored separately so a failure names the stage that broke, and `false_refusal` and `false_answer` are counted apart rather than averaged. `baseline.json` records the accepted state and a run reports per-question status changes against it, exiting non-zero on regression. First baseline: 34/41. Question set drafted against article titles and **not yet reviewed for legal correctness**.
 - **2026-08-31** — **Structured answers.** The LLM now returns a schema-constrained object (`backend/app/ai/answer.py`) instead of prose: `sufficient`, `question_type`, `verdict`, `explanation`, `qualifications`, `cited_chunk_ids`. Fixes question polarity by construction — the opening word of a polar answer is written by code from the `verdict` enum, so it cannot contradict the explanation. *"Can police arrest me without telling me why?"* now answers **"No."** Citations are checked against the retrieved chunks deterministically, so fabricated ones are stripped and reported with no extra model call. The refusal became a field rather than a magic string and now explains what was missing. Cited sources are separated from considered sources, so a refusal no longer lists irrelevant chunks as if they supported it. Phase 3 Citation generation ticked; verification remains open on the entailment half. 50 tests.
 - **2026-08-31** — Attempted an absolute rerank score threshold as a sufficiency gate. It caused a false refusal on *"Can police arrest me without telling me why?"*, a question the corpus answers. Measurement showed the approach is unworkable, not merely miscalibrated — see *Measured: rerank scores are not a confidence signal*. Removed the floor; reranking now trims only relative to each query's own best match and can never refuse on its own. Sufficiency stays with the LLM's grounding prompt. Recorded the planned structured answer schema to fix question polarity by prevention rather than by a second verification call.
