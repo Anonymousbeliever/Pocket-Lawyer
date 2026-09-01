@@ -107,23 +107,26 @@ def evaluate_tier2(
 
         outcome = rag.answer(question.question)
 
+        # `considered` is what survived reranking and reached the LLM.
+        # `cited` is what the answer actually relied on. Neither is the
+        # raw retrieved set, which answer() does not expose.
         considered = [c.get("chunk_id") for c in outcome["considered"]]
         cited = [c.get("chunk_id") for c in outcome["sources"]]
 
         result = QuestionResult(
             id=question.id,
             answerable=question.answerable,
-            retrieved_top=considered,
-            reranked_top=cited or considered,
+            reranked_top=considered,
+            cited_top=cited,
             sufficient=outcome["structured"].sufficient,
         )
 
         if question.answerable:
             expected = set(question.expect_any_of)
 
-            # Tier 2 goes through the full pipeline, so the candidate
-            # set here is what survived reranking.
-            result.retrieval_hit = bool(expected & set(considered))
+            # retrieval_hit stays None on purpose. Deriving it from the
+            # reranked set would just duplicate rerank_hit and report a
+            # retrieval failure that never happened.
             result.rerank_hit = bool(expected & set(considered))
             result.rerank_top1 = bool(
                 considered and considered[0] in expected

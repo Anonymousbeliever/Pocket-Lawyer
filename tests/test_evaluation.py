@@ -9,7 +9,7 @@ exist.
 
 import pytest
 
-from evaluation.report import compare, summarize
+from evaluation.report import compare, print_run, summarize
 from evaluation.schema import (
     Question,
     QuestionResult,
@@ -61,6 +61,65 @@ def test_tier1_does_not_judge_out_of_scope_questions():
 def test_tier2_requires_both_retrieval_and_an_answer():
     assert result(sufficient=True).passed(tier=2)
     assert not result(sufficient=False).passed(tier=2)
+
+
+def tier2_result(**overrides) -> QuestionResult:
+    """
+    Tier 2 cannot see the raw retrieved set - LegalRAG.answer() returns
+    only the reranked sources - so retrieval_hit is None there.
+    """
+
+    defaults = dict(
+        id="q1",
+        answerable=True,
+        retrieval_hit=None,
+        rerank_hit=True,
+        rerank_top1=True,
+        sufficient=True,
+    )
+    defaults.update(overrides)
+    return QuestionResult(**defaults)
+
+
+def test_tier2_judges_correctly_without_retrieval_hit():
+    assert tier2_result().passed(tier=2)
+    assert not tier2_result(rerank_hit=False).passed(tier=2)
+    assert not tier2_result(sufficient=False).passed(tier=2)
+
+
+def test_tier2_never_claims_retrieval_failed(capsys):
+    """
+    Regression: tier 2 derived retrieval_hit from the reranked list,
+    so a question that WAS retrieved (tier 1 found it at #9) was
+    reported as "NEVER RETRIEVED". That single mislabelling produced
+    three wrong diagnoses, including a phantom Qdrant bug.
+    """
+
+    failing = tier2_result(rerank_hit=False, rerank_top1=False)
+
+    question = Question(
+        id="q1",
+        question="What are county governments responsible for?",
+        answerable=True,
+        expect_any_of=["some-chunk"],
+    )
+
+    summary = summarize([failing], tier=2)
+    print_run(summary, [failing], {"q1": question}, tier=2)
+
+    output = capsys.readouterr().out
+
+    assert "NEVER RETRIEVED" not in output
+    assert "NOT AMONG THE SOURCES SENT TO THE LLM" in output
+
+
+def test_unobservable_retrieval_is_not_scored():
+    """A metric nothing measured must not be reported as a total."""
+
+    summary = summarize([tier2_result(), tier2_result(id="q2")], tier=2)
+
+    assert summary["metrics"]["retrieval_hit"]["total"] == 0
+    assert summary["metrics"]["rerank_hit"]["total"] == 2
 
 
 def test_tier2_out_of_scope_passes_only_when_refused():

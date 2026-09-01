@@ -36,16 +36,22 @@ class QuestionResult:
     id: str
     answerable: bool
 
-    # Tier 1 - None for questions the corpus cannot answer, where
-    # there is no expected authority to find.
+    # None where the metric is not observable:
+    #  - for questions the corpus cannot answer, there is no expected
+    #    authority to find
+    #  - retrieval_hit is None in tier 2, because LegalRAG.answer()
+    #    exposes only the reranked sources, not the raw retrieved set.
+    #    Tier 1 measures retrieval properly and for free.
     retrieval_hit: bool | None = None
     rerank_hit: bool | None = None
     rerank_top1: bool | None = None
 
     # What actually came back, so a failure can be diagnosed without
-    # re-running anything by hand.
+    # re-running anything by hand. Each field holds exactly one stage -
+    # conflating them once produced three wrong diagnoses.
     retrieved_top: list[str] = field(default_factory=list)
     reranked_top: list[str] = field(default_factory=list)
+    cited_top: list[str] = field(default_factory=list)
 
     # Tier 2
     sufficient: bool | None = None

@@ -169,7 +169,16 @@ def _print_failure(result: QuestionResult, question: Question | None) -> None:
     # Naming the stage is the point of scoring retrieval and reranking
     # separately. "Retrieved then dropped" and "never retrieved" need
     # completely different fixes.
-    if not result.retrieval_hit:
+    if result.retrieval_hit is None:
+        # Tier 2 cannot see the raw retrieved set, so it must not claim
+        # retrieval failed. Run tier 1 to find out which stage broke.
+        if not result.rerank_hit:
+            print(
+                "       cause    : NOT AMONG THE SOURCES SENT TO THE LLM "
+                "(run tier 1 to see whether retrieval or reranking lost it)"
+            )
+
+    elif not result.retrieval_hit:
         print("       cause    : NEVER RETRIEVED - vector search missed it")
 
     elif not result.rerank_hit:
@@ -184,7 +193,12 @@ def _print_failure(result: QuestionResult, question: Question | None) -> None:
 
     print(f"       expected : {sorted(expected)}")
     print(f"       reranked : {result.reranked_top or '(none)'}")
-    print(f"       retrieved: {result.retrieved_top[:5]}")
+
+    if result.retrieved_top:
+        print(f"       retrieved: {result.retrieved_top[:5]}")
+
+    if result.cited_top:
+        print(f"       cited    : {result.cited_top}")
 
 
 def _first_rank(retrieved: list[str], expected: set[str]) -> str:
