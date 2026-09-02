@@ -21,15 +21,13 @@ from dataclasses import asdict
 from datetime import date
 
 from backend.app.core.config import COLLECTION_NAME, MAX_CHUNK_CHARS
+from data_pipeline import adapters
 from data_pipeline.chunking.chunker import build_chunks
 from data_pipeline.cleaners import base as cleaner_base
-from data_pipeline.cleaners import constitution as constitution_cleaner
 from data_pipeline.extractors.pdf_extractor import extract_text
 from data_pipeline.ir import Document
 from data_pipeline.metadata import build_metadata, write_metadata
 from data_pipeline.registry import DocumentEntry, get_document, load_registry
-from data_pipeline.structure import constitution as constitution_structure
-from data_pipeline.validators import constitution as constitution_validator
 from data_pipeline.validators import generic as generic_validator
 from data_pipeline.vectorstore.collection import (
     ensure_collection,
@@ -44,33 +42,6 @@ from data_pipeline.vectorstore.ingest import (
 
 
 STAGES = ["extract", "clean", "structure", "chunk", "store"]
-
-
-# ---------------------------------------------------------
-# ADAPTERS
-# ---------------------------------------------------------
-
-CLEANER_SPECS = {
-    "constitution": constitution_cleaner.SPEC,
-}
-
-STRUCTURE_PARSERS = {
-    "constitution": constitution_structure.parse,
-}
-
-VALIDATORS = {
-    "constitution": constitution_validator,
-}
-
-
-def _resolve(mapping: dict, name: str, kind: str):
-    if name not in mapping:
-        raise KeyError(
-            f"No {kind} adapter named {name!r}. "
-            f"Available: {', '.join(sorted(mapping))}"
-        )
-
-    return mapping[name]
 
 
 # ---------------------------------------------------------
@@ -107,7 +78,7 @@ def stage_extract(entry: DocumentEntry) -> None:
 def stage_clean(entry: DocumentEntry) -> None:
     print("Cleaning extracted text...")
 
-    spec = _resolve(CLEANER_SPECS, entry.cleaner, "cleaner")
+    spec = adapters.cleaner_spec(entry.cleaner)
 
     text = entry.extracted_path.read_text(encoding="utf-8")
 
@@ -121,12 +92,13 @@ def stage_clean(entry: DocumentEntry) -> None:
         "Generic text validation",
     )
 
-    validator = _resolve(VALIDATORS, entry.validator, "validator")
+    validator = adapters.validator(entry.validator)
 
-    report(
-        validator.validate_cleaned_text(cleaned),
-        f"{entry.document_type.title()} text validation",
-    )
+    if validator and hasattr(validator, "validate_cleaned_text"):
+        report(
+            validator.validate_cleaned_text(cleaned),
+            f"{entry.document_type.title()} text validation",
+        )
 
     print(f"       {len(cleaned):,} characters -> {entry.cleaned_path.name}")
 
@@ -134,15 +106,15 @@ def stage_clean(entry: DocumentEntry) -> None:
 def stage_structure(entry: DocumentEntry) -> Document:
     print("Detecting legal structure...")
 
-    parse = _resolve(STRUCTURE_PARSERS, entry.structure, "structure")
+    parse = adapters.structure_parser(entry.structure)
 
     text = entry.cleaned_path.read_text(encoding="utf-8")
 
     document = parse(text, entry)
 
-    validator = _resolve(VALIDATORS, entry.validator, "validator")
+    validator = adapters.validator(entry.validator)
 
-    if hasattr(validator, "validate_document"):
+    if validator and hasattr(validator, "validate_document"):
         report(
             validator.validate_document(document),
             "Document structure validation",

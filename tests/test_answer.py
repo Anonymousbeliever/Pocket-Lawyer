@@ -20,8 +20,8 @@ from backend.app.ai.answer import (
 )
 
 
-ARTICLE_49 = "constitution-of-kenya-2010-chapter-four-article-49"
-ARTICLE_51 = "constitution-of-kenya-2010-chapter-four-article-51"
+ARTICLE_49 = "constitution-of-kenya-2010@v2010-chapter-four-article-49"
+ARTICLE_51 = "constitution-of-kenya-2010@v2010-chapter-four-article-51"
 
 
 def sources() -> list[dict]:

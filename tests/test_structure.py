@@ -53,8 +53,16 @@ def test_registry_rejects_unknown_document():
 
 
 def test_registry_derives_artifact_paths(entry):
-    assert entry.cleaned_path.name == f"{DOCUMENT_ID}.txt"
-    assert entry.chunks_path.name == f"{DOCUMENT_ID}_chunks.json"
+    """
+    Document-first: fixed filenames inside a directory named for the
+    document version, so two versions never share artifacts.
+    """
+
+    assert entry.document_dir.name == f"{DOCUMENT_ID}@v2010"
+    assert entry.cleaned_path.name == "cleaned.txt"
+    assert entry.chunks_path.name == "chunks.json"
+    assert entry.metadata_path.name == "metadata.json"
+    assert entry.cleaned_path.parent == entry.document_dir
 
 
 # ---------------------------------------------------------

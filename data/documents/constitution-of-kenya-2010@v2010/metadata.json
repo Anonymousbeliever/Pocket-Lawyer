@@ -1,0 +1,30 @@
+{
+  "document_id": "constitution-of-kenya-2010",
+  "title": "Constitution of Kenya, 2010",
+  "document_type": "constitution",
+  "jurisdiction": "Kenya",
+  "language": "English",
+  "source": {
+    "name": "Kenya Law",
+    "url": null
+  },
+  "version": "2010",
+  "effective_from": "2010-08-27",
+  "effective_to": null,
+  "in_force": true,
+  "files": {
+    "raw": "data\\raw\\constitution\\constitution-of-kenya-2010.pdf",
+    "extracted": "data\\documents\\constitution-of-kenya-2010@v2010\\extracted.txt",
+    "cleaned": "data\\documents\\constitution-of-kenya-2010@v2010\\cleaned.txt"
+  },
+  "checksums": {
+    "raw_sha256": "edd6242e4fb96346320decfbe6b1e19b259aa69a3ff3ef8b3a054dc4471f402b",
+    "extracted_sha256": "f334588ad5fc6f7e21b0c26ff35e346dfeb721cc75b6f7bdeb7dd422844306a4",
+    "cleaned_sha256": "737c0cb896a744628218f1104f13fad352ef7e14224fcd3624e13511a4e99f27"
+  },
+  "processing": {
+    "status": "ingested",
+    "chunk_count": 279,
+    "as_at": "2026-09-02"
+  }
+}

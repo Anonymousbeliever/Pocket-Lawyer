@@ -22,7 +22,8 @@ def make_document(units: list[Unit]) -> Document:
         jurisdiction="Kenya",
         language="English",
         version="2026",
-        effective_date="2026-01-01",
+        effective_from="2026-01-01",
+        effective_to=None,
         in_force=True,
         source_name="Kenya Law",
         source_url=None,
@@ -94,7 +95,7 @@ def test_single_part_unit_keeps_a_clean_id():
 
     assert len(chunks) == 1
     assert chunks[0]["chunk_id"] == (
-        "test-doc-2026-chapter-four-article-49"
+        "test-doc-2026@v2026-chapter-four-article-49"
     )
     assert "part" not in chunks[0]["chunk_id"]
 
@@ -130,7 +131,8 @@ def test_versioning_fields_reach_the_payload():
     chunk = build_chunks(make_document([unit]), as_at="2026-08-31")[0]
 
     assert chunk["version"] == "2026"
-    assert chunk["effective_date"] == "2026-01-01"
+    assert chunk["effective_from"] == "2026-01-01"
+    assert chunk["effective_to"] is None
     assert chunk["in_force"] is True
     assert chunk["as_at"] == "2026-08-31"
 

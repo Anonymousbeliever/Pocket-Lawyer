@@ -20,6 +20,8 @@ REQUIRED_CHUNK_FIELDS = [
     "jurisdiction",
     "language",
     "version",
+    "effective_from",
+    "effective_to",
     "in_force",
     "as_at",
     "source_name",

@@ -27,7 +27,11 @@ class CleanerSpec:
     """Per-document-type cleaning configuration."""
 
     # Text before the first match is publisher front matter and is cut.
-    start_pattern: str
+    #
+    # Optional: the Constitution opens with an unmistakable "PREAMBLE /
+    # We, the people of Kenya", but an Act has no equivalent single
+    # marker. When None the document is kept whole.
+    start_pattern: str | None = None
 
     # Running header repeated on every page, if any.
     running_header_pattern: str | None = None
@@ -40,7 +44,9 @@ class CleanerSpec:
 def clean(text: str, spec: CleanerSpec) -> str:
     """Clean extracted text according to a document type's spec."""
 
-    text = cut_to_start(text, spec.start_pattern)
+    if spec.start_pattern:
+        text = cut_to_start(text, spec.start_pattern)
+
     text = remove_footer_page_numbers(text)
     text = remove_page_markers(text)
 

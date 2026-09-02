@@ -51,8 +51,13 @@ class Document:
     jurisdiction: str
     language: str
 
+    # Temporal validity. `effective_to` is None while a version is the
+    # operative one; setting it, with in_force False, is how a
+    # superseded version stays queryable for "what did the law say in
+    # 2015" without being returned by default.
     version: str
-    effective_date: str | None
+    effective_from: str | None
+    effective_to: str | None
     in_force: bool
 
     source_name: str

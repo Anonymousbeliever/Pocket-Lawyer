@@ -25,11 +25,17 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 DATA_DIR = PROJECT_ROOT / "data"
 
+# Immutable source files, grouped by document type. Never regenerated,
+# never tracked.
 RAW_DIR = DATA_DIR / "raw"
-EXTRACTED_DIR = DATA_DIR / "extracted"
-CLEANED_DIR = DATA_DIR / "cleaned"
-METADATA_DIR = DATA_DIR / "metadata"
-PROCESSED_DIR = DATA_DIR / "processed"
+
+# Derived artifacts, one directory per document version:
+#   data/documents/<document_id>@v<version>/{extracted,cleaned,...}
+#
+# Document-first rather than stage-first: the pipeline stages live in
+# the code, so encoding them in folder names only scatters a single
+# document's files across five directories.
+DOCUMENTS_DIR = DATA_DIR / "documents"
 
 
 load_dotenv(PROJECT_ROOT / ".env")

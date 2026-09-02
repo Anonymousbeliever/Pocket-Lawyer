@@ -10,7 +10,7 @@ from pathlib import Path
 
 import yaml
 
-from backend.app.core.config import PROJECT_ROOT
+from backend.app.core.config import DOCUMENTS_DIR, PROJECT_ROOT
 
 
 REGISTRY_PATH = Path(__file__).resolve().parent / "documents.yaml"
@@ -27,7 +27,8 @@ class DocumentEntry:
     language: str
 
     version: str
-    effective_date: str | None
+    effective_from: str | None
+    effective_to: str | None
     in_force: bool
 
     source_name: str
@@ -45,29 +46,40 @@ class DocumentEntry:
 
     @property
     def slug(self) -> str:
-        """Filename stem used for this document's pipeline artifacts."""
+        """
+        Identity of this document *version*.
 
-        return self.document_id
+        Mirrors the chunk id prefix exactly, so a chunk id can always be
+        traced back to the directory its artifacts live in. Two versions
+        of the same Act therefore never share a directory - which
+        matters most for metadata.json, the provenance record.
+        """
+
+        return f"{self.document_id}@v{self.version}"
+
+    @property
+    def document_dir(self) -> Path:
+        return DOCUMENTS_DIR / self.slug
 
     @property
     def extracted_path(self) -> Path:
-        return PROJECT_ROOT / "data" / "extracted" / f"{self.slug}.txt"
+        return self.document_dir / "extracted.txt"
 
     @property
     def cleaned_path(self) -> Path:
-        return PROJECT_ROOT / "data" / "cleaned" / f"{self.slug}.txt"
+        return self.document_dir / "cleaned.txt"
 
     @property
     def structure_path(self) -> Path:
-        return PROJECT_ROOT / "data" / "processed" / f"{self.slug}_structure.json"
+        return self.document_dir / "structure.json"
 
     @property
     def chunks_path(self) -> Path:
-        return PROJECT_ROOT / "data" / "processed" / f"{self.slug}_chunks.json"
+        return self.document_dir / "chunks.json"
 
     @property
     def metadata_path(self) -> Path:
-        return PROJECT_ROOT / "data" / "metadata" / f"{self.slug}.json"
+        return self.document_dir / "metadata.json"
 
 
 def _parse_entry(raw: dict) -> DocumentEntry:
@@ -102,7 +114,8 @@ def _parse_entry(raw: dict) -> DocumentEntry:
         jurisdiction=raw["jurisdiction"],
         language=raw["language"],
         version=str(raw["version"]),
-        effective_date=raw.get("effective_date"),
+        effective_from=raw.get("effective_from"),
+        effective_to=raw.get("effective_to"),
         in_force=bool(raw["in_force"]),
         source_name=source.get("name", "Unknown"),
         source_url=source.get("url"),
@@ -126,26 +139,67 @@ def load_registry(path: Path = REGISTRY_PATH) -> list[DocumentEntry]:
 
     entries = [_parse_entry(raw) for raw in raw_entries]
 
-    ids = [entry.document_id for entry in entries]
+    # Uniqueness is per document *version*, not per document. Two
+    # versions of the same Act are two entries sharing a document_id.
+    slugs = [entry.slug for entry in entries]
 
-    duplicates = sorted({i for i in ids if ids.count(i) > 1})
+    duplicates = sorted({s for s in slugs if slugs.count(s) > 1})
 
     if duplicates:
         raise ValueError(
-            "Duplicate document_id in registry: "
+            "Duplicate document version in registry: "
             + ", ".join(duplicates)
         )
+
+    # Exactly one version of a document may be the operative one.
+    for document_id in {entry.document_id for entry in entries}:
+        in_force = [
+            entry.slug
+            for entry in entries
+            if entry.document_id == document_id and entry.in_force
+        ]
+
+        if len(in_force) > 1:
+            raise ValueError(
+                f"More than one version of {document_id} is marked "
+                "in_force: " + ", ".join(sorted(in_force))
+            )
 
     return entries
 
 
-def get_document(document_id: str) -> DocumentEntry:
-    for entry in load_registry():
-        if entry.document_id == document_id:
+def get_document(reference: str) -> DocumentEntry:
+    """
+    Resolve a document reference to one registered version.
+
+    Accepts either an exact version slug ("employment-act-2007@v2022")
+    or a bare document id, which resolves to the version currently in
+    force.
+    """
+
+    entries = load_registry()
+
+    for entry in entries:
+        if entry.slug == reference:
             return entry
 
-    known = ", ".join(e.document_id for e in load_registry())
+    matches = [e for e in entries if e.document_id == reference]
 
-    raise KeyError(
-        f"Unknown document_id: {document_id}. Registered: {known}"
-    )
+    if len(matches) == 1:
+        return matches[0]
+
+    if matches:
+        current = [e for e in matches if e.in_force]
+
+        if len(current) == 1:
+            return current[0]
+
+        raise KeyError(
+            f"{reference} has several registered versions and none is "
+            "uniquely in force. Name one: "
+            + ", ".join(sorted(e.slug for e in matches))
+        )
+
+    known = ", ".join(sorted(e.slug for e in entries))
+
+    raise KeyError(f"Unknown document: {reference}. Registered: {known}")

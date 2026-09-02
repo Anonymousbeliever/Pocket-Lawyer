@@ -32,185 +32,185 @@
   question: "Can police arrest me without telling me why?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-49
+    - constitution-of-kenya-2010@v2010-chapter-four-article-49
   note: "Article 49(1)(a). The worked example used throughout this project."
 
 - id: arrest-rights
   question: "What are my rights if I am arrested?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-49
+    - constitution-of-kenya-2010@v2010-chapter-four-article-49
   note: "The well-phrased form of the same question; historically scored 0.9993."
 
 - id: arrest-court-time
   question: "How long can the police hold me before taking me to court?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-49
+    - constitution-of-kenya-2010@v2010-chapter-four-article-49
   note: "Article 49(1)(f) - twenty-four hours."
 
 - id: arrest-silence
   question: "Do I have to answer police questions after being arrested?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-49
+    - constitution-of-kenya-2010@v2010-chapter-four-article-49
   note: "Article 49(1)(a)(ii) and (b) - right to remain silent."
 
 - id: arrest-bail
   question: "Can I be released on bail while waiting for my trial?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-49
+    - constitution-of-kenya-2010@v2010-chapter-four-article-49
   note: "Article 49(1)(h) - bond or bail unless compelling reasons."
 
 - id: fair-trial
   question: "What rights do I have during a criminal trial?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-50
+    - constitution-of-kenya-2010@v2010-chapter-four-article-50
   note: "Article 50(2) - the fair trial guarantees."
 
 - id: state-funded-lawyer
   question: "Can I get a lawyer paid for by the government if I cannot afford one?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-50
+    - constitution-of-kenya-2010@v2010-chapter-four-article-50
   note: "Article 50(2)(h) - advocate at State expense where substantial injustice would result."
 
 - id: detained-person-rights
   question: "Do people in prison still have rights?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-51
+    - constitution-of-kenya-2010@v2010-chapter-four-article-51
   note: "Article 51(1) - detained persons retain rights in the Bill of Rights."
 
 - id: torture
   question: "Is torture allowed in Kenya?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-29
-    - constitution-of-kenya-2010-chapter-four-article-25
+    - constitution-of-kenya-2010@v2010-chapter-four-article-29
+    - constitution-of-kenya-2010@v2010-chapter-four-article-25
   note: "Article 29(d) prohibits it; Article 25(a) makes freedom from torture non-limitable."
 
 - id: discrimination
   question: "Is it legal to treat someone unfairly because of their gender?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-27
+    - constitution-of-kenya-2010@v2010-chapter-four-article-27
   note: "Article 27 - equality and freedom from discrimination."
 
 - id: privacy-search
   question: "Can someone search my house without my permission?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-31
+    - constitution-of-kenya-2010@v2010-chapter-four-article-31
   note: "Article 31(a) - right not to have your home searched."
 
 - id: freedom-expression
   question: "Do I have freedom of speech in Kenya?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-33
+    - constitution-of-kenya-2010@v2010-chapter-four-article-33
   note: "Article 33 - freedom of expression."
 
 - id: access-information
   question: "Can I ask the government to give me information it holds?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-35
+    - constitution-of-kenya-2010@v2010-chapter-four-article-35
   note: "Article 35(1)(a) - access to information held by the State."
 
 - id: peaceful-demonstration
   question: "Am I allowed to take part in a peaceful protest?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-37
+    - constitution-of-kenya-2010@v2010-chapter-four-article-37
   note: "Article 37 - assembly, demonstration, picketing and petition."
 
 - id: property-taken
   question: "Can the government take away my property?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-40
+    - constitution-of-kenya-2010@v2010-chapter-four-article-40
   note: "Article 40 - protection of right to property."
 
 - id: trade-union
   question: "Do I have the right to join a trade union?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-41
+    - constitution-of-kenya-2010@v2010-chapter-four-article-41
   note: "Article 41 - labour relations."
 
 - id: clean-environment
   question: "Do I have a right to a clean environment?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-42
+    - constitution-of-kenya-2010@v2010-chapter-four-article-42
   note: "Article 42 - environment."
 
 - id: right-to-healthcare
   question: "Does the Constitution give me a right to health care?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-43
+    - constitution-of-kenya-2010@v2010-chapter-four-article-43
   note: "Article 43(1)(a) - economic and social rights."
 
 - id: right-to-housing
   question: "Does the Constitution say anything about a right to housing?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-43
+    - constitution-of-kenya-2010@v2010-chapter-four-article-43
   note: "Article 43(1)(b) - accessible and adequate housing."
 
 - id: consumer-rights
   question: "What rights do I have as a customer buying goods?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-46
+    - constitution-of-kenya-2010@v2010-chapter-four-article-46
   note: "Article 46 - consumer rights."
 
 - id: access-to-justice
   question: "Does everyone have a right to go to court?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-48
-    - constitution-of-kenya-2010-chapter-four-article-22
+    - constitution-of-kenya-2010@v2010-chapter-four-article-48
+    - constitution-of-kenya-2010@v2010-chapter-four-article-22
   note: "Article 48 access to justice; Article 22 enforcement of the Bill of Rights."
 
 - id: children-rights
   question: "What rights do children have in Kenya?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-53
+    - constitution-of-kenya-2010@v2010-chapter-four-article-53
   note: "Article 53 - children."
 
 - id: disability-rights
   question: "What does the law say about people living with disabilities?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-54
+    - constitution-of-kenya-2010@v2010-chapter-four-article-54
   note: "Article 54 - persons with disabilities."
 
 - id: rights-limitation
   question: "Can my rights ever be limited by the government?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-24
+    - constitution-of-kenya-2010@v2010-chapter-four-article-24
   note: "Article 24 - limitation of rights and fundamental freedoms."
 
 - id: absolute-rights
   question: "Are there any rights that can never be taken away?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-25
+    - constitution-of-kenya-2010@v2010-chapter-four-article-25
   note: "Article 25 - rights that may not be limited."
 
 - id: unfair-government-decision
   question: "What can I do if a government office treats me unfairly?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-four-article-47
-    - constitution-of-kenya-2010-chapter-four-article-22
+    - constitution-of-kenya-2010@v2010-chapter-four-article-47
+    - constitution-of-kenya-2010@v2010-chapter-four-article-22
   note: "Article 47 fair administrative action; Article 22 enforcement."
 
 # =========================================================
@@ -221,111 +221,111 @@
   question: "How does a person become a Kenyan citizen by birth?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-three-article-14
+    - constitution-of-kenya-2010@v2010-chapter-three-article-14
   note: "Article 14 - citizenship by birth."
 
 - id: dual-citizenship
   question: "Can a Kenyan also hold citizenship of another country?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-three-article-16
+    - constitution-of-kenya-2010@v2010-chapter-three-article-16
   note: "Article 16 - dual citizenship."
 
 - id: citizenship-revocation
   question: "Can someone lose their Kenyan citizenship?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-three-article-17
-    - constitution-of-kenya-2010-chapter-three-article-13
+    - constitution-of-kenya-2010@v2010-chapter-three-article-17
+    - constitution-of-kenya-2010@v2010-chapter-three-article-13
   note: "Article 17 revocation; Article 13 retention and acquisition."
 
 - id: foreigner-land
   question: "Can a foreigner own land in Kenya?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-five-article-65
+    - constitution-of-kenya-2010@v2010-chapter-five-article-65
   note: "Article 65 - landholding by non-citizens, leasehold limits."
 
 - id: land-types
   question: "What are the different categories of land in Kenya?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-five-article-61
-    - constitution-of-kenya-2010-chapter-five-article-62
+    - constitution-of-kenya-2010@v2010-chapter-five-article-61
+    - constitution-of-kenya-2010@v2010-chapter-five-article-62
   note: "Article 61 classification; Article 62 public land."
 
 - id: community-land
   question: "What is community land?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-five-article-63
+    - constitution-of-kenya-2010@v2010-chapter-five-article-63
   note: "Article 63 - community land."
 
 - id: voter-registration
   question: "Who is allowed to register as a voter?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-seven-article-83
+    - constitution-of-kenya-2010@v2010-chapter-seven-article-83
   note: "Article 83 - registration as a voter."
 
 - id: independent-candidate
   question: "Can I run for election without joining a political party?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-seven-article-85
+    - constitution-of-kenya-2010@v2010-chapter-seven-article-85
   note: "Article 85 - eligibility to stand as an independent candidate."
 
 - id: election-dispute
   question: "What happens if someone disputes an election result?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-seven-article-87
+    - constitution-of-kenya-2010@v2010-chapter-seven-article-87
   note: "Article 87 - electoral disputes."
 
 - id: court-system
   question: "What kinds of courts are there in Kenya?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-ten-article-162
-    - constitution-of-kenya-2010-chapter-ten-article-169
+    - constitution-of-kenya-2010@v2010-chapter-ten-article-162
+    - constitution-of-kenya-2010@v2010-chapter-ten-article-169
   note: "Article 162 system of courts; Article 169 subordinate courts."
 
 - id: county-government-role
   question: "What are county governments responsible for?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-eleven-article-186
-    - constitution-of-kenya-2010-chapter-eleven-article-183
-    - constitution-of-kenya-2010-chapter-eleven-article-174
+    - constitution-of-kenya-2010@v2010-chapter-eleven-article-186
+    - constitution-of-kenya-2010@v2010-chapter-eleven-article-183
+    - constitution-of-kenya-2010@v2010-chapter-eleven-article-174
   note: "Article 186 functions; 183 county executive; 174 objects of devolution."
 
 - id: governor-removal
   question: "Can a county governor be removed from office?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-eleven-article-181
+    - constitution-of-kenya-2010@v2010-chapter-eleven-article-181
   note: "Article 181 - removal of a county governor."
 
 - id: unconstitutional-law
   question: "What happens if a law goes against the Constitution?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-one-article-2
+    - constitution-of-kenya-2010@v2010-chapter-one-article-2
   note: "Article 2 - supremacy of the Constitution."
 
 - id: official-languages
   question: "What are the official languages of Kenya?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-two-article-7
+    - constitution-of-kenya-2010@v2010-chapter-two-article-7
   note: "Article 7 - national, official and other languages."
 
 - id: public-officer-conduct
   question: "What standards of behaviour are public officers held to?"
   answerable: true
   expect_any_of:
-    - constitution-of-kenya-2010-chapter-six-article-75
-    - constitution-of-kenya-2010-chapter-six-article-73
+    - constitution-of-kenya-2010@v2010-chapter-six-article-75
+    - constitution-of-kenya-2010@v2010-chapter-six-article-73
   note: "Article 75 conduct of State officers; Article 73 responsibilities of leadership."
 
 # =========================================================

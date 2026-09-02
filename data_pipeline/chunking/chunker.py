@@ -63,7 +63,13 @@ def build_chunks(
     chunks: list[dict] = []
 
     for unit in document.units:
-        base_id = f"{document.document_id}-{unit.slug()}"
+        # The version belongs in the identity, not just the payload.
+        # Without it, the same Act as enacted and as amended produce
+        # identical chunk ids, identical uuid5 point ids, and silently
+        # overwrite each other in the vector store.
+        base_id = (
+            f"{document.document_id}@v{document.version}-{unit.slug()}"
+        )
 
         parts = split_text(unit.text, max_chars=max_chars)
 
@@ -108,10 +114,13 @@ def _build_chunk(
         "jurisdiction": document.jurisdiction,
         "language": document.language,
 
-        # Versioning — what lets a future query filter out repealed law
-        # and lets an answer state the date its authority is current to.
+        # Temporal validity - what lets a query filter out superseded
+        # law, and lets an answer state the date its authority is
+        # current to. `as_at` is when this chunk was ingested; the
+        # effective dates are properties of the law itself.
         "version": document.version,
-        "effective_date": document.effective_date,
+        "effective_from": document.effective_from,
+        "effective_to": document.effective_to,
         "in_force": document.in_force,
         "as_at": as_at,
 

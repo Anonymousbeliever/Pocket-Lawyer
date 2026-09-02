@@ -58,7 +58,8 @@ def build_metadata(
         },
 
         "version": entry.version,
-        "effective_date": entry.effective_date,
+        "effective_from": entry.effective_from,
+        "effective_to": entry.effective_to,
         "in_force": entry.in_force,
 
         "files": {

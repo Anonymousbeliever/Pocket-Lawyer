@@ -1,18 +1,23 @@
 # Pocket Lawyer — document registry
 #
+# One entry per document VERSION. Two versions of the same Act are two
+# entries sharing a document_id and differing in version; they never
+# overwrite each other, because identity is document_id@vversion.
+#
 # Adding a document of a type that already has adapters (cleaner /
 # structure / validator below) means adding an entry here and nothing
 # else. A genuinely new document type needs one new structure adapter.
 #
 # Fields:
-#   document_id     stable identifier; also the chunk id prefix
+#   document_id     stable across versions; with version it forms both
+#                   the chunk id prefix and the artifact directory name
 #   version         edition of the law, not of this pipeline
-#   effective_date  when the law took effect (ISO date)
-#   in_force        false for repealed/superseded law — kept for
-#                   historical questions but filtered out by default
+#   effective_from  when this version took effect (ISO date)
+#   effective_to    when it was superseded; null while operative
+#   in_force        exactly one version of a document may be true
 #   cleaner /
 #   structure /
-#   validator       adapter names, resolved in data_pipeline.registry
+#   validator       adapter names, resolved in data_pipeline.adapters
 
 - document_id: constitution-of-kenya-2010
   title: "Constitution of Kenya, 2010"
@@ -20,12 +25,13 @@
   jurisdiction: Kenya
   language: English
   version: "2010"
-  effective_date: "2010-08-27"
+  effective_from: "2010-08-27"
+  effective_to: null
   in_force: true
   source:
     name: "Kenya Law"
     url: null
-  raw_path: "data/raw/constitution/Constitution of Kenya.pdf"
+  raw_path: "data/raw/constitution/constitution-of-kenya-2010.pdf"
   cleaner: constitution
   structure: constitution
   validator: constitution

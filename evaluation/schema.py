@@ -12,7 +12,7 @@ from pathlib import Path
 
 import yaml
 
-from backend.app.core.config import PROCESSED_DIR
+from backend.app.core.config import DOCUMENTS_DIR
 
 
 QUESTIONS_PATH = Path(__file__).resolve().parent / "questions.yaml"
@@ -166,12 +166,12 @@ def validate_questions(questions: list[Question]) -> list[str]:
     return errors
 
 
-def corpus_chunk_ids(processed_dir: Path = PROCESSED_DIR) -> set[str]:
+def corpus_chunk_ids(documents_dir: Path = DOCUMENTS_DIR) -> set[str]:
     """Every chunk id currently produced by the ingestion pipeline."""
 
     ids: set[str] = set()
 
-    for path in processed_dir.glob("*_chunks.json"):
+    for path in documents_dir.glob("*/chunks.json"):
         chunks = json.loads(path.read_text(encoding="utf-8"))
         ids.update(chunk["chunk_id"] for chunk in chunks)
 

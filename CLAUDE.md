@@ -42,9 +42,11 @@ data_pipeline/
   documents.yaml           document registry - add a document by adding an entry
   ir.py                    Document/Unit - the common shape every stage works on
   registry.py              loads the registry, derives artifact paths
+  adapters.py              the type registry - register a new type HERE only
   structure/<type>.py      the ONLY type-specific stage; the adapter seam
   cleaners/, chunking/, validators/, vectorstore/
-data/                      raw / extracted / cleaned / metadata / processed
+data/raw/<type>/           immutable sources, never tracked
+data/documents/<id>@v<ver>/  extracted, cleaned, structure, chunks, metadata
 tests/                     pytest
 docs/project-plan.md       the living plan and progress tracker
 mobile/                    empty (Flutter, not started)
@@ -80,6 +82,11 @@ python -m backend.app.ai.llm         # generation only
 Ingestion is idempotent — point IDs are `uuid5(chunk_id)`, so re-running
 updates in place rather than duplicating. `--recreate` is only needed when the
 collection's vector schema changes.
+
+**Identity is version-aware**: `chunk_id = {document_id}@v{version}-{slug}`.
+Two editions of the same Act are two registry entries sharing a `document_id`,
+differing in `version`, and they never overwrite each other. Exactly one may be
+`in_force`; retrieval filters on that by default.
 
 **Always use `python -m ...`, never `python backend/app/ai/rag.py`** — the
 latter fails with `ModuleNotFoundError: No module named 'backend'` because these
