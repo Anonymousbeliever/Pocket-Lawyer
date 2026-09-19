@@ -111,7 +111,18 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # RETRIEVAL
 # ---------------------------------------------------------
 
-RETRIEVAL_TOP_K = _get_int("RETRIEVAL_TOP_K", 15)
+# The candidate pool has to scale with the corpus. At 15 it was tuned
+# against the Constitution alone (279 chunks). Indexing the Criminal
+# Procedure Code took the corpus to 591, and "Can I be released on bail
+# while waiting for my trial?" stopped retrieving Article 49 at all —
+# it sat between rank 16 and 30, crowded out by Criminal Procedure Code
+# bail sections. At 30 it returns, and the reranker then puts it first.
+#
+# Measured over the full 56-question set, 15 -> 30 restored retrieval to
+# 41/41 and made no other question worse. The cost is real: reranking is
+# the dominant request latency and this doubles the passages scored.
+# Accuracy outranks speed here.
+RETRIEVAL_TOP_K = _get_int("RETRIEVAL_TOP_K", 30)
 
 RERANK_TOP_K = _get_int("RERANK_TOP_K", 5)
 

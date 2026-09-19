@@ -4,6 +4,7 @@ Pocket Lawyer ingestion pipeline.
     python -m data_pipeline.run --document constitution-of-kenya-2010
     python -m data_pipeline.run --all
     python -m data_pipeline.run --document X --from chunk
+    python -m data_pipeline.run --document X --to chunk
     python -m data_pipeline.run --document X --recreate
 
 Stages:
@@ -11,7 +12,9 @@ Stages:
     extract -> clean -> structure -> chunk -> store
 
 Each stage writes its artifact to disk, so `--from` can resume without
-redoing expensive work. Only `store` needs Qdrant running.
+redoing expensive work and `--to` can stop before it. Only `store`
+needs Qdrant running, so `--to chunk` is the way to check a new
+document's artifacts before anything reaches the index.
 """
 
 import argparse
@@ -219,6 +222,7 @@ def stage_store(
 def run_document(
     entry: DocumentEntry,
     start: str,
+    stop: str = "store",
     recreate: bool = False,
 ) -> None:
     banner(f"POCKET LAWYER — INGEST: {entry.document_id}")
@@ -226,22 +230,28 @@ def run_document(
     as_at = date.today().isoformat()
 
     begin = STAGES.index(start)
+    end = STAGES.index(stop)
 
     chunks: list[dict] | None = None
 
-    if begin <= STAGES.index("extract"):
+    def runs(stage: str) -> bool:
+        index = STAGES.index(stage)
+
+        return begin <= index <= end
+
+    if runs("extract"):
         stage_extract(entry)
 
-    if begin <= STAGES.index("clean"):
+    if runs("clean"):
         stage_clean(entry)
 
-    if begin <= STAGES.index("structure"):
+    if runs("structure"):
         stage_structure(entry)
 
-    if begin <= STAGES.index("chunk"):
+    if runs("chunk"):
         chunks = stage_chunk(entry, as_at=as_at)
 
-    if begin <= STAGES.index("store"):
+    if runs("store"):
         if chunks is None:
             chunks = json.loads(
                 entry.chunks_path.read_text(encoding="utf-8")
@@ -250,7 +260,11 @@ def run_document(
         stage_store(entry, chunks, as_at=as_at, recreate=recreate)
 
     print()
-    print(f"[PASS] {entry.document_id} ingested")
+
+    if end < STAGES.index("store"):
+        print(f"[PASS] {entry.document_id} processed to '{stop}'")
+    else:
+        print(f"[PASS] {entry.document_id} ingested")
 
 
 def main() -> None:
@@ -276,6 +290,18 @@ def main() -> None:
     )
 
     parser.add_argument(
+        "--to",
+        dest="stop",
+        choices=STAGES,
+        default="store",
+        help=(
+            "stop after this stage (default: store). '--to chunk' runs "
+            "the whole pipeline without Qdrant, so a new document's "
+            "artifacts can be inspected before anything is indexed"
+        ),
+    )
+
+    parser.add_argument(
         "--recreate",
         action="store_true",
         help=(
@@ -291,6 +317,12 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    if STAGES.index(args.stop) < STAGES.index(args.start):
+        parser.error(
+            f"--to {args.stop} runs before --from {args.start}; "
+            "nothing would run."
+        )
 
     if args.list:
         for entry in load_registry():
@@ -309,6 +341,7 @@ def main() -> None:
             run_document(
                 entry,
                 start=args.start,
+                stop=args.stop,
                 recreate=args.recreate and index == 0,
             )
 

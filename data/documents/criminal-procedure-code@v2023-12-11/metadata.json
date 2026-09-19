@@ -1,0 +1,30 @@
+{
+  "document_id": "criminal-procedure-code",
+  "title": "Criminal Procedure Code (Cap. 75)",
+  "document_type": "act",
+  "jurisdiction": "Kenya",
+  "language": "English",
+  "source": {
+    "name": "Kenya Law",
+    "url": "https://new.kenyalaw.org/akn/ke/act/1930/11/eng@2023-12-11"
+  },
+  "version": "2023-12-11",
+  "effective_from": "2023-12-11",
+  "effective_to": null,
+  "in_force": true,
+  "files": {
+    "raw": "data\\raw\\legislation\\criminal-procedure-code.pdf",
+    "extracted": "data\\documents\\criminal-procedure-code@v2023-12-11\\extracted.txt",
+    "cleaned": "data\\documents\\criminal-procedure-code@v2023-12-11\\cleaned.txt"
+  },
+  "checksums": {
+    "raw_sha256": "aba1fe3c2f8b424d74db45f76f20470e98f38945eb4f329eaf172fb829852659",
+    "extracted_sha256": "04ae656b6cc163c3ffc944f526f89db8822a5fe3c8cb82d2c8ba7aeb6bb35157",
+    "cleaned_sha256": "fd64ce627e3ff3c3625a42c45f8c3a3474945d8a8c6dd42f9c7ac4e652ca6a88"
+  },
+  "processing": {
+    "status": "ingested",
+    "chunk_count": 312,
+    "as_at": "2026-09-02"
+  }
+}

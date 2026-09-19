@@ -61,7 +61,13 @@
   answerable: true
   expect_any_of:
     - constitution-of-kenya-2010@v2010-chapter-four-article-49
-  note: "Article 49(1)(h) - bond or bail unless compelling reasons."
+  note: >
+    Article 49(1)(h) - bond or bail unless compelling reasons.
+    Deliberately kept Constitution-only even though Criminal Procedure
+    Code section 123 is a legitimate answer to the same words. Widening
+    it would let this question pass on the Code alone, hiding exactly
+    the failure it caught once: Article 49 falling out of retrieval
+    entirely. The Code side is measured by cpc-bail-before-trial.
 
 - id: fair-trial
   question: "What rights do I have during a criminal trial?"
@@ -410,3 +416,145 @@
   question: "What legally happens if I cannot pay back my debts?"
   answerable: false
   note: "Insolvency Act."
+
+# =========================================================
+# ANSWERABLE - Criminal Procedure Code (Cap. 75)
+#
+# Added when the Code was indexed alongside the Constitution. These are
+# procedure questions: what the police and the courts may actually do,
+# as distinct from the rights in Chapter Four that constrain them.
+#
+# Several deliberately overlap the arrest questions above. That overlap
+# is the point - it is where a right and a procedure both apply, and it
+# is exactly where retrieval went wrong when the second document landed.
+#
+# REVIEW NOTE: as with the Constitution set, these were drafted from
+# section titles and a reading of the retrieved text, not a full
+# reading of the Code. Correct anything legally wrong.
+# =========================================================
+
+- id: cpc-arrest-without-warrant
+  question: "When can the police arrest someone without a warrant?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-iii-section-29
+    - criminal-procedure-code@v2023-12-11-part-iii-section-30
+  note: "Section 29 is the general power; section 30 covers named categories."
+
+- id: cpc-citizen-arrest
+  question: "Can an ordinary person arrest someone who has committed a crime?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-iii-section-34
+    - criminal-procedure-code@v2023-12-11-part-iii-section-35
+  note: "Section 34 permits it; section 35 governs what must happen next."
+
+- id: cpc-detention-before-court
+  question: "How long can the police keep me before taking me to court?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-iii-section-36
+    - criminal-procedure-code@v2023-12-11-part-iv-section-108
+    - constitution-of-kenya-2010@v2010-chapter-four-article-49
+  note: >
+    Deliberately cross-document. Article 49(1)(f) sets the constitutional
+    limit; sections 36 and 108 are the procedure. A good answer reaches
+    both, and this question is the regression test for that.
+
+- id: cpc-remand-application
+  question: "Can the police ask a court to keep holding me while they investigate?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-iii-section-36a
+  note: "Section 36A. The section that displaced Article 49 on arrest-silence."
+
+- id: cpc-bail-before-trial
+  question: "Can a court release me on bail before my trial starts?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-iv-section-123
+    - criminal-procedure-code@v2023-12-11-part-iv-section-124
+    - constitution-of-kenya-2010@v2010-chapter-four-article-49
+  note: >
+    Section 123 is the operative bail provision, 124 the bond. Article
+    49(1)(h) is the right it implements. Note the distinct stage: this
+    is pre-trial bail, not sections 356-357 which are bail pending
+    appeal - the reranker confused the two.
+
+- id: cpc-search-on-arrest
+  question: "Can the police search me when they arrest me?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-iii-section-25
+  note: "Section 25."
+
+- id: cpc-searching-women
+  question: "Who is allowed to search a woman who has been arrested?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-iii-section-27
+  note: "Section 27. A narrow, specific rule - a good test of precise retrieval."
+
+- id: cpc-charge-contents
+  question: "What information must a charge sheet contain?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-iv-section-137-part-1
+    - criminal-procedure-code@v2023-12-11-part-iv-section-137-part-2
+    - criminal-procedure-code@v2023-12-11-part-iv-section-89
+  note: >
+    Section 137 is the only section long enough to be split, so this
+    also checks that a split unit stays retrievable.
+
+- id: cpc-plea-agreement
+  question: "Can I negotiate with the prosecution to plead guilty to a lesser charge?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-iv-section-137a
+    - criminal-procedure-code@v2023-12-11-part-iv-section-137b
+  note: "Sections 137A-137N. Inserted by amendment - lettered sections a digits-only parser would have dropped."
+
+- id: cpc-tried-twice
+  question: "Can I be taken to court twice for the same offence?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-iv-section-138
+    - criminal-procedure-code@v2023-12-11-part-ix-section-279
+  note: "Section 138; section 279 is the plea of autrefois acquit/convict."
+
+- id: cpc-no-case-to-answer
+  question: "What happens if the prosecution has no evidence against me?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-vi-section-210
+  note: "Section 210 - acquittal where no case to answer."
+
+- id: cpc-language-of-evidence
+  question: "Will the evidence be explained to me in a language I understand?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-v-section-198
+  note: "Section 198. Article 50(2)(m) is the parallel right if it is ever listed."
+
+- id: cpc-appeal-conviction
+  question: "Can I appeal if a magistrate convicts me?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-xi-section-347
+    - criminal-procedure-code@v2023-12-11-part-xi-section-348
+  note: "Section 347 gives the right of appeal to the High Court; 348 limits it."
+
+- id: cpc-victim-statement
+  question: "Can a victim tell the court how the crime affected them?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-ixa-section-329a
+    - criminal-procedure-code@v2023-12-11-part-ixa-section-329c
+  note: "Part IXA. The Part whose Roman numeral carries a letter suffix."
+
+- id: cpc-compensation-order
+  question: "Can a court order a convicted person to compensate their victim?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-iv-section-175
+  note: "Section 175."

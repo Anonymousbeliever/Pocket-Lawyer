@@ -168,3 +168,7 @@ def test_unknown_document_type_fails_with_the_known_list():
 
 def test_registered_types_are_discoverable():
     assert "constitution" in registered_types()
+
+    # The synthetic Part/Section document above now has a real adapter
+    # behind it, and a real Act in the registry.
+    assert "act" in registered_types()

@@ -132,6 +132,10 @@ def evaluate_tier2(
                 considered and considered[0] in expected
             )
 
+            # Seeing the right law and relying on it are different
+            # things, and only this distinguishes them.
+            result.cited_expected = bool(expected & set(cited))
+
         results.append(result)
 
     return results

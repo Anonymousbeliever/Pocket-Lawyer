@@ -152,6 +152,54 @@ def test_false_answer_is_detected():
     assert not answered.false_refusal
 
 
+def test_wrong_authority_is_detected():
+    """
+    The blind spot the Criminal Procedure Code exposed. "Can police
+    arrest me without telling me why?" was answered from s.29 and s.2
+    while Article 49 was never cited — and because the question is
+    answerable, `false_answer` could not see it.
+    """
+
+    answered_from_elsewhere = result(
+        rerank_hit=True,
+        sufficient=True,
+        cited_expected=False,
+    )
+
+    assert answered_from_elsewhere.wrong_authority
+    assert not answered_from_elsewhere.false_answer
+    assert not answered_from_elsewhere.false_refusal
+
+
+def test_wrong_authority_ignores_refusals_and_out_of_scope():
+    assert not result(sufficient=False, cited_expected=False).wrong_authority
+
+    assert not result(
+        answerable=False,
+        sufficient=True,
+        cited_expected=False,
+    ).wrong_authority
+
+
+def test_wrong_authority_is_counted_but_does_not_fail_the_question():
+    """
+    Counted, not failed. `expect_any_of` lists the authorities we know
+    of, not every authority that could be legitimate, so this flags an
+    answer for reading rather than declaring it wrong.
+    """
+
+    answered_from_elsewhere = result(
+        rerank_hit=True,
+        sufficient=True,
+        cited_expected=False,
+    )
+
+    summary = summarize([answered_from_elsewhere], tier=2)
+
+    assert summary["counts"]["wrong_authority"] == 1
+    assert answered_from_elsewhere.passed(tier=2)
+
+
 def test_the_two_failure_modes_are_counted_separately():
     summary = summarize(
         [

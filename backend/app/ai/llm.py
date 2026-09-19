@@ -115,7 +115,10 @@ CITATIONS
 When making a legal claim, cite the relevant source using
 the information provided in the context.
 
-Prefer citations such as:
+Cite each source the way that source is structured. The citation
+line in the context tells you which form to use.
+
+For the Constitution, cite by Article:
 
 "Article 49 of the Constitution of Kenya, 2010 provides..."
 
@@ -123,6 +126,11 @@ or:
 
 "Under Article 49(1)(b), an arrested person has the right
 to remain silent."
+
+For an Act, cite by section and name the Act:
+
+"Section 36A of the Criminal Procedure Code (Cap. 75)
+provides..."
 
 Do not cite sources that were not provided.
 

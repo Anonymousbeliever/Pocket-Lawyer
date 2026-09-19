@@ -14,7 +14,7 @@ chapter is.
 
 import re
 
-from data_pipeline.ir import Document, Unit
+from data_pipeline.ir import Document, Unit, document_from_entry
 from data_pipeline.registry import DocumentEntry
 
 
@@ -275,17 +275,4 @@ def parse(text: str, entry: DocumentEntry) -> Document:
             )
         )
 
-    return Document(
-        document_id=entry.document_id,
-        title=entry.title,
-        document_type=entry.document_type,
-        jurisdiction=entry.jurisdiction,
-        language=entry.language,
-        version=entry.version,
-        effective_from=entry.effective_from,
-        effective_to=entry.effective_to,
-        in_force=entry.in_force,
-        source_name=entry.source_name,
-        source_url=entry.source_url,
-        units=units,
-    )
+    return document_from_entry(entry, units)

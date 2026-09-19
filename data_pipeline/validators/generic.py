@@ -12,6 +12,32 @@ from backend.app.core.config import MAX_CHUNK_CHARS
 from data_pipeline.chunking.ids import point_id
 
 
+# Kenya Law publishes every document with the same front matter: a
+# cover, a licence page carrying "Legislation as at <date>", and a
+# table of contents whose entries end in dot leaders. None of that is
+# law, and none of it is specific to one document type — it is what a
+# cleaner's `start_pattern` is there to cut, and these are the checks
+# that catch it when the pattern drifts.
+#
+# The leader pattern is anchored to end of line on purpose. A table of
+# contents entry ends with the page number:
+#
+#     Part I - PRELIMINARY .................... 3
+#
+# while a statutory form in an Act's schedule is full of fill-in blanks
+# that look the same mid-line:
+#
+#     on the ......... day of ......... 20......, at the ......... held
+#
+# Unanchored, the check passes the Constitution (which has no forms) and
+# fails every Act that carries them.
+PUBLISHER_ARTEFACTS = {
+    "table of contents": r"(?m)^Contents$",
+    "publisher blurb": r"Legislation as at",
+    "TOC page leaders": r"(?m)\.{5,}\s+\d+\s*$",
+}
+
+
 REQUIRED_CHUNK_FIELDS = [
     "chunk_id",
     "document_id",
@@ -43,6 +69,10 @@ def validate_cleaned_text(text: str) -> list[str]:
 
     if re.search(r"--- PAGE \d+ ---", text):
         errors.append("Forbidden content still present: page markers")
+
+    for name, pattern in PUBLISHER_ARTEFACTS.items():
+        if re.search(pattern, text):
+            errors.append(f"Forbidden content still present: {name}")
 
     for name, char in {
         "fi ligature": "ﬁ",

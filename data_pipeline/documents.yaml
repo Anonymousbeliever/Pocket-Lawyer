@@ -35,3 +35,24 @@
   cleaner: constitution
   structure: constitution
   validator: constitution
+
+# The consolidated edition, not the 1930 enactment: `version` and
+# `effective_from` are the "Legislation as at" date on the PDF, which
+# matches its FRBR URI. The Act commenced on 1 August 1930; that is a
+# fact about the Act, not about this version, and has no field here.
+- document_id: criminal-procedure-code
+  title: "Criminal Procedure Code (Cap. 75)"
+  document_type: act
+  jurisdiction: Kenya
+  language: English
+  version: "2023-12-11"
+  effective_from: "2023-12-11"
+  effective_to: null
+  in_force: true
+  source:
+    name: "Kenya Law"
+    url: "https://new.kenyalaw.org/akn/ke/act/1930/11/eng@2023-12-11"
+  raw_path: "data/raw/legislation/criminal-procedure-code.pdf"
+  cleaner: criminal-procedure-code
+  structure: act
+  validator: criminal-procedure-code

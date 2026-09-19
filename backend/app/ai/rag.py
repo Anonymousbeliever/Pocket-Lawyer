@@ -207,14 +207,41 @@ def main():
         sys.exit(1)
 
     print()
+    print("Models are loaded. Ask as many questions as you like;")
+    print("blank line or Ctrl-C to quit.")
 
-    question = input(
-        "Enter your legal question: "
-    ).strip()
+    while True:
+        print()
 
-    if not question:
-        print("No question provided.")
-        sys.exit(1)
+        try:
+            question = input(
+                "Enter your legal question: "
+            ).strip()
+
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+
+        if not question:
+            break
+
+        answer_one(rag, question)
+
+    print()
+    print("=" * 60)
+    print("RAG pipeline completed.")
+    print("=" * 60)
+
+
+def answer_one(rag: LegalRAG, question: str) -> None:
+    """
+    Answer one question and print it.
+
+    Split out of main() so the models load once and then serve any
+    number of questions. Reloading BGE-M3 and the cross-encoder per
+    question costs ~2.5 GB and most of a minute, which made the CLI
+    unusable for anything but a single lookup.
+    """
 
     print()
     print("=" * 60)
@@ -233,7 +260,7 @@ def main():
         print("[ERROR] RAG pipeline failed")
         print()
         print(error)
-        sys.exit(1)
+        return
 
     # -----------------------------------------------------
     # FINAL ANSWER
@@ -320,10 +347,6 @@ def main():
         )
 
         print()
-
-    print("=" * 60)
-    print("RAG pipeline completed.")
-    print("=" * 60)
 
 
 if __name__ == "__main__":

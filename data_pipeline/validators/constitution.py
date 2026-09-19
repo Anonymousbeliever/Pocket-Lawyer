@@ -30,7 +30,6 @@ def validate_cleaned_text(text: str) -> list[str]:
     errors.extend(_required_content(text))
     errors.extend(_article_sequence(text))
     errors.extend(_structure(text))
-    errors.extend(_forbidden_content(text))
 
     return errors
 
@@ -91,20 +90,6 @@ def _structure(text: str) -> list[str]:
     for marker in ("Chapter ONE", "Chapter Two", "FIRST SCHEDULE", "SIXTH SCHEDULE"):
         if marker not in text:
             errors.append(f"{marker} not detected")
-
-    return errors
-
-
-def _forbidden_content(text: str) -> list[str]:
-    errors: list[str] = []
-
-    for name, pattern in {
-        "table of contents": r"(?m)^Contents$",
-        "publisher blurb": r"Legislation as at",
-        "TOC page leaders": r"\.{5,}\s+\d+",
-    }.items():
-        if re.search(pattern, text):
-            errors.append(f"Forbidden content still present: {name}")
 
     return errors
 

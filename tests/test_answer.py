@@ -215,3 +215,4 @@ def test_invalid_json_is_rejected_clearly():
 def test_missing_fields_are_reported():
     with pytest.raises(RuntimeError, match="missing required fields"):
         LegalAnswer.from_json(json.dumps({"sufficient": True}))
+

@@ -56,6 +56,10 @@ class QuestionResult:
     # Tier 2
     sufficient: bool | None = None
 
+    # Whether the answer actually leaned on an expected authority, as
+    # opposed to merely having been shown one.
+    cited_expected: bool | None = None
+
     @property
     def refusal_correct(self) -> bool | None:
         if self.sufficient is None:
@@ -74,6 +78,34 @@ class QuestionResult:
         """The corpus cannot answer it, but the system answered anyway."""
 
         return not self.answerable and self.sufficient is True
+
+    @property
+    def wrong_authority(self) -> bool:
+        """
+        Answered confidently while citing none of the expected sources.
+
+        Distinct from `false_answer`, which only sees questions the
+        corpus cannot answer at all. This is an in-scope question
+        answered from the wrong law — the failure the Criminal Procedure
+        Code surfaced, where "Can police arrest me without telling me
+        why?" was answered from s.29 (Arrest by police officer without
+        warrant) and s.2 (Interpretation) rather than Article 49. Every
+        citation was real and passed verification; none of them
+        addressed what was asked.
+
+        Counted, not treated as a failure. `expect_any_of` lists the
+        authorities we know of, not every authority that could be
+        legitimate — the Criminal Procedure Code's own s.123 turned out
+        to be a valid answer to the bail question nobody had listed. So
+        this flags answers worth reading, rather than asserting they are
+        wrong.
+        """
+
+        return (
+            self.answerable
+            and self.sufficient is True
+            and self.cited_expected is False
+        )
 
     def passed(self, tier: int) -> bool:
         """

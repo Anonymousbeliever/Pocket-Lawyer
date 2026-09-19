@@ -4,7 +4,7 @@ This is the living project plan and progress tracker.
 
 Update this file when a task starts, finishes, or the current position changes. Source inventory lives in [`legal-data/sources.md`](legal-data/sources.md).
 
-**Last updated:** 2026-08-31
+**Last updated:** 2026-09-19
 
 ## How to use this document
 
@@ -152,7 +152,8 @@ This is now implemented end-to-end for the Constitution.
 
 ## Current position
 
-**Phase 2 and Phase 3 are proven end-to-end on a single document.**
+**Phase 2 and Phase 3 are proven end-to-end across two documents of different
+types.**
 
 The full chain works today:
 
@@ -161,11 +162,11 @@ Question
    ↓
 BGE-M3 embedding
    ↓
-Qdrant (270 vectors, Constitution only)
+Qdrant (591 vectors: Constitution 279, Criminal Procedure Code 312)
    ↓
-Top 15 candidates
+Top 30 candidates
    ↓
-BGE reranker
+BGE reranker, no single document taking every slot
    ↓
 Top 5 sources
    ↓
@@ -176,12 +177,26 @@ Grounded answer + sources
 
 Run it with `python -m backend.app.ai.rag`.
 
-**Two things now limit the product, and they are different problems:**
+The generic pipeline held: adding an Act — Part → Section rather than
+Chapter → Article — needed a cleaner spec, a structure adapter and a validator,
+and **no change to the orchestrator, registry, IR, chunker, vector store or any
+part of the retrieval path**.
 
-1. **Corpus breadth.** Only the Constitution is indexed. Questions outside it correctly return "I don't have enough reliable information" — the right behaviour, but not yet a useful product.
-2. **The ingestion layer is single-document code.** It cannot safely take a second document as written. See *Known limitations and blockers*.
+**Three things now limit the product:**
 
-**Next:** the ingestion-foundation refactor (a generic, idempotent, registry-driven pipeline). That work must land before the corpus grows, because it changes point IDs and the collection schema and therefore requires a full re-ingest either way.
+1. **Corpus breadth.** Two documents is not a legal corpus. Most questions still
+   correctly refuse.
+2. **Ranking, not retrieval.** A second document made the cross-encoder's
+   weaknesses visible: it prefers surface similarity to legal relevance, and
+   the query-vocabulary gap between how citizens ask and how law is written is
+   now the binding constraint. See *Measured: a second document changes
+   retrieval, not just coverage*.
+3. **The evaluation harness does not scale.** It measures the right things, but
+   has no way to run only what a change affects. See *Evaluation will not scale
+   as written*.
+
+**Next:** either the evaluation scoping work — which every subsequent document
+depends on — or continued corpus expansion accepting the current cost.
 
 ---
 
@@ -266,9 +281,15 @@ Every stage above has been proven against the Constitution. What does not exist 
 
 ## Phase 2 — Legal Knowledge Base
 
-**Status:** Done for the first document — corpus breadth outstanding
+**Status:** Done and proven on two documents — corpus breadth outstanding
 
 **Objective:** Turn the processed legal corpus into a searchable knowledge base.
+
+> The subsection below describes the original single-document build and its
+> then-current file paths. Both the layout and the numbers have since changed
+> (`data-pipeline/` → `data_pipeline/`, 270 → 279 Constitution chunks, 591 in
+> the collection). It is kept as the record of what was built when. The
+> progress log carries the current state.
 
 - [ ] PostgreSQL
 - [x] Qdrant
@@ -319,7 +340,7 @@ Meaning matches even when wording differs. A user asking *"Can cops arrest me wi
 - [x] Reranking
 - [x] Citation generation
 - [ ] Citation verification — *identity half done, entailment outstanding*
-- [x] Evaluation — *56-question set, baseline recorded; question set awaiting legal review*
+- [x] Evaluation — *71-question set, baseline recorded; question set awaiting legal review*
 
 ### What was actually built
 
@@ -451,7 +472,8 @@ Beyond fixing polarity this earned three things:
 
 ## Phase 4 — Application Backend
 
-**Status:** Not started
+**Status:** In progress — the service and routing exist; persistence and
+conversation do not
 
 **Objective:** Turn the RAG system into a proper application backend.
 
@@ -538,9 +560,11 @@ Recorded 2026-08-31 after a full review of the codebase and generated data.
 - No metadata filtering at query time, despite the payload carrying `document_type` and `jurisdiction`.
 - Schedule 6 is a single **24,146-character** chunk (Schedules 3 and 4 exceed 5,000). Not truncated — BGE-M3 accepts 8192 tokens — but one vector for that much unrelated text is semantically diluted and expensive to rerank and to put in context.
 - ~~No `version` / `effective_date` / `in_force` in the Qdrant payload.~~ **Closed 2026-09-02.** The payload carries `version`, `effective_from`, `effective_to`, `in_force` and `as_at`, and identity is version-aware (`document_id@vversion`), so two editions of the same Act coexist rather than overwriting each other. Retrieval filters `in_force == true` by default.
-- Sub-paragraph hierarchy is flattened: `(i)`/`(ii)`/`(iii)` collapse into the parent paragraph. Text is intact and faithful, but pinpoint citation below the paragraph level is not addressable.
-- No automated tests anywhere; `pytest` is not a dependency.
-- `.env.example` still lists a non-existent `OPENAI_MODEL=gpt-5.6-luna`.
+- Sub-paragraph hierarchy is flattened: `(i)`/`(ii)`/`(iii)` collapse into the parent paragraph. Text is intact and faithful, but pinpoint citation below the paragraph level is not addressable. The Act adapter inherits the same limitation.
+- ~~No automated tests anywhere; `pytest` is not a dependency.~~ **Closed.** 122 tests, no Qdrant or API key needed.
+- ~~`.env.example` still lists a non-existent `OPENAI_MODEL=gpt-5.6-luna`.~~ **Closed.**
+- `delete_document` in `vectorstore/ingest.py` filters on `document_id` alone while identity is `document_id@vversion`, so ingesting one version of a document would wipe every version of it. Not triggered today — one version of each document is registered — but it contradicts the version-awareness the rest of the system has.
+- Evaluation cost grows with the question count *and* the corpus, and the runner has no scoping mechanism beyond a hand-typed `--id` list, no caching between runs, and no concurrency in tier 2. `Question` carries no document tag, so "run only what this document touches" cannot be expressed. See *Evaluation will not scale as written*.
 
 ### Measured: rerank scores are not a confidence signal
 
@@ -632,12 +656,155 @@ input starved both stages.
 
 Evaluation result: **34/41 → 40/41**, six questions improved, none regressed.
 
+### Measured: a second document changes retrieval, not just coverage
+
+Recorded 2026-09-03, when the Criminal Procedure Code doubled the corpus from
+279 to 591 chunks. The ingestion was correct and needed no downstream changes.
+Retrieval was a different story: **52/56 questions passing, three arrest
+questions regressed**, and they failed in two distinct ways.
+
+**Capacity — `arrest-bail`.** Article 49 stopped being retrieved *at all*. It
+sat between rank 16 and 30, crowded out by CPC bail sections. `RETRIEVAL_TOP_K`
+was tuned at 15 against a 279-chunk corpus; at 591 it was simply too narrow.
+Raising it to 30 restored retrieval to 41/41 and made **no other question
+worse** — the candidate pool has to scale with the corpus. The cost is real:
+reranking is the dominant latency and this doubles the passages it scores.
+
+**Ranking — `arrest-reason` and `arrest-silence`.** Article 49 *was* retrieved,
+at #9 and #2, and reranking discarded it. One document took all five slots.
+
+| Question | What won | Why |
+|---|---|---|
+| "Do I have to answer police questions after being arrested?" | s.36A *Remand by court* | its text contains "inquiries ... by the police"; Article 49 says "the right to remain silent" |
+| "Can police arrest me without telling me why?" | ss.29, 31, 33, 35 | arrest *powers* and *disposal*, none imposing a duty to give reasons |
+
+The consequences differed, and the difference matters. `arrest-silence` was
+given a single irrelevant source and **correctly refused** — the grounding
+prompt worked, and it failed safe. `arrest-reason` **answered**, citing s.29 and
+s.2. Nothing was fabricated; every citation was real and passed verification.
+That is what made it dangerous: a confident, correctly-cited answer to a
+question the sources do not address, on the archetypal question in this
+project's own vision statement.
+
+**The fix is structural, not another threshold.** `rerank()` now reserves a slot
+for the best-scoring passage from a document that would otherwise be shut out,
+exempt from the relative tail cut, capped at `top_k - 1` per document. When only
+one document appears in the candidates the old path runs unchanged, so a
+single-document corpus behaves exactly as before. Tuning `RERANK_TOP_K` or the
+0.10 ratio was rejected: Article 49 scored under a tenth of s.36A here, and this
+project already has measurements showing cross-encoder scores cannot carry a
+hand-picked floor.
+
+Result: **70/71 passing, no regressions**, both failures closed, and tier 2 back
+to 0 false refusals and 0 false answers. `rerank_top1` did not fully recover and
+was not expected to — diversity gets the right law *in front of the LLM*, it
+does not make the cross-encoder rank it first. The three arrest questions that
+lost top-1 lost it to CPC sections that genuinely speak to the same facts.
+
+**A metric blind spot this exposed.** `false_answer` only counts answering an
+*out-of-scope* question, so `arrest-reason` — in scope, answered, citing none of
+the expected authorities — scored as a clean pass. The harness held both facts
+(`rerank_hit: false`, `sufficient: true`) and never combined them. Added as
+`wrong_authority`: counted and listed, but deliberately **not** a failure
+condition, because `expect_any_of` lists the authorities we know of, not every
+one that could be legitimate — CPC s.123 turned out to be a valid answer to a
+bail question nobody had listed.
+
+### Measured: one aggregate subject verdict cannot gate sufficiency
+
+Recorded 2026-09-12 after building a subject-matter gate, measuring it twice,
+and removing it. Kept so the idea is not tried again in this form.
+
+**The failure it was built for.** Tier 2 over the 15 out-of-scope questions
+found one false answer. *"What legally happens if I cannot pay back my debts?"*
+was answered with `sufficient=True`, citing CPC s.174 (costs ordered on a
+**criminal conviction** → imprisonment up to three months) and s.342
+(commitment for non-payment of a **criminal fine** → up to six months). The
+question is about civil debt. The answer told the reader they could be
+imprisoned for owing money. Every citation was real and passed
+`verify_citations` — a relevance failure, not a hallucination, and therefore
+indistinguishable from a correct answer.
+
+**What was tried.** Three required schema fields — `question_subject`,
+`sources_subject`, `subject_match` — with code forcing `sufficient = False`
+when the match was not good enough. This deliberately copied the pattern that
+fixed question polarity: make the model state the judgement explicitly, then
+enforce it outside the model rather than trusting the prompt.
+
+**Two settings, two opposite failures:**
+
+| `SUFFICIENT_MATCH` | `debt-inability` | `arrest-rights` / `children-rights` |
+|---|---|---|
+| `("same",)` | refused ✓ | **falsely refused** ✗ |
+| `+ "related_but_different"` | **answered** ✗ | answered ✓ |
+
+**Why no setting works.** The model returned `related_but_different` for *both*:
+
+- `children-rights` — Article 53 *"Children"* ranked **first**, alongside
+  Articles 21, 43, 14 and 19. The answer was right there.
+- `debt-inability` — nothing in the set concerned civil debt at all. Its own
+  `sources_subject` read *"imprisonment for non-payment of fines and costs in
+  criminal cases"*, which is exactly correct.
+
+Identical verdict, opposite truth. The model's *perception* was accurate; the
+aggregate *judgement* carries no signal.
+
+The cause is structural. `sources_subject` describes the whole reranked set,
+and that set is diverse by design — reranking now deliberately reserves a slot
+for a second document. Asked whether five mixed passages "match" a question,
+the honest answer is nearly always "sort of", whether or not the governing
+provision is among them. **The gate measured breadth, not wrongness.**
+
+**Removed** rather than left in place: after relaxing, it fired on nothing
+(`subject-gated 0` on every run), so it was carrying schema fields, prompt
+tokens and per-call cost for no benefit.
+
+**What would actually work** is per-source relevance — which specific chunk
+ids govern the question, refusing when that set is empty — since Article 53
+governs children's rights while nothing in the debt set governs civil debt.
+That is the entailment item already on the roadmap. It was not attempted here:
+two measurement cycles was the agreed budget for a cheap interim, and the
+honest conclusion is that this problem does not have a cheap interim.
+
+**`debt-inability` therefore remains an open, known false answer.**
+
+### Evaluation will not scale as written
+
+Recorded 2026-09-03 after a full read of `evaluation/`. The harness is sound in
+what it measures; the problem is what it costs to run.
+
+- **No scoping.** `Question` carries no document tag, so "run only what this
+  document touches" cannot be expressed. The CPC work used a hand-typed `--id`
+  list, chosen by reading section titles and guessing which existing questions a
+  new document might endanger. That judgement was correct here and does not
+  scale past a few documents.
+- **No caching.** Nothing keys a result on question + corpus version + code
+  version, so a docs-only change triggers the same full recompute as a retrieval
+  change.
+- **No concurrency.** `evaluate_tier2` is a plain sequential loop; every OpenAI
+  call blocks the next, though they are entirely independent.
+- **Out-of-scope questions pay full cost for nothing.** All three tier-1 metrics
+  stay `None` for `answerable: false`, yet each still runs a full retrieve and
+  rerank at top-30 on every run.
+- **Models are loaded once**, correctly — that common failure mode is *not*
+  present. They are constructed in `main()` and passed into the loop.
+
+What is *not* wrong: the tier 1/tier 2 split, scoring retrieval and reranking
+separately so a failure names its stage, keeping `false_refusal` and
+`false_answer` apart, and deterministic citation-identity checking. Those earn
+their keep. The gap is selectivity — running only what a change can affect.
+
+This matters beyond convenience. An evaluation too slow to run is one that stops
+being run, and this system's whole claim rests on being able to prove it still
+retrieves the right law.
+
 ### Architectural gaps
 
 - **Case law has no structural model.** Judgments are not chapters and articles. They need holdings vs obiter, court hierarchy, and overruled/distinguished status. The corpus plan includes case law; the pipeline has no concept of it.
 - **Amendment/repeal lifecycle — foundations laid, policy outstanding.** Versions can now coexist and be filtered (`in_force`, `effective_from`, `effective_to`), and answers carry an "as at" date. What does not exist yet is the *process*: detecting that a law has been amended, ingesting the new version, and marking the old one superseded. Until that exists, correctness depends on someone remembering to update the registry.
 - **Dense-only retrieval.** Legal queries need exact lexical anchors — "Section 45", "Cap 141", defined terms. BGE-M3 natively produces sparse vectors and Qdrant supports fusion; only dense is used today.
-- **No evaluation harness.** Without a golden set of questions mapped to expected authorities, every future change is unfalsifiable.
+- ~~**No evaluation harness.**~~ **Closed 2026-09-01.** 71 questions, two tiers, baseline recorded.
+- **Query vocabulary gap.** A citizen asks "do I have to answer police questions"; the law says "the right to remain silent". Nothing bridges the two, so a section merely containing "inquiries ... by the police" outranks the constitutional right. Source diversity now stops that costing the answer, but the ranking is still wrong. This is the query-analyser item, and the corpus growing makes it worse, not better.
 - **Kenya Law licensing/terms not confirmed** for redistributing legal text in an open-source repository.
 
 ### Serving constraints
@@ -662,8 +829,16 @@ Revised 2026-08-31. The ordering changed for two reasons: the ingestion layer mu
    56 questions, two tiers, baseline recorded.
    Question set still needs legal review.
 
-3. Corpus expansion
-   Each new document validates the generic pipeline.
+3. Corpus expansion                      ← IN PROGRESS
+   Criminal Procedure Code (Cap. 75) ingested 2026-09-03.
+   It validated the generic pipeline and broke retrieval
+   ranking in three arrest questions - both findings recorded.
+
+3b. Evaluation scoping                   ← NEW, blocks 3 at scale
+   Tag questions by document; run only what a change can
+   affect; cache between runs; parallelise tier 2. Without
+   this, every added document makes every future change
+   more expensive to verify.
 
 4. Evidence sufficiency
    NOT an absolute rerank threshold - that was tried and
@@ -757,6 +932,55 @@ Priority order when trade-offs arise:
 - **2026-08-31** — **Ingestion foundation built.** Replaced the five per-document scripts with one generic, registry-driven pipeline (`python -m data_pipeline.run`). Renamed `data-pipeline/` to `data_pipeline/` so stages can share code; added a common document IR so chunking, embedding and storage no longer know the document type. Fixed all four ingestion blockers: deterministic `uuid5` point IDs, generic stages behind per-type adapters, streaming batched embed-and-upsert with no on-disk vectors, and one central config imported by both the pipeline and the AI layer. Collection schema moved to named vectors with a sparse slot declared for future hybrid search, and the payload now carries `version`, `effective_date`, `in_force` and `as_at`. Added the first tests (33). Constitution re-ingested: **279 chunks**, longest 3,996 characters — Schedule 6's 24,146-character chunk is now split. Re-running produced **279 → 279 points**, proving ingestion is idempotent and a second document can no longer overwrite the first. Retrieval parity confirmed (Article 49 still ranks first) and the divorce refusal still holds.
 - **2026-09-02** — **Version-aware, document-first ingestion.** Chunk identity became `document_id@vversion-slug`, so two editions of the same Act no longer produce identical ids and overwrite each other. Derived artifacts moved from five stage directories to one directory per document version (`data/documents/<id>@v<version>/`), with `raw/` kept separate as the immutable source. `effective_from` / `effective_to` joined `in_force` and `version` on the payload and in metadata. Adapter tables moved out of the orchestrator into `data_pipeline/adapters.py` behind a `StructureParser` Protocol, and `CleanerSpec.start_pattern` became optional — it was a Constitution assumption sitting in supposedly generic code. Added `tests/test_multi_document.py`, which proves two document shapes and two versions produce disjoint ids without needing a second real document. **The evaluation reproduced the baseline exactly — 41/41, 40/41, 33/41, no regressions** — confirming that identity and file locations moved without disturbing a single retrieval decision. Old `data/` directories deliberately left in place.
 - **2026-09-01** — **Contextual embedding.** Chunks are now embedded and reranked with their document, citation and article title prepended (`backend/app/core/passage.py`); the stored content sent to the LLM is unchanged. Diagnosed offline before changing anything, which also refuted a length-bias theory. Evaluation went **34/41 → 40/41**, six questions improved, none regressed. See *Measured: chunks must be embedded with their citation context*. The one remaining failure, `county-government-role`, is a suspected defect in the question rather than the system — the Fourth Schedule distributes county functions and was never listed as an acceptable authority. Awaiting legal review.
+- **2026-09-19** — **FastAPI serving layer and semantic intent routing.** The
+  engine now has an application around it. `main.py` builds one `LegalRAG` in a
+  lifespan, so models load **once** instead of per process; `POST /ask` routes,
+  `GET /health` does a live Qdrant count. Sources are returned as structured
+  payload metadata, with `sources` (what the answer cited) kept separate from
+  `considered` (everything the LLM saw). A sync endpoint plus one lock
+  serialises the CPU-bound path — a property of running BGE in-process on CPU,
+  not a ceiling; the lock lives in the route layer so the pipeline is unaware.
+  `rag.py`, `retriever.py`, `reranker.py`, `llm.py` and `answer.py` were **not
+  modified**, which is what kept the evaluation harness valid throughout.
+  **Routing moved from regex to semantics after two live misses.** The first
+  router matched patterns against the raw string: "what is your name" slipped
+  past one covering "what's your name", and "morning" past one requiring "good
+  morning". Each miss cost a retrieval, a 30-passage rerank and a paid LLM call
+  to produce an unhelpful refusal — the inevitable result of enumerating an open
+  set by hand. `IntentClassifier` now compares the query embedding against
+  per-intent centroids, with LEGAL as one of the classes: **nearest centroid,
+  never a threshold**, for exactly the reason rerank scores cannot carry one.
+  Measured over 40 labelled inputs, the classes separate with no overlap
+  (conversational +0.094..+0.361, legal −0.222..−0.006), giving **39/39 on
+  routing direction and zero legal questions misrouted to chat**.
+  `CONVERSATIONAL_MARGIN = 0.05` sits in the gap between the clusters, not
+  threaded through it. `gm`, `sup`, `habari yako` and `niaje` route correctly
+  without appearing in any pattern or exemplar, and "hello, can police arrest me
+  without a warrant" scores −0.217 — meaning beating spelling, which was the
+  point. The regexes survive as a 13-entry fast path so "hi" skips the
+  embedding. 130 → **160 tests**, still no Qdrant or API key required. See
+  *Measured: one aggregate subject verdict cannot gate sufficiency* for the
+  unrelated dead end removed the same week.
+- **2026-09-03** — **Second document: the Criminal Procedure Code (Cap. 75).**
+  223-page consolidation "as at 11 December 2023", ingested as
+  `criminal-procedure-code@v2023-12-11` — **312 chunks from 311 live sections**,
+  sections 1–394 complete with no gaps plus 33 lettered insertions
+  (`36A`, `137A`–`137N`, `379A`) across 13 Parts. 116 repealed sections and all
+  four schedules are deliberately excluded: the schedules are multi-column
+  tables that line-based PDF extraction shreds into one line per cell, which
+  would have added ~29 chunks of noise matching arrest queries. Collection
+  went **279 → 591**, and re-ingesting the Constitution afterwards reported
+  **591 → 591**, proving the two documents coexist and ingestion is idempotent.
+  The generic pipeline needed **no changes**; what it needed was a cleaner spec,
+  a reusable `structure/act.py`, and a validator — correcting the "one new
+  structure adapter" estimate, since a cleaner spec names the document itself
+  and cannot be derived. Three arrest questions regressed and were fixed by
+  scaling `RETRIEVAL_TOP_K` 15 → 30 and reserving a reranked slot for a
+  shut-out document; added `wrong_authority` to the harness after finding that
+  answering an in-scope question from the wrong law scored as a clean pass.
+  Question set 56 → 71. **70/71 passing, no regressions, 122 tests.** Full
+  analysis in *Measured: a second document changes retrieval, not just
+  coverage*.
 - **2026-09-01** — **Evaluation harness.** 56 questions (41 answerable, 15 out of scope) in `evaluation/questions.yaml`, scored in two tiers: tier 1 runs retrieval and reranking with no API key and no cost, tier 2 adds the LLM for refusal correctness. Retrieval and reranking are scored separately so a failure names the stage that broke, and `false_refusal` and `false_answer` are counted apart rather than averaged. `baseline.json` records the accepted state and a run reports per-question status changes against it, exiting non-zero on regression. First baseline: 34/41. Question set drafted against article titles and **not yet reviewed for legal correctness**.
 - **2026-08-31** — **Structured answers.** The LLM now returns a schema-constrained object (`backend/app/ai/answer.py`) instead of prose: `sufficient`, `question_type`, `verdict`, `explanation`, `qualifications`, `cited_chunk_ids`. Fixes question polarity by construction — the opening word of a polar answer is written by code from the `verdict` enum, so it cannot contradict the explanation. *"Can police arrest me without telling me why?"* now answers **"No."** Citations are checked against the retrieved chunks deterministically, so fabricated ones are stripped and reported with no extra model call. The refusal became a field rather than a magic string and now explains what was missing. Cited sources are separated from considered sources, so a refusal no longer lists irrelevant chunks as if they supported it. Phase 3 Citation generation ticked; verification remains open on the entailment half. 50 tests.
 - **2026-08-31** — Attempted an absolute rerank score threshold as a sufficiency gate. It caused a false refusal on *"Can police arrest me without telling me why?"*, a question the corpus answers. Measurement showed the approach is unworkable, not merely miscalibrated — see *Measured: rerank scores are not a confidence signal*. Removed the floor; reranking now trims only relative to each query's own best match and can never refuse on its own. Sufficiency stays with the LLM's grounding prompt. Recorded the planned structured answer schema to fix question polarity by prevention rather than by a second verification call.

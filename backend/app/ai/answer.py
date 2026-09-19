@@ -37,6 +37,11 @@ INSUFFICIENT_ANSWER = (
 )
 
 
+# A subject-matter gate was tried here and removed. See "Measured: one
+# aggregate subject verdict cannot gate sufficiency" in
+# docs/project-plan.md before considering it again.
+
+
 VERDICT_OPENING = {
     "yes": "Yes.",
     "no": "No.",
@@ -194,6 +199,33 @@ def verify_citations(
 # RENDERING
 # ---------------------------------------------------------
 
+# The model is told, in the system prompt, what to say when the sources
+# are insufficient — so it frequently says it, and `render` then prefixed
+# the same sentence again. The user saw the refusal twice, which reads as
+# a bug rather than as a considered decline.
+REFUSAL_MARKERS = (
+    "don't have enough reliable information",
+    "do not have enough reliable information",
+)
+
+
+def _without_refusal(explanation: str) -> str:
+    """Drop sentences that merely repeat the canned refusal."""
+
+    if not explanation:
+        return ""
+
+    kept = [
+        sentence
+        for sentence in explanation.split(". ")
+        if not any(
+            marker in sentence.lower() for marker in REFUSAL_MARKERS
+        )
+    ]
+
+    return ". ".join(part for part in kept if part.strip()).strip()
+
+
 def render(answer: LegalAnswer) -> str:
     """
     Compose the user-facing text.
@@ -203,8 +235,10 @@ def render(answer: LegalAnswer) -> str:
     """
 
     if not answer.sufficient:
-        if answer.explanation:
-            return f"{INSUFFICIENT_ANSWER}\n\n{answer.explanation}"
+        reason = _without_refusal(answer.explanation)
+
+        if reason:
+            return f"{INSUFFICIENT_ANSWER}\n\n{reason}"
 
         return INSUFFICIENT_ANSWER
 

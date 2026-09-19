@@ -10,22 +10,36 @@ orchestrator does not need to change, and neither does any stage after
 structure parsing - an Act's Part/Section and the Constitution's
 Chapter/Article both become `path` plus `unit_type` in the IR.
 
-Adding a type:
+Adding a document:
 
-    1. write cleaners/<type>.py exposing a CleanerSpec named SPEC
-    2. write structure/<type>.py exposing parse(text, entry) -> Document
-    3. optionally write validators/<type>.py
+    1. write cleaners/<document>.py exposing a CleanerSpec named SPEC
+    2. reuse an existing structure parser, or write structure/<type>.py
+       exposing parse(text, entry) -> Document for a new hierarchy
+    3. write validators/<document>.py, or use "none" to opt out
     4. add one line to each table below
+
+Note the asymmetry, learned from adding the second document. The
+structure parser is genuinely per-*type* and reusable: every Kenya Law
+Act shares the Part -> Section shape, so "act" is written once. The
+cleaner spec is per-*document*, because where the operative text begins
+and which running header repeats both name the document itself.
 """
 
 from typing import Protocol
 
 from data_pipeline.cleaners import constitution as constitution_cleaner
+from data_pipeline.cleaners import (
+    criminal_procedure_code as criminal_procedure_code_cleaner,
+)
 from data_pipeline.cleaners.base import CleanerSpec
 from data_pipeline.ir import Document
 from data_pipeline.registry import DocumentEntry
+from data_pipeline.structure import act as act_structure
 from data_pipeline.structure import constitution as constitution_structure
 from data_pipeline.validators import constitution as constitution_validator
+from data_pipeline.validators import (
+    criminal_procedure_code as criminal_procedure_code_validator,
+)
 
 
 class StructureParser(Protocol):
@@ -44,17 +58,25 @@ class StructureParser(Protocol):
 # REGISTRATIONS
 # ---------------------------------------------------------
 
+# Cleaner specs are per-document, not per-type: their patterns embed the
+# document's own title and running header, and a CleanerSpec is static
+# data with no access to the registry entry.
 CLEANERS: dict[str, CleanerSpec] = {
     "constitution": constitution_cleaner.SPEC,
+    "criminal-procedure-code": criminal_procedure_code_cleaner.SPEC,
 }
 
+# Structure parsers are per-type and reusable. "act" handles the
+# Part -> Section shape Kenya Law uses for every consolidated Act.
 STRUCTURE_PARSERS: dict[str, StructureParser] = {
     "constitution": constitution_structure.parse,
+    "act": act_structure.parse,
 }
 
 # Optional. A type with no entry here gets generic validation only.
 VALIDATORS: dict[str, object] = {
     "constitution": constitution_validator,
+    "criminal-procedure-code": criminal_procedure_code_validator,
 }
 
 
@@ -91,9 +113,27 @@ def structure_parser(name: str) -> StructureParser:
 
 
 def validator(name: str):
-    """Type-specific validator, or None when the type has none."""
+    """
+    Type-specific validator, or None when the type has none.
 
-    return VALIDATORS.get(name)
+    `registry.py` makes `validator` a required field, so an unregistered
+    name here is a typo rather than a deliberate opt-out — and silently
+    returning None would downgrade the document to generic validation
+    without saying so. The sentinel "none" is how a type opts out on
+    purpose.
+    """
+
+    if name in VALIDATORS:
+        return VALIDATORS[name]
+
+    if name in ("none", "generic"):
+        return None
+
+    raise KeyError(
+        f"No validator adapter named {name!r}. Registered: "
+        f"{', '.join(sorted(VALIDATORS))}. Use 'none' to opt out "
+        "deliberately, or add it to data_pipeline/adapters.py."
+    )
 
 
 def registered_types() -> list[str]:

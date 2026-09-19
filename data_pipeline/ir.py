@@ -74,3 +74,30 @@ class Document:
             for unit in self.units
             if unit.unit_type == unit_type
         )
+
+
+def document_from_entry(entry, units: list[Unit]) -> Document:
+    """
+    Build a Document from a registry entry and the units a parser found.
+
+    Every structure adapter ends the same way: copy eleven fields off the
+    entry and attach the units. Doing that by hand in each adapter means
+    a new field has to be remembered in N places, and a forgotten one
+    fails silently — the document simply loses a payload field. This is
+    the one place to change.
+    """
+
+    return Document(
+        document_id=entry.document_id,
+        title=entry.title,
+        document_type=entry.document_type,
+        jurisdiction=entry.jurisdiction,
+        language=entry.language,
+        version=entry.version,
+        effective_from=entry.effective_from,
+        effective_to=entry.effective_to,
+        in_force=entry.in_force,
+        source_name=entry.source_name,
+        source_url=entry.source_url,
+        units=units,
+    )

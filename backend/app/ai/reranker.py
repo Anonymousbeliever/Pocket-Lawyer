@@ -40,6 +40,7 @@ class LegalReranker:
         documents: list[dict],
         top_k: int = RERANK_TOP_K,
         relative_ratio: float = RERANK_RELATIVE_RATIO,
+        max_per_document: int | None = None,
     ) -> list[dict]:
         """
         Rerank retrieved legal documents and trim the weak tail.
@@ -58,6 +59,22 @@ class LegalReranker:
         sources actually answer the question is decided by the LLM
         under its grounding prompt, not here.
 
+        One document may not take every slot. A citizen's question
+        usually has its *right* in the Constitution and its *procedure*
+        in an Act, and until the Criminal Procedure Code was indexed
+        that distinction could not arise — there was only one document.
+        With two, "Do I have to answer police questions after being
+        arrested?" put five Criminal Procedure Code sections in front of
+        the LLM and none of Article 49, because s.36A (Remand by court)
+        contains "inquiries ... by the police" while the constitutional
+        right is worded "the right to remain silent". The system then
+        refused a question the corpus answers.
+
+        So the best-scoring passage from a document that would otherwise
+        be shut out keeps a slot, even below the tail cut. This is a
+        structural rule rather than another threshold, deliberately:
+        cross-encoder scores are not trustworthy enough to tune against.
+
         Args:
             query:
                 User's legal question.
@@ -71,6 +88,11 @@ class LegalReranker:
             relative_ratio:
                 Fraction of the top score a result must reach to be
                 kept.
+
+            max_per_document:
+                Most slots any one document may occupy. Defaults to
+                top_k - 1, which reserves exactly one slot for the
+                strongest passage from somewhere else.
         """
 
         if not query.strip():
@@ -96,29 +118,101 @@ class LegalReranker:
         # Score every question/document pair.
         scores = [float(score) for score in self.model.predict(pairs)]
 
-        # Relative to this query's own best match, so the cut adapts to
-        # however this phrasing happened to score.
-        cut = max(scores) * relative_ratio
-
-        reranked = []
+        scored = []
 
         for document, score in zip(documents, scores):
-            if score < cut:
-                continue
-
             result = document.copy()
 
             result["rerank_score"] = score
 
-            reranked.append(result)
+            scored.append(result)
 
         # Highest relevance first.
-        reranked.sort(
+        scored.sort(
             key=lambda item: item["rerank_score"],
             reverse=True,
         )
 
-        return reranked[:top_k]
+        # Relative to this query's own best match, so the cut adapts to
+        # however this phrasing happened to score.
+        cut = max(scores) * relative_ratio
+
+        sources = {item.get("document_id") for item in scored}
+
+        # With one document in play there is nothing to diversify, and
+        # capping slots would only discard good matches. This is also
+        # what keeps behaviour identical to before the corpus grew.
+        if len(sources) < 2:
+            return [
+                item
+                for item in scored
+                if item["rerank_score"] >= cut
+            ][:top_k]
+
+        return self._select_across_documents(
+            scored,
+            cut=cut,
+            top_k=top_k,
+            max_per_document=(
+                max(1, top_k - 1)
+                if max_per_document is None
+                else max_per_document
+            ),
+        )
+
+    @staticmethod
+    def _select_across_documents(
+        scored: list[dict],
+        cut: float,
+        top_k: int,
+        max_per_document: int,
+    ) -> list[dict]:
+        """
+        Fill top_k without letting one document take every slot.
+
+        Two passes over the same score-ordered list. The first is
+        ordinary selection — anything clearing the tail cut, capped per
+        document. The second spends whatever slots are left on the best
+        passage from a document that got nothing, and is the only place
+        a below-cut passage can be kept.
+        """
+
+        selected: list[dict] = []
+        taken: dict[str, int] = {}
+
+        for item in scored:
+            if len(selected) >= top_k:
+                break
+
+            if item["rerank_score"] < cut:
+                continue
+
+            source = item.get("document_id")
+
+            if taken.get(source, 0) >= max_per_document:
+                continue
+
+            selected.append(item)
+            taken[source] = taken.get(source, 0) + 1
+
+        for item in scored:
+            if len(selected) >= top_k:
+                break
+
+            source = item.get("document_id")
+
+            if source in taken:
+                continue
+
+            selected.append(item)
+            taken[source] = 1
+
+        selected.sort(
+            key=lambda item: item["rerank_score"],
+            reverse=True,
+        )
+
+        return selected
 
 
 # ---------------------------------------------------------

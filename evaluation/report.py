@@ -62,6 +62,14 @@ def summarize(
         counts["false_refusal"] = sum(1 for r in results if r.false_refusal)
         counts["false_answer"] = sum(1 for r in results if r.false_answer)
 
+        # Answered, was shown the right law, and cited something else.
+        # Invisible until now: `false_answer` only looks at questions
+        # the corpus cannot answer, so an in-scope question answered
+        # from the wrong sections scored as a clean pass.
+        counts["wrong_authority"] = sum(
+            1 for r in results if r.wrong_authority
+        )
+
     return {
         "metadata": metadata or {},
         "metrics": metrics,
@@ -74,6 +82,7 @@ def summarize(
                 "rerank_hit": r.rerank_hit,
                 "rerank_top1": r.rerank_top1,
                 "sufficient": r.sufficient,
+                "cited_expected": r.cited_expected,
             }
             for r in results
         },
@@ -130,6 +139,7 @@ def print_run(
         print()
         print(f"  false refusals   {counts.get('false_refusal', 0)}")
         print(f"  false answers    {counts.get('false_answer', 0)}")
+        print(f"  wrong authority  {counts.get('wrong_authority', 0)}")
 
     print()
     print(
@@ -148,6 +158,31 @@ def print_run(
 
         for result in failures:
             _print_failure(result, questions.get(result.id))
+
+    # Not failures — the expected authority did reach the LLM. But the
+    # answer rests on something else, which is worth a human reading
+    # either the answer or the question's expected set.
+    flagged = [
+        r for r in results if r.wrong_authority and r.passed(tier)
+    ]
+
+    if flagged:
+        print()
+        print("-" * 64)
+        print("ANSWERED FROM SOURCES WE DID NOT EXPECT")
+        print("-" * 64)
+
+        for result in flagged:
+            question = questions.get(result.id)
+
+            print()
+            print(f"[READ] {result.id}")
+
+            if question:
+                print(f"       {question.question}")
+                print(f"       expected : {sorted(question.expect_any_of)}")
+
+            print(f"       cited    : {result.cited_top}")
 
     print()
 
