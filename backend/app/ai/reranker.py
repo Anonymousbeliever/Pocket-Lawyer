@@ -104,19 +104,99 @@ class LegalReranker:
         if top_k < 1:
             raise ValueError("top_k must be at least 1.")
 
-        # Score against the same contextual form used at ingest time:
-        # the citation and title give the cross-encoder something to
-        # judge, which bare list-shaped schedule text does not.
-        pairs = [
-            [
-                query,
-                contextual_text(document),
-            ]
-            for document in documents
+        scores = self._score(query, documents)
+
+        return self._select(
+            documents,
+            scores,
+            top_k=top_k,
+            relative_ratio=relative_ratio,
+            max_per_document=max_per_document,
+        )
+
+    def rerank_many(
+        self,
+        batches: list[tuple[str, list[dict]]],
+        top_k: int = RERANK_TOP_K,
+        relative_ratio: float = RERANK_RELATIVE_RATIO,
+        max_per_document: int | None = None,
+    ) -> list[list[dict]]:
+        """
+        Rerank several queries in ONE cross-encoder call.
+
+        Identical output to calling `rerank` on each batch in turn - the
+        selection below is the same function - but a single `predict` over
+        every pair uses the CPU far better than one call per question.
+
+        This is the evaluation harness's path. Scoring 82 questions
+        separately means 82 round trips through the model with the batch
+        mostly empty; scoring them together fills it.
+        """
+
+        eligible = [
+            (index, query, documents)
+            for index, (query, documents) in enumerate(batches)
+            if query.strip() and documents
         ]
 
-        # Score every question/document pair.
-        scores = [float(score) for score in self.model.predict(pairs)]
+        if not eligible:
+            return [[] for _ in batches]
+
+        pairs: list[list[str]] = []
+
+        for _, query, documents in eligible:
+            pairs.extend(self._pairs(query, documents))
+
+        flat = [float(score) for score in self.model.predict(pairs)]
+
+        results: list[list[dict]] = [[] for _ in batches]
+
+        offset = 0
+
+        for index, _, documents in eligible:
+            scores = flat[offset : offset + len(documents)]
+            offset += len(documents)
+
+            results[index] = self._select(
+                documents,
+                scores,
+                top_k=top_k,
+                relative_ratio=relative_ratio,
+                max_per_document=max_per_document,
+            )
+
+        return results
+
+    @staticmethod
+    def _pairs(query: str, documents: list[dict]) -> list[list[str]]:
+        """
+        Score against the same contextual form used at ingest time: the
+        citation and title give the cross-encoder something to judge, which
+        bare list-shaped schedule text does not.
+        """
+
+        return [[query, contextual_text(document)] for document in documents]
+
+    def _score(self, query: str, documents: list[dict]) -> list[float]:
+        return [
+            float(score)
+            for score in self.model.predict(self._pairs(query, documents))
+        ]
+
+    def _select(
+        self,
+        documents: list[dict],
+        scores: list[float],
+        top_k: int,
+        relative_ratio: float,
+        max_per_document: int | None,
+    ) -> list[dict]:
+        """
+        Tail trim, then diversity, then top_k.
+
+        Extracted unchanged from `rerank` so that a batched scoring pass can
+        reuse it. Everything here was already the behaviour.
+        """
 
         scored = []
 

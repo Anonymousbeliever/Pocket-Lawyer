@@ -1,32 +1,44 @@
 {
   "metadata": {
-    "created": "2026-09-03T20:11:55",
+    "created": "2026-09-20T01:37:52",
     "tier": 1,
     "collection": "pocket_lawyer_legal",
     "embedding_model": "BAAI/bge-m3",
     "reranker_model": "BAAI/bge-reranker-v2-m3",
     "retrieval_top_k": 30,
-    "rerank_top_k": 5
+    "rerank_top_k": 5,
+    "cache": {
+      "read": false,
+      "write": true,
+      "hits": {
+        "retrieval": 0,
+        "rerank": 0
+      },
+      "misses": {
+        "retrieval": 82,
+        "rerank": 82
+      }
+    }
   },
   "metrics": {
     "retrieval_hit": {
-      "passed": 56,
-      "total": 56
+      "passed": 66,
+      "total": 67
     },
     "rerank_hit": {
-      "passed": 55,
-      "total": 56
+      "passed": 64,
+      "total": 67
     },
     "rerank_top1": {
-      "passed": 38,
-      "total": 56
+      "passed": 43,
+      "total": 67
     }
   },
   "counts": {
-    "questions": 71,
-    "answerable": 56,
+    "questions": 82,
+    "answerable": 67,
     "out_of_scope": 15,
-    "passed": 70
+    "passed": 79
   },
   "questions": {
     "arrest-reason": {
@@ -160,7 +172,7 @@
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": true,
+      "rerank_top1": false,
       "sufficient": null,
       "cited_expected": null
     },
@@ -665,6 +677,105 @@
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "penal-robbery": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "penal-murder-definition": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "penal-murder-sentence": {
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": false,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "penal-stealing": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "penal-assault": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "penal-burglary": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "penal-attempt": {
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "penal-incitement": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "penal-affray": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "penal-riot": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "penal-robbery-arrest": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
       "sufficient": null,
       "cited_expected": null
     }

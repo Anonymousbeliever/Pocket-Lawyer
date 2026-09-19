@@ -19,9 +19,9 @@ penalties, or citations. Never claim a source says something it does not.
 
 ## Current state
 
-Retrieval → reranking → grounded generation works end to end over **two
-documents, 591 chunks**: the Constitution of Kenya, 2010 (279) and the Criminal
-Procedure Code, Cap. 75 (312).
+Retrieval → reranking → grounded generation works end to end over **three
+documents, 962 chunks**: the Constitution of Kenya, 2010 (279), the Criminal
+Procedure Code, Cap. 75 (312) and the Penal Code, Cap. 63 (371).
 
 **FastAPI now serves it.** Models load once at startup and are reused across
 requests, and a semantic router answers conversational input without touching
@@ -54,6 +54,8 @@ data_pipeline/
   registry.py              loads the registry, derives artifact paths
   adapters.py              the type registry - register a new document HERE only
   structure/<type>.py      per-TYPE and reusable: constitution.py, act.py
+                           act.py handles Part -> Section (CPC) and
+                           Part -> Chapter -> Section (Penal Code)
   cleaners/<document>.py   per-DOCUMENT: its patterns name the document itself
   validators/<document>.py per-DOCUMENT, plus generic.py for every document
   chunking/, vectorstore/
@@ -86,7 +88,7 @@ What that exercise corrected is the cost estimate. A new document needs:
 
 ```bash
 docker compose up -d              # Qdrant on localhost:6333
-pytest                            # 160 tests, no Qdrant or API key needed
+pytest                            # 205 tests, no Qdrant or API key needed
 
 python -m uvicorn backend.app.main:app --reload   # the API, models load once
 python -m backend.app.ai.intent                   # routing accuracy + margins
@@ -98,8 +100,11 @@ python -m data_pipeline.run --document X --from chunk   # resume a stage
 python -m data_pipeline.run --document X --to chunk     # stop before Qdrant
 python -m data_pipeline.run --document X --recreate     # rebuild collection
 
-python -m evaluation.run             # tier 1: retrieval only, free, no API key
+python -m evaluation.run --tier 0    # retrieval only, seconds, no reranker
+python -m evaluation.run             # tier 1: + reranking, free, no API key
 python -m evaluation.run --tier 2    # adds the LLM (refusal correctness)
+python -m evaluation.run --document penal-code   # only that document's questions
+python -m evaluation.run --no-cache  # recompute; still writes results
 python -m evaluation.run --accept-last   # record the last run as baseline
 python -m evaluation.run --id <qid>  # one question, repeatable, for debugging
 
@@ -155,10 +160,24 @@ are provisioned for.
   check it against the baseline. Tier 1 is free and catches retrieval and
   reranking regressions; a single manual question does not.
 - **Scope the evaluation while iterating; run it whole before baselining.**
-  `--id` is repeatable, and a full run costs real time that grows with both the
-  question count and the corpus. Iterate on the questions a change can actually
-  affect, then run all of them once before `--accept-last`. Note `--id` runs are
+  `--id` and `--document` are the scoping tools, and `--id` runs are
   deliberately excluded from `--save-baseline` and from `last_run.json`.
+- **Know which tier a change actually needs.** A full tier 1 run is warranted
+  only when something can move a *retrieval decision*: `retriever.py`,
+  `reranker.py`, `passage.py`, the retrieval settings in `config.py`, anything
+  in `data_pipeline/` that changes chunk ids or text, a new document, or the
+  embedding model. It is **not** warranted for the API layer, routing, schemas,
+  tests or docs - the harness imports none of them. `llm.py` and `answer.py`
+  are tier 2 territory; tier 1 never calls the LLM.
+- **Results are cached, and the key is what makes that safe.** Level 1
+  (retrieval) is keyed on the corpus; level 2 (reranking) is keyed on the
+  *retrieved candidates*, deliberately **not** on the corpus - so adding a
+  document reranks only the questions whose top-k actually moved. Both keys
+  include a hash of the source of `retriever.py`, `reranker.py` and
+  `passage.py`, so editing any of them invalidates everything downstream.
+  It cannot see a library upgrade: use `--no-cache` for that, which recomputes
+  while still writing. **A baseline is never served from cache** -
+  `--accept-last` refuses a run with cache hits.
 - **Embed chunks with their citation context**, never the bare body. An
   article's topic often lives only in its title - Article 16 is "Dual
   citizenship" and its text never says "dual". Embedding content alone made it

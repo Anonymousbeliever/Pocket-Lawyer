@@ -4,7 +4,7 @@ This is the living project plan and progress tracker.
 
 Update this file when a task starts, finishes, or the current position changes. Source inventory lives in [`legal-data/sources.md`](legal-data/sources.md).
 
-**Last updated:** 2026-09-19
+**Last updated:** 2026-09-20
 
 ## How to use this document
 
@@ -152,17 +152,17 @@ This is now implemented end-to-end for the Constitution.
 
 ## Current position
 
-**Phase 2 and Phase 3 are proven end-to-end across two documents of different
-types.**
-
-The full chain works today:
+**Three documents, served over HTTP, with an evaluation harness that scales.**
 
 ```text
 Question
    ↓
+Intent routing (nearest centroid) ──→ conversational, no retrieval
+   ↓ legal
 BGE-M3 embedding
    ↓
-Qdrant (591 vectors: Constitution 279, Criminal Procedure Code 312)
+Qdrant (962 vectors: Constitution 279, Criminal Procedure Code 312,
+        Penal Code 371)
    ↓
 Top 30 candidates
    ↓
@@ -172,31 +172,36 @@ Top 5 sources
    ↓
 gpt-4o-mini (strict grounding prompt)
    ↓
-Grounded answer + sources
+Grounded answer + verified citations
 ```
 
-Run it with `python -m backend.app.ai.rag`.
+`python -m uvicorn backend.app.main:app` serves it, loading models once.
+`python -m backend.app.ai.rag` is still the CLI.
 
-The generic pipeline held: adding an Act — Part → Section rather than
-Chapter → Article — needed a cleaner spec, a structure adapter and a validator,
-and **no change to the orchestrator, registry, IR, chunker, vector store or any
-part of the retrieval path**.
+The generic pipeline has now absorbed three hierarchies — Chapter → Article,
+Part → Section, and Part → Chapter → Section — without the orchestrator,
+registry, IR, chunker or vector store changing once. Per document the cost is a
+cleaner spec, a validator, and a structure adapter only for a genuinely new
+shape.
 
-**Three things now limit the product:**
+**Current state:** 82 questions, baseline **79/82**. Adding the Penal Code
+caused **zero regressions**, where the Criminal Procedure Code had broken three
+questions at half the corpus size.
 
-1. **Corpus breadth.** Two documents is not a legal corpus. Most questions still
-   correctly refuse.
-2. **Ranking, not retrieval.** A second document made the cross-encoder's
-   weaknesses visible: it prefers surface similarity to legal relevance, and
-   the query-vocabulary gap between how citizens ask and how law is written is
-   now the binding constraint. See *Measured: a second document changes
-   retrieval, not just coverage*.
-3. **The evaluation harness does not scale.** It measures the right things, but
-   has no way to run only what a change affects. See *Evaluation will not scale
-   as written*.
+**What limits the product now:**
 
-**Next:** either the evaluation scoping work — which every subsequent document
-depends on — or continued corpus expansion accepting the current cost.
+1. **Corpus breadth.** Three documents is a start, not a legal corpus.
+2. **Dense-only retrieval.** Measured concretely by `penal-murder-sentence`:
+   section 204 answers the question in eleven words and sits at rank 53,
+   because dense embeddings favour longer text sharing vocabulary. The sparse
+   vector slot is declared in the collection and unused. See *Architectural
+   gaps*.
+3. **The application layer.** No conversation state, no persistence, no auth,
+   no mobile app.
+
+Still open and recorded: `debt-inability`'s false answer, the
+`delete_document` version bug, and `county-government-role` awaiting a
+lawyer's view.
 
 ---
 
@@ -932,6 +937,36 @@ Priority order when trade-offs arise:
 - **2026-08-31** — **Ingestion foundation built.** Replaced the five per-document scripts with one generic, registry-driven pipeline (`python -m data_pipeline.run`). Renamed `data-pipeline/` to `data_pipeline/` so stages can share code; added a common document IR so chunking, embedding and storage no longer know the document type. Fixed all four ingestion blockers: deterministic `uuid5` point IDs, generic stages behind per-type adapters, streaming batched embed-and-upsert with no on-disk vectors, and one central config imported by both the pipeline and the AI layer. Collection schema moved to named vectors with a sparse slot declared for future hybrid search, and the payload now carries `version`, `effective_date`, `in_force` and `as_at`. Added the first tests (33). Constitution re-ingested: **279 chunks**, longest 3,996 characters — Schedule 6's 24,146-character chunk is now split. Re-running produced **279 → 279 points**, proving ingestion is idempotent and a second document can no longer overwrite the first. Retrieval parity confirmed (Article 49 still ranks first) and the divorce refusal still holds.
 - **2026-09-02** — **Version-aware, document-first ingestion.** Chunk identity became `document_id@vversion-slug`, so two editions of the same Act no longer produce identical ids and overwrite each other. Derived artifacts moved from five stage directories to one directory per document version (`data/documents/<id>@v<version>/`), with `raw/` kept separate as the immutable source. `effective_from` / `effective_to` joined `in_force` and `version` on the payload and in metadata. Adapter tables moved out of the orchestrator into `data_pipeline/adapters.py` behind a `StructureParser` Protocol, and `CleanerSpec.start_pattern` became optional — it was a Constitution assumption sitting in supposedly generic code. Added `tests/test_multi_document.py`, which proves two document shapes and two versions produce disjoint ids without needing a second real document. **The evaluation reproduced the baseline exactly — 41/41, 40/41, 33/41, no regressions** — confirming that identity and file locations moved without disturbing a single retrieval decision. Old `data/` directories deliberately left in place.
 - **2026-09-01** — **Contextual embedding.** Chunks are now embedded and reranked with their document, citation and article title prepended (`backend/app/core/passage.py`); the stored content sent to the LLM is unchanged. Diagnosed offline before changing anything, which also refuted a length-bias theory. Evaluation went **34/41 → 40/41**, six questions improved, none regressed. See *Measured: chunks must be embedded with their citation context*. The one remaining failure, `county-government-role`, is a suspected defect in the question rather than the system — the Fourth Schedule distributes county functions and was never listed as an acceptable authority. Awaiting legal review.
+- **2026-09-20** — **Third document, and an evaluation harness that scales.**
+  The Penal Code (Cap. 63), 2023-12-11 consolidation: **371 chunks from 368
+  live sections**, sections 1–398 complete with 18 lettered insertions, 48
+  repealed dropped, no schedules at all. Collection **591 → 962**.
+  It is **Part → Chapter → Section** where the Criminal Procedure Code is
+  Part → Section, so `act.py` gained optional Chapter support — additive, with
+  a test asserting the CPC still produces two-level paths. Citations now read
+  *Part II — Chapter XVIII — Section 203*, putting the chapter title into the
+  embedding header. `CleanerSpec` also gained `end_pattern`: this Act closes
+  with an alphabetical index the document itself disclaims as *"not part of the
+  Act"*, and indexing it would have embedded page-number fragments as law.
+  **Zero regressions across a 63% corpus increase** — the reranking diversity
+  fix held at three documents where the CPC had broken three questions at two.
+  71 → 82 questions; new baseline 79/82.
+  **The harness was the real work.** A full run had reached hours, all of it in
+  one place: 30 cross-encoder passes per question on CPU. Now:
+  **tier 0** (retrieval only, no reranker loaded, seconds) — which would alone
+  have caught `arrest-bail`, the CPC's worst regression, since that was a pure
+  retrieval miss; a **two-level cache** whose second level is keyed on the
+  *retrieved candidates* and deliberately **not** on the corpus, so adding a
+  document reranks only the questions whose top-k moved; **batched reranking**
+  across questions; and `--document` for scoped runs, which needed no schema
+  change because expected chunk ids already name their document. Both cache
+  keys hash the source of `retriever.py`, `reranker.py` and `passage.py` — the
+  property that makes caching safe rather than a way to hide regressions.
+  Verified transparent: a warm run reproduced the cold run exactly
+  (66/67, 64/67, 43/67) in seconds. 160 → **205 tests**.
+  Also fixed: comparing runs across tiers reported spurious regressions,
+  because `passed()` means something different at each tier. Every `--tier 2`
+  run against the tier 1 baseline had been affected.
 - **2026-09-19** — **FastAPI serving layer and semantic intent routing.** The
   engine now has an application around it. `main.py` builds one `LegalRAG` in a
   lifespan, so models load **once** instead of per process; `POST /ask` routes,

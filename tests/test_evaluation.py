@@ -35,6 +35,44 @@ def result(**overrides) -> QuestionResult:
 # PASS CRITERIA
 # ---------------------------------------------------------
 
+def test_tier0_judges_retrieval_only():
+    """
+    No reranker runs, so `rerank_hit` is unknown and must not be consulted.
+    The Criminal Procedure Code's worst regression - Article 49 falling
+    outside the top 30 for `arrest-bail` - is visible at this tier.
+    """
+
+    found = result(retrieval_hit=True, rerank_hit=None, rerank_top1=None)
+    missed = result(retrieval_hit=False, rerank_hit=None, rerank_top1=None)
+
+    assert found.passed(tier=0)
+    assert not missed.passed(tier=0)
+
+
+def test_tier0_does_not_judge_out_of_scope_questions():
+    out_of_scope = result(
+        answerable=False,
+        retrieval_hit=None,
+        rerank_hit=None,
+        rerank_top1=None,
+    )
+
+    assert out_of_scope.passed(tier=0)
+
+
+def test_tier0_and_tier1_disagree_on_purpose():
+    """
+    Retrieved but reranked away: tier 0 passes it, tier 1 fails it. That is
+    the difference between the two, and why their baselines are not
+    interchangeable.
+    """
+
+    dropped = result(retrieval_hit=True, rerank_hit=False, rerank_top1=False)
+
+    assert dropped.passed(tier=0)
+    assert not dropped.passed(tier=1)
+
+
 def test_tier1_passes_when_expected_authority_survives_reranking():
     assert result(rerank_hit=True).passed(tier=1)
 
@@ -288,6 +326,29 @@ def test_added_and_removed_questions_are_tracked():
     assert comparison["new"] == ["new"]
     assert comparison["removed"] == ["old"]
     assert comparison["regressed"] == []
+
+
+def test_comparing_across_tiers_is_refused():
+    """
+    `passed()` asks a different question at each tier, so a cross-tier diff
+    reports regressions that are only a change of criteria. This had been
+    happening silently on every tier 2 run against the tier 1 baseline.
+    """
+
+    tier1 = summarize([result(id="a")], tier=1, metadata={"tier": 1})
+    tier2 = summarize([result(id="a", sufficient=True)], tier=2,
+                      metadata={"tier": 2})
+
+    reasons = compare(tier2, tier1)["incomparable"]
+
+    assert any("tier changed" in reason for reason in reasons)
+
+
+def test_same_tier_comparison_is_allowed():
+    before = summarize([result(id="a")], tier=1, metadata={"tier": 1})
+    after = summarize([result(id="a")], tier=1, metadata={"tier": 1})
+
+    assert compare(after, before)["incomparable"] == []
 
 
 def test_changed_embedding_model_invalidates_the_comparison():

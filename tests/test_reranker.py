@@ -346,6 +346,88 @@ def test_max_per_document_can_be_overridden():
 
 
 # ---------------------------------------------------------
+# BATCHING ACROSS QUESTIONS
+#
+# The evaluation harness scores every question in one cross-encoder call
+# rather than one call each. It must return exactly what the sequential path
+# returns - a faster harness that quietly changes results is worthless.
+# ---------------------------------------------------------
+
+def test_batched_reranking_equals_sequential():
+    questions = [
+        ("What are my rights if I am arrested?", mixed(
+            ("constitution", "article-49"),
+            ("criminal-procedure-code", "cpc-29"),
+            ("constitution", "article-51"),
+        )),
+        ("Can I be released on bail?", mixed(
+            ("criminal-procedure-code", "cpc-123"),
+            ("constitution", "article-49"),
+        )),
+        ("What is robbery?", mixed(
+            ("penal-code", "penal-295"),
+            ("penal-code", "penal-296"),
+            ("criminal-procedure-code", "cpc-29"),
+        )),
+    ]
+
+    # One score per (query, document) pair, in the order a single batched
+    # predict would see them: 3 + 2 + 3.
+    per_query = [[0.9, 0.4, 0.2], [0.8, 0.05], [0.95, 0.7, 0.01]]
+
+    sequential = [
+        make_reranker(scores).rerank(query, documents)
+        for (query, documents), scores in zip(questions, per_query)
+    ]
+
+    flat = [score for scores in per_query for score in scores]
+
+    batched = make_reranker(flat).rerank_many(questions)
+
+    assert [ids(r) for r in batched] == [ids(r) for r in sequential]
+
+
+def test_batching_keeps_per_document_diversity():
+    """The reserved slot is applied per query, not across the batch."""
+
+    batched = make_reranker([0.9, 0.8, 0.02, 0.9, 0.01]).rerank_many(
+        [
+            ("first", mixed(
+                ("act", "a-1"),
+                ("act", "a-2"),
+                ("constitution", "c-1"),
+            )),
+            ("second", mixed(
+                ("act", "a-3"),
+                ("constitution", "c-2"),
+            )),
+        ],
+        top_k=2,
+    )
+
+    assert "c-1" in ids(batched[0])
+    assert "c-2" in ids(batched[1])
+
+
+def test_batching_handles_empty_and_blank_entries():
+    batched = make_reranker([0.9]).rerank_many(
+        [
+            ("a real question", mixed(("act", "a-1"))),
+            ("", mixed(("act", "a-2"))),
+            ("no documents", []),
+        ]
+    )
+
+    assert ids(batched[0]) == ["a-1"]
+    assert batched[1] == []
+    assert batched[2] == []
+
+
+def test_batching_nothing_returns_nothing():
+    assert make_reranker([]).rerank_many([]) == []
+
+
+# ---------------------------------------------------------
 # BASICS
 # ---------------------------------------------------------
 

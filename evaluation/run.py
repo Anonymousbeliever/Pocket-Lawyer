@@ -24,6 +24,12 @@ from backend.app.core.config import (
     RERANKER_MODEL,
     RETRIEVAL_TOP_K,
 )
+from evaluation.cache import (
+    ResultCache,
+    corpus_fingerprint,
+    rerank_key,
+    retrieval_key,
+)
 from evaluation.report import (
     build_metadata,
     compare,
@@ -44,12 +50,18 @@ from evaluation.schema import (
 )
 
 
-def evaluate_tier1(
+def _retrieve_all(
     questions: list[Question],
     retriever,
-    reranker,
-) -> list[QuestionResult]:
-    results: list[QuestionResult] = []
+    cache: ResultCache,
+    fingerprint: str,
+) -> list[list[dict]]:
+    """
+    Retrieve for every question, reusing level 1 where the corpus has not
+    moved. Cheap either way - an embedding and a Qdrant query.
+    """
+
+    retrieved: list[list[dict]] = []
 
     for index, question in enumerate(questions, start=1):
         print(
@@ -57,40 +69,136 @@ def evaluate_tier1(
             flush=True,
         )
 
-        retrieved = retriever.retrieve(
-            query=question.question,
-            top_k=RETRIEVAL_TOP_K,
-        )
+        key = retrieval_key(question.question, fingerprint)
 
-        reranked = reranker.rerank(
-            query=question.question,
-            documents=retrieved,
-            top_k=RERANK_TOP_K,
-        )
+        chunks = cache.get("retrieval", key)
 
-        retrieved_ids = [c.get("chunk_id") for c in retrieved]
-        reranked_ids = [c.get("chunk_id") for c in reranked]
+        if chunks is None:
+            chunks = retriever.retrieve(
+                query=question.question,
+                top_k=RETRIEVAL_TOP_K,
+            )
 
-        result = QuestionResult(
-            id=question.id,
-            answerable=question.answerable,
-            retrieved_top=retrieved_ids,
-            reranked_top=reranked_ids,
-        )
+            cache.put("retrieval", key, chunks)
 
-        # Only an answerable question has an authority to find.
-        if question.answerable:
-            expected = set(question.expect_any_of)
+        retrieved.append(chunks)
 
-            result.retrieval_hit = bool(expected & set(retrieved_ids))
+    return retrieved
+
+
+def _score_question(
+    question: Question,
+    retrieved_ids: list[str],
+    reranked_ids: list[str] | None,
+) -> QuestionResult:
+    """
+    `reranked_ids=None` means no reranker ran - tier 0. The rerank metrics
+    then stay None so `_ratio` reports them as unmeasured rather than as
+    zero; a metric nothing measured must not be published as a failure.
+    """
+
+    result = QuestionResult(
+        id=question.id,
+        answerable=question.answerable,
+        retrieved_top=retrieved_ids,
+        reranked_top=reranked_ids or [],
+    )
+
+    # Only an answerable question has an authority to find.
+    if question.answerable:
+        expected = set(question.expect_any_of)
+
+        result.retrieval_hit = bool(expected & set(retrieved_ids))
+
+        if reranked_ids is not None:
             result.rerank_hit = bool(expected & set(reranked_ids))
             result.rerank_top1 = bool(
                 reranked_ids and reranked_ids[0] in expected
             )
 
-        results.append(result)
+    return result
 
-    return results
+
+def evaluate_tier0(
+    questions: list[Question],
+    retriever,
+    cache: ResultCache,
+    fingerprint: str,
+) -> list[QuestionResult]:
+    """
+    Retrieval only. No cross-encoder is constructed, so ~1.1 GB never loads
+    and hundreds of questions run in seconds.
+
+    Narrower than tier 1, not lesser: the Criminal Procedure Code's worst
+    regression was Article 49 falling outside the top 30 for `arrest-bail`,
+    which needed no reranking to detect.
+    """
+
+    retrieved = _retrieve_all(questions, retriever, cache, fingerprint)
+
+    return [
+        _score_question(
+            question,
+            [c.get("chunk_id") for c in chunks],
+            None,
+        )
+        for question, chunks in zip(questions, retrieved)
+    ]
+
+
+def evaluate_tier1(
+    questions: list[Question],
+    retriever,
+    reranker,
+    cache: ResultCache,
+    fingerprint: str,
+) -> list[QuestionResult]:
+    retrieved = _retrieve_all(questions, retriever, cache, fingerprint)
+
+    retrieved_ids = [
+        [c.get("chunk_id") for c in chunks] for chunks in retrieved
+    ]
+
+    # Level 2 is keyed on the CANDIDATES, not the corpus, so a question whose
+    # top-k did not move survives the arrival of a whole new document.
+    keys = [
+        rerank_key(question.question, ids)
+        for question, ids in zip(questions, retrieved_ids)
+    ]
+
+    reranked_ids: list[list[str] | None] = [
+        cache.get("rerank", key) for key in keys
+    ]
+
+    pending = [i for i, value in enumerate(reranked_ids) if value is None]
+
+    if pending:
+        print()
+        print(
+            f"Reranking {len(pending)} of {len(questions)} "
+            f"({len(questions) - len(pending)} reused)...",
+            flush=True,
+        )
+
+        # One cross-encoder call for every question that needs one, rather
+        # than one call per question with the batch mostly empty.
+        batched = reranker.rerank_many(
+            [(questions[i].question, retrieved[i]) for i in pending],
+            top_k=RERANK_TOP_K,
+        )
+
+        for i, chunks in zip(pending, batched):
+            ids = [c.get("chunk_id") for c in chunks]
+
+            reranked_ids[i] = ids
+            cache.put("rerank", keys[i], ids)
+
+    return [
+        _score_question(question, ids, ranked)
+        for question, ids, ranked in zip(
+            questions, retrieved_ids, reranked_ids
+        )
+    ]
 
 
 def evaluate_tier2(
@@ -149,9 +257,31 @@ def main() -> None:
     parser.add_argument(
         "--tier",
         type=int,
-        choices=[1, 2],
+        choices=[0, 1, 2],
         default=1,
-        help="1 = retrieval only (free), 2 = full pipeline (uses the LLM)",
+        help=(
+            "0 = retrieval only, seconds, no reranker loaded; "
+            "1 = retrieval + reranking (free); "
+            "2 = full pipeline (uses the LLM)"
+        ),
+    )
+
+    parser.add_argument(
+        "--document",
+        help=(
+            "only questions expecting chunks from this document, by id "
+            "prefix, e.g. penal-code. Out-of-scope questions reference no "
+            "document and are therefore excluded"
+        ),
+    )
+
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help=(
+            "recompute everything. Use after changing anything the cache "
+            "key cannot see, such as a library upgrade"
+        ),
     )
 
     parser.add_argument(
@@ -196,6 +326,14 @@ def main() -> None:
             print("       Run the evaluation first.")
             sys.exit(1)
 
+        # A reference result must be computed, not recalled.
+        cache_meta = (previous.get("metadata") or {}).get("cache") or {}
+
+        if any((cache_meta.get("hits") or {}).values()):
+            print("[FAIL] refusing to baseline a run that used the cache.")
+            print("       Re-run with --no-cache, then promote that.")
+            sys.exit(1)
+
         save_baseline(previous)
 
         created = previous.get("metadata", {}).get("created", "unknown")
@@ -221,6 +359,21 @@ def main() -> None:
             print(f"       {error}")
         sys.exit(1)
 
+    if args.document:
+        # The expected chunk ids already name their document, so no tag on
+        # Question is needed: "penal-code@v2023-12-11-part-ii-..." .
+        prefix = f"{args.document}@"
+
+        questions = [
+            q
+            for q in questions
+            if any(cid.startswith(prefix) for cid in q.expect_any_of)
+        ]
+
+        if not questions:
+            print(f"[FAIL] no questions expect chunks from {args.document!r}")
+            sys.exit(1)
+
     if args.id:
         wanted = set(args.id)
         questions = [q for q in questions if q.id in wanted]
@@ -245,20 +398,44 @@ def main() -> None:
     # RUN
     # -----------------------------------------------------
 
-    if args.tier == 1:
+    # A baseline must be computed, never recalled - so a reference run reads
+    # nothing. It still WRITES, because the values it computes are correct by
+    # definition and discarding them would cost a second full run to warm the
+    # cache.
+    cache = ResultCache(
+        read=not (args.no_cache or args.save_baseline),
+        write=True,
+    )
+
+    fingerprint = corpus_fingerprint()
+
+    if args.tier < 2:
         # Deliberately not LegalRAG: it constructs LegalLLM, which
-        # requires an API key. Tier 1 must run without one.
-        from backend.app.ai.reranker import LegalReranker
+        # requires an API key. Tiers 0 and 1 must run without one.
         from backend.app.ai.retriever import LegalRetriever
 
         retriever = LegalRetriever()
-        print()
-        reranker = LegalReranker()
 
-        print()
-        print("Running...")
+        if args.tier == 0:
+            print()
+            print("Running (retrieval only)...")
 
-        results = evaluate_tier1(questions, retriever, reranker)
+            results = evaluate_tier0(
+                questions, retriever, cache, fingerprint
+            )
+
+        else:
+            from backend.app.ai.reranker import LegalReranker
+
+            print()
+            reranker = LegalReranker()
+
+            print()
+            print("Running...")
+
+            results = evaluate_tier1(
+                questions, retriever, reranker, cache, fingerprint
+            )
 
     else:
         from backend.app.ai.rag import LegalRAG
@@ -282,8 +459,26 @@ def main() -> None:
             "reranker_model": RERANKER_MODEL,
             "retrieval_top_k": RETRIEVAL_TOP_K,
             "rerank_top_k": RERANK_TOP_K,
+            "cache": cache.summary(),
         },
     )
+
+    print()
+    print(
+        f"Cache: retrieval {cache.hits['retrieval']} reused / "
+        f"{cache.misses['retrieval']} computed"
+    )
+
+    if args.tier == 1:
+        # The number that matters when a document is added: how many
+        # questions had candidates that actually moved.
+        print(
+            f"       rerank    {cache.hits['rerank']} reused / "
+            f"{cache.misses['rerank']} computed"
+        )
+
+    if not cache.read:
+        print("       (reading disabled; results still written)")
 
     summary = summarize(results, tier=args.tier, metadata=metadata)
 

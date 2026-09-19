@@ -111,6 +111,12 @@ class QuestionResult:
         """
         Whether this question is currently in a good state.
 
+        Tier 0 runs no reranker, so it can only ask whether the expected
+        authority came back at all. That is a narrower question than tier
+        1's and a genuinely useful one: the Criminal Procedure Code's worst
+        regression was `arrest-bail`, where Article 49 fell outside the
+        top 30 entirely. No cross-encoder was needed to see it.
+
         Tier 1 only judges answerable questions: did the expected
         authority survive to the point where the LLM would see it?
         `rerank_top1` is tracked as a quality signal, not a pass
@@ -118,7 +124,16 @@ class QuestionResult:
 
         Tier 2 adds the refusal judgement, which is the only thing
         that can be checked for a question the corpus cannot answer.
+
+        Because the three mean different things, a run must not be compared
+        against a baseline from another tier - see `_incomparable_reasons`.
         """
+
+        if tier < 1:
+            if not self.answerable:
+                return True
+
+            return bool(self.retrieval_hit)
 
         if tier < 2:
             if not self.answerable:

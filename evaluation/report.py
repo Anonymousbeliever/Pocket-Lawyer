@@ -343,6 +343,21 @@ def _incomparable_reasons(current: dict, baseline: dict) -> list[str]:
         if before and after and before != after:
             reasons.append(f"{key} changed: {before} -> {after}")
 
+    # `passed()` means something different at each tier - tier 0 asks whether
+    # the authority was retrieved, tier 1 whether it survived reranking, tier
+    # 2 whether the answer was also given. Comparing across them reports
+    # regressions that are only a change of question, which had been
+    # happening quietly on every tier 2 run against the tier 1 baseline.
+    before_tier = baseline.get("metadata", {}).get("tier")
+    after_tier = current.get("metadata", {}).get("tier")
+
+    if before_tier is not None and after_tier is not None:
+        if before_tier != after_tier:
+            reasons.append(
+                f"tier changed: {before_tier} -> {after_tier} "
+                "(pass criteria differ, so the comparison is not meaningful)"
+            )
+
     return reasons
 
 

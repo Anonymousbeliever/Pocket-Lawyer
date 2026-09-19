@@ -61,3 +61,7 @@ dist/
 
 # Transient evaluation run output; baseline.json is the tracked one
 evaluation/last_run.json
+
+# Cached retrieval and reranking results. Keyed on corpus, config and the
+# source of the modules that decide a result, so it rebuilds itself.
+evaluation/.cache/
