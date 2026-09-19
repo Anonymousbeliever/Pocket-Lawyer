@@ -1,0 +1,30 @@
+{
+  "document_id": "penal-code",
+  "title": "Penal Code (Cap. 63)",
+  "document_type": "act",
+  "jurisdiction": "Kenya",
+  "language": "English",
+  "source": {
+    "name": "Kenya Law",
+    "url": "https://new.kenyalaw.org/akn/ke/act/1930/10/eng@2023-12-11"
+  },
+  "version": "2023-12-11",
+  "effective_from": "2023-12-11",
+  "effective_to": null,
+  "in_force": true,
+  "files": {
+    "raw": "data\\raw\\legislation\\penal-code.pdf",
+    "extracted": "data\\documents\\penal-code@v2023-12-11\\extracted.txt",
+    "cleaned": "data\\documents\\penal-code@v2023-12-11\\cleaned.txt"
+  },
+  "checksums": {
+    "raw_sha256": "f3350272de350e0942a986e600de2ac75dd914c10c795a8f84e24bf806f2a3f7",
+    "extracted_sha256": "2c3453df2487b0190e5daae2053e84abe0fb3f2d7970be08f8e4812d35dd28df",
+    "cleaned_sha256": "f6e2e05c1d6614e7ea24f3ba72b4330e7d6b55dfaf811811b8436e054e26fba6"
+  },
+  "processing": {
+    "status": "ingested",
+    "chunk_count": 371,
+    "as_at": "2026-09-19"
+  }
+}

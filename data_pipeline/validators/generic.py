@@ -31,6 +31,15 @@ from data_pipeline.chunking.ids import point_id
 #
 # Unanchored, the check passes the Constitution (which has no forms) and
 # fails every Act that carries them.
+#
+# `\s+` between the dots and the number deliberately spans newlines. PDF
+# extraction often splits a leader from its page number:
+#
+#     definition of ......................
+#     256
+#
+# That is how the Penal Code's trailing index was caught - the entries are
+# split across lines, so a same-line-only pattern would have missed all 95.
 PUBLISHER_ARTEFACTS = {
     "table of contents": r"(?m)^Contents$",
     "publisher blurb": r"Legislation as at",

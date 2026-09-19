@@ -31,6 +31,7 @@ from data_pipeline.cleaners import constitution as constitution_cleaner
 from data_pipeline.cleaners import (
     criminal_procedure_code as criminal_procedure_code_cleaner,
 )
+from data_pipeline.cleaners import penal_code as penal_code_cleaner
 from data_pipeline.cleaners.base import CleanerSpec
 from data_pipeline.ir import Document
 from data_pipeline.registry import DocumentEntry
@@ -40,6 +41,7 @@ from data_pipeline.validators import constitution as constitution_validator
 from data_pipeline.validators import (
     criminal_procedure_code as criminal_procedure_code_validator,
 )
+from data_pipeline.validators import penal_code as penal_code_validator
 
 
 class StructureParser(Protocol):
@@ -64,6 +66,7 @@ class StructureParser(Protocol):
 CLEANERS: dict[str, CleanerSpec] = {
     "constitution": constitution_cleaner.SPEC,
     "criminal-procedure-code": criminal_procedure_code_cleaner.SPEC,
+    "penal-code": penal_code_cleaner.SPEC,
 }
 
 # Structure parsers are per-type and reusable. "act" handles the
@@ -77,6 +80,7 @@ STRUCTURE_PARSERS: dict[str, StructureParser] = {
 VALIDATORS: dict[str, object] = {
     "constitution": constitution_validator,
     "criminal-procedure-code": criminal_procedure_code_validator,
+    "penal-code": penal_code_validator,
 }
 
 

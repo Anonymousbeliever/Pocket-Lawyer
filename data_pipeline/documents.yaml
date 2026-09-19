@@ -56,3 +56,24 @@
   cleaner: criminal-procedure-code
   structure: act
   validator: criminal-procedure-code
+
+# Reuses the `act` structure parser, which gained optional Chapter support for
+# this document: the Penal Code is Part -> Chapter -> Section where the
+# Criminal Procedure Code is Part -> Section. Same consolidation date as the
+# CPC, different act number in the FRBR URI (10 rather than 11).
+- document_id: penal-code
+  title: "Penal Code (Cap. 63)"
+  document_type: act
+  jurisdiction: Kenya
+  language: English
+  version: "2023-12-11"
+  effective_from: "2023-12-11"
+  effective_to: null
+  in_force: true
+  source:
+    name: "Kenya Law"
+    url: "https://new.kenyalaw.org/akn/ke/act/1930/10/eng@2023-12-11"
+  raw_path: "data/raw/legislation/penal-code.pdf"
+  cleaner: penal-code
+  structure: act
+  validator: penal-code

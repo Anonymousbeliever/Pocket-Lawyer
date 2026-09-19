@@ -39,6 +39,17 @@ PART_PATTERN = re.compile(
     r"^Part\s+([IVXLCDM]+[A-Z]?)\s*[–—-]\s*(.*)$"
 )
 
+# Some Acts put a Chapter level between Part and Section. The Penal Code has
+# two Parts and thirty-eight Chapters; the Criminal Procedure Code has none.
+#
+# Note the shape differs from a Part heading: where a Part is one line with a
+# dash ("Part II – CRIMES"), a Chapter splits across two:
+#
+#   Chapter XV
+#   OFFENCES AGAINST MORALITY
+#
+CHAPTER_PATTERN = re.compile(r"^Chapter\s+([IVXLCDM]+[A-Z]?)$")
+
 # Sections appear as a bare number on its own line, followed by the
 # section title on the next line. The letter suffix matters: 137A to
 # 137N and 379A are real sections that a digits-only pattern misses.
@@ -126,6 +137,7 @@ def _parse_tree(text: str) -> dict:
     tree: dict = {"parts": []}
 
     current_part = None
+    current_chapter = None
     current_section = None
     current_subsection = None
     current_paragraph = None
@@ -150,6 +162,24 @@ def _parse_tree(text: str) -> dict:
 
             tree["parts"].append(current_part)
 
+            current_chapter = None
+            current_section = None
+            current_subsection = None
+            current_paragraph = None
+
+            continue
+
+        # CHAPTER — optional level, present in the Penal Code, absent from
+        # the Criminal Procedure Code. Its title is on the following line,
+        # which then falls through with no section active and is dropped.
+        chapter_match = CHAPTER_PATTERN.match(line)
+
+        if chapter_match:
+            current_chapter = {
+                "number": chapter_match.group(1),
+                "title": next_line,
+            }
+
             current_section = None
             current_subsection = None
             current_paragraph = None
@@ -173,6 +203,7 @@ def _parse_tree(text: str) -> dict:
             current_section = {
                 "number": section_match.group(1),
                 "title": next_line,
+                "chapter": current_chapter,
                 "subsections": [],
                 "text": [],
             }
@@ -252,6 +283,33 @@ def _section_text(section: dict) -> str:
     return "\n".join(lines).strip()
 
 
+def _path(part_label: str, section: dict) -> list[str]:
+    """
+    The citation breadcrumb, with the Chapter included when the Act has one.
+
+    Labels only, never titles - the Constitution adapter does the same with
+    "Chapter Four". It keeps the citation short and keeps the commas and en
+    dashes that live in Act headings out of `Unit.slug()`, and therefore out
+    of chunk ids.
+
+    An Act without Chapters produces exactly what it did before:
+
+        ["Part III", "Section 21"]                     Criminal Procedure Code
+        ["Part II", "Chapter XV", "Section 203"]       Penal Code
+    """
+
+    path = [part_label]
+
+    chapter = section.get("chapter")
+
+    if chapter:
+        path.append(f"Chapter {chapter['number']}")
+
+    path.append(f"Section {section['number']}")
+
+    return path
+
+
 def _is_repealed(section: dict) -> bool:
     """
     A repealed section's title is its whole body, in brackets.
@@ -296,10 +354,7 @@ def parse(text: str, entry: DocumentEntry) -> Document:
                     unit_type="section",
                     number=section["number"],
                     title=section["title"],
-                    path=[
-                        part_label,
-                        f"Section {section['number']}",
-                    ],
+                    path=_path(part_label, section),
                     text=content,
                 )
             )

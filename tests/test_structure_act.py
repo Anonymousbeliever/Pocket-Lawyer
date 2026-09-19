@@ -321,6 +321,110 @@ def test_cpc_and_constitution_chunk_ids_are_disjoint(sample):
 
 
 # ---------------------------------------------------------
+# THE OPTIONAL CHAPTER LEVEL
+#
+# The Penal Code is Part -> Chapter -> Section; the Criminal Procedure Code is
+# Part -> Section. Chapter support is additive, so both must work through the
+# same parser.
+#
+# Note the heading shape differs from a Part's: a Part is one line with a dash,
+# a Chapter splits across two.
+# ---------------------------------------------------------
+
+CHAPTERED = """PENAL CODE
+CAP. 63
+Assented to on 26 May 1930
+[Amended by Penal Code (Amendment) Ordinance, 1930 (Act No. 45 of 1930)]
+Part I – GENERAL PROVISIONS
+Chapter I
+PRELIMINARY
+1.
+Short title
+This Code may be cited as the Penal Code.
+Part II – CRIMES
+Chapter XV
+OFFENCES AGAINST MORALITY
+139.
+[Deleted by Act No. 3 of 2006, 2nd Sch.]
+Chapter XIX
+MURDER AND MANSLAUGHTER
+203.
+Murder
+Any person who of malice aforethought causes the death of another person by an
+unlawful act or omission is guilty of murder.
+204.
+Punishment of murder
+Any person convicted of murder shall be sentenced to death.
+"""
+
+
+@pytest.fixture(scope="module")
+def chaptered(entry):
+    return act_structure.parse(CHAPTERED, entry)
+
+
+def test_the_chapter_sits_between_part_and_section(chaptered):
+    assert unit(chaptered, "203").path == [
+        "Part II",
+        "Chapter XIX",
+        "Section 203",
+    ]
+
+
+def test_chapters_reset_across_parts(chaptered):
+    assert unit(chaptered, "1").path == ["Part I", "Chapter I", "Section 1"]
+
+
+def test_the_chapter_title_does_not_leak_into_the_section(chaptered):
+    """
+    "OFFENCES AGAINST MORALITY" sits on its own line after the heading. With
+    no section open it must be dropped, not accumulated.
+    """
+
+    for candidate in chaptered.units:
+        assert "MURDER AND MANSLAUGHTER" not in candidate.text
+        assert "OFFENCES AGAINST MORALITY" not in candidate.text
+
+
+def test_a_chapter_heading_is_not_mistaken_for_a_part(chaptered):
+    """Both are Roman numerals; only the Part carries a dash and a title."""
+
+    labels = {unit.path[0] for unit in chaptered.units}
+
+    assert labels == {"Part I", "Part II"}
+
+
+def test_chapters_keep_chunk_ids_clean(chaptered):
+    """
+    An extra path level must not smuggle punctuation into `Unit.slug()` -
+    labels only, never the chapter's title.
+    """
+
+    for chunk in build_chunks(chaptered):
+        assert set(chunk["chunk_id"]) <= set(
+            "abcdefghijklmnopqrstuvwxyz0123456789-@."
+        )
+
+    assert unit(chaptered, "203").slug() == "part-ii-chapter-xix-section-203"
+
+
+def test_repealed_sections_are_still_dropped_under_chapters(chaptered):
+    assert unit(chaptered, "139") is None
+
+
+def test_an_act_without_chapters_is_unchanged(sample):
+    """
+    The Criminal Procedure Code regression. Chapter support is additive: with
+    no Chapter headings the path stays two levels, exactly as before.
+    """
+
+    for candidate in sample.units:
+        assert len(candidate.path) == 2
+
+    assert unit(sample, "21").path == ["Part III", "Section 21"]
+
+
+# ---------------------------------------------------------
 # FRONT-MATTER DETECTION
 #
 # Found by this document: the dot-leader check was Constitution-only

@@ -33,6 +33,14 @@ class CleanerSpec:
     # marker. When None the document is kept whole.
     start_pattern: str | None = None
 
+    # Text from the first match onward is trailing matter and is cut.
+    #
+    # Added for the Penal Code, which ends with an alphabetical index the
+    # document itself disclaims: "This index is not part of the Act, and is
+    # inserted only for convenience." Indexing it would mean embedding
+    # thousands of page-number fragments as though they were law.
+    end_pattern: str | None = None
+
     # Running header repeated on every page, if any.
     running_header_pattern: str | None = None
 
@@ -46,6 +54,9 @@ def clean(text: str, spec: CleanerSpec) -> str:
 
     if spec.start_pattern:
         text = cut_to_start(text, spec.start_pattern)
+
+    if spec.end_pattern:
+        text = cut_at_end(text, spec.end_pattern)
 
     text = remove_footer_page_numbers(text)
     text = remove_page_markers(text)
@@ -78,6 +89,26 @@ def cut_to_start(text: str, start_pattern: str) -> str:
         )
 
     return text[match.start():]
+
+
+def cut_at_end(text: str, end_pattern: str) -> str:
+    """
+    Drop everything from the first match onward.
+
+    Raises when the marker is absent, for the same reason `cut_to_start`
+    does: a spec that names trailing matter and then silently fails to find
+    it would ship the trailing matter as law.
+    """
+
+    match = re.search(end_pattern, text)
+
+    if not match:
+        raise ValueError(
+            "Could not find the document end marker "
+            f"({end_pattern!r}) in the extract."
+        )
+
+    return text[: match.start()]
 
 
 def remove_page_markers(text: str) -> str:

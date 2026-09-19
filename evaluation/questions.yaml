@@ -558,3 +558,119 @@
   expect_any_of:
     - criminal-procedure-code@v2023-12-11-part-iv-section-175
   note: "Section 175."
+
+# =========================================================
+# ANSWERABLE - Penal Code (Cap. 63)
+#
+# The third document, and the one that closes the gap a live demo hit:
+# "tell me the criminal code on robbery" correctly refused, because the
+# Criminal Procedure Code governs how a case is RUN while the Penal Code
+# defines what the offences ARE.
+#
+# These are offence-definition questions - what something is, and what the
+# punishment is. Several deliberately pair with the CPC: an offence here,
+# the procedure there.
+#
+# REVIEW NOTE: drafted from section titles and the retrieved text, not a
+# full reading of the Code. Correct anything legally wrong.
+# =========================================================
+
+- id: penal-robbery
+  question: "What counts as robbery under Kenyan law?"
+  answerable: true
+  expect_any_of:
+    - penal-code@v2023-12-11-part-ii-chapter-xxviii-section-295
+    - penal-code@v2023-12-11-part-ii-chapter-xxviii-section-296
+  note: >
+    Section 295 defines it, 296 punishes it. This is the question the demo
+    failed on, so it is the regression test for corpus coverage.
+
+- id: penal-murder-definition
+  question: "What is the difference between murder and manslaughter?"
+  answerable: true
+  expect_any_of:
+    - penal-code@v2023-12-11-part-ii-chapter-xviii-section-203
+    - penal-code@v2023-12-11-part-ii-chapter-xviii-section-202
+  note: "Section 203 is murder, 202 manslaughter - malice aforethought is the line."
+
+- id: penal-murder-sentence
+  question: "What is the sentence for murder in Kenya?"
+  answerable: true
+  expect_any_of:
+    - penal-code@v2023-12-11-part-ii-chapter-xviii-section-204
+    - penal-code@v2023-12-11-part-ii-chapter-xviii-section-205
+  note: "Section 204. Deliberately separate from the definition question."
+
+- id: penal-stealing
+  question: "What does it mean to steal something in law?"
+  answerable: true
+  expect_any_of:
+    - penal-code@v2023-12-11-part-ii-chapter-xxvi-section-268
+    - penal-code@v2023-12-11-part-ii-chapter-xxvi-section-275
+  note: "Section 268 defines stealing; 275 is the general punishment for theft."
+
+- id: penal-assault
+  question: "What is the difference between common assault and assault causing bodily harm?"
+  answerable: true
+  expect_any_of:
+    - penal-code@v2023-12-11-part-ii-chapter-xxiv-section-250
+    - penal-code@v2023-12-11-part-ii-chapter-xxiv-section-251
+  note: "Sections 250 and 251."
+
+- id: penal-burglary
+  question: "Is breaking into someone's house at night a different crime from during the day?"
+  answerable: true
+  expect_any_of:
+    - penal-code@v2023-12-11-part-ii-chapter-xxix-section-304
+  note: "Section 304 - housebreaking and burglary turn on the time of day."
+
+- id: penal-attempt
+  question: "Can I be charged for attempting a crime I did not complete?"
+  answerable: true
+  expect_any_of:
+    - penal-code@v2023-12-11-part-ii-chapter-xxxix-section-388
+    - penal-code@v2023-12-11-part-ii-chapter-xxxix-section-389
+    - criminal-procedure-code@v2023-12-11-part-iv-section-180
+  note: >
+    Corrected after the first run. Section 389 alone was too narrow - it is
+    only the sentencing provision. Section 388 "Attempt defined" is the one
+    that actually describes "a crime I did not complete", and Criminal
+    Procedure Code section 180 answers "can I be charged" directly. The
+    system returned better law than was asked for; the expectation was
+    wrong, not the retrieval.
+
+- id: penal-incitement
+  question: "Is it a crime to encourage someone else to commit an offence?"
+  answerable: true
+  expect_any_of:
+    - penal-code@v2023-12-11-part-ii-chapter-xxxix-section-391
+  note: "Section 391 - soliciting or inciting."
+
+- id: penal-affray
+  question: "Is fighting in public a criminal offence?"
+  answerable: true
+  expect_any_of:
+    - penal-code@v2023-12-11-part-ii-chapter-ix-section-92
+  note: "Section 92 - affray."
+
+- id: penal-riot
+  question: "When does a gathering become an unlawful assembly or a riot?"
+  answerable: true
+  expect_any_of:
+    - penal-code@v2023-12-11-part-ii-chapter-ix-section-78
+    - penal-code@v2023-12-11-part-ii-chapter-ix-section-80
+  note: >
+    Sections 78 and 80. Pairs against the Constitution's Article 37 right to
+    assemble and demonstrate - a cross-document boundary worth watching.
+
+- id: penal-robbery-arrest
+  question: "If someone robs me, can the police arrest them without a warrant?"
+  answerable: true
+  expect_any_of:
+    - penal-code@v2023-12-11-part-ii-chapter-xxviii-section-295
+    - criminal-procedure-code@v2023-12-11-part-iii-section-29
+  note: >
+    Deliberately cross-document: the Penal Code says what robbery is, the
+    Criminal Procedure Code says when arrest without warrant is permitted.
+    This is the regression test for reranking diversity across three
+    documents rather than two.
