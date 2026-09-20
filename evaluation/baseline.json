@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "created": "2026-09-20T01:37:52",
+    "created": "2026-09-20T13:18:22",
     "tier": 1,
     "collection": "pocket_lawyer_legal",
     "embedding_model": "BAAI/bge-m3",
@@ -22,15 +22,15 @@
   },
   "metrics": {
     "retrieval_hit": {
-      "passed": 66,
+      "passed": 67,
       "total": 67
     },
     "rerank_hit": {
-      "passed": 64,
+      "passed": 65,
       "total": 67
     },
     "rerank_top1": {
-      "passed": 43,
+      "passed": 44,
       "total": 67
     }
   },
@@ -38,7 +38,7 @@
     "questions": 82,
     "answerable": 67,
     "out_of_scope": 15,
-    "passed": 79
+    "passed": 80
   },
   "questions": {
     "arrest-reason": {
@@ -701,7 +701,7 @@
     "penal-murder-sentence": {
       "passed": false,
       "answerable": true,
-      "retrieval_hit": false,
+      "retrieval_hit": true,
       "rerank_hit": false,
       "rerank_top1": false,
       "sufficient": null,
@@ -735,11 +735,11 @@
       "cited_expected": null
     },
     "penal-attempt": {
-      "passed": false,
+      "passed": true,
       "answerable": true,
       "retrieval_hit": true,
-      "rerank_hit": false,
-      "rerank_top1": false,
+      "rerank_hit": true,
+      "rerank_top1": true,
       "sufficient": null,
       "cited_expected": null
     },

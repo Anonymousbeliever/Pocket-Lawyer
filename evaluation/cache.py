@@ -46,7 +46,7 @@ CACHE_DIR = Path(__file__).resolve().parent / ".cache"
 
 # The modules whose source decides a result. Retrieval depends on the first
 # two; reranking on the last two.
-RETRIEVAL_SOURCES = ("retriever.py", "passage.py")
+RETRIEVAL_SOURCES = ("retriever.py", "passage.py", "sparse.py")
 RERANK_SOURCES = ("reranker.py", "passage.py")
 
 _AI_DIR = Path(config.__file__).resolve().parent.parent / "ai"
@@ -117,6 +117,8 @@ def retrieval_key(question: str, fingerprint: str) -> str:
             config.EMBEDDING_MODEL,
             config.COLLECTION_NAME,
             config.RETRIEVAL_TOP_K,
+            config.HYBRID_RETRIEVAL,
+            config.SPARSE_TOP_K,
             _source_hash(RETRIEVAL_SOURCES),
         ]
     )

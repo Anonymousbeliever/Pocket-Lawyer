@@ -1,16 +1,28 @@
 import sys
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import FieldCondition, Filter, MatchValue
+from qdrant_client.models import (
+    FieldCondition,
+    Filter,
+    Fusion,
+    FusionQuery,
+    MatchValue,
+    Prefetch,
+    SparseVector as QdrantSparseVector,
+)
 from sentence_transformers import SentenceTransformer
 
 from backend.app.core.config import (
     COLLECTION_NAME,
     DENSE_VECTOR_NAME,
     EMBEDDING_MODEL,
+    HYBRID_RETRIEVAL,
     QDRANT_URL,
     RETRIEVAL_TOP_K,
+    SPARSE_TOP_K,
+    SPARSE_VECTOR_NAME,
 )
+from backend.app.core.sparse import LexicalEncoder
 
 
 class LegalRetriever:
@@ -48,6 +60,18 @@ class LegalRetriever:
         )
 
         print("[PASS] Embedding model loaded")
+
+        # Lexical weights from the same model - only a Linear(1024, 1)
+        # head on top, so no second model and no extra memory.
+        self.lexical = None
+
+        if HYBRID_RETRIEVAL:
+            self.lexical = LexicalEncoder(
+                self.embedding_model,
+                model_name=self.embedding_model_name,
+            )
+
+            print("[PASS] Sparse head loaded (hybrid retrieval)")
 
     # -----------------------------------------------------
     # QUERY EMBEDDING
@@ -103,14 +127,12 @@ class LegalRetriever:
                 ]
             )
 
-        results = self.client.query_points(
-            collection_name=self.collection_name,
-            query=query_vector,
-            using=DENSE_VECTOR_NAME,
+        results = self._search(
+            query=query,
+            query_vector=query_vector,
             query_filter=query_filter,
-            limit=top_k,
-            with_payload=True,
-        ).points
+            top_k=top_k,
+        )
 
         retrieved_chunks = []
 
@@ -123,6 +145,78 @@ class LegalRetriever:
             retrieved_chunks.append(chunk)
 
         return retrieved_chunks
+
+    def _search(
+        self,
+        query: str,
+        query_vector: list[float],
+        query_filter: Filter | None,
+        top_k: int,
+        sparse_top_k: int = SPARSE_TOP_K,
+    ):
+        """
+        Dense alone, or dense and lexical fused.
+
+        Fusion is **Reciprocal Rank Fusion**, which combines the two
+        result lists by RANK rather than by score. That matters here
+        specifically: this project has twice been burned by absolute
+        similarity scores not being comparable - the rerank floor, and
+        the subject-match gate - and dense cosine and sparse dot product
+        are on entirely different scales. RRF never has to reconcile
+        them.
+        """
+
+        if self.lexical is None:
+            return self.client.query_points(
+                collection_name=self.collection_name,
+                query=query_vector,
+                using=DENSE_VECTOR_NAME,
+                query_filter=query_filter,
+                limit=top_k,
+                with_payload=True,
+            ).points
+
+        sparse = self.lexical.encode_one(query)
+
+        if sparse.is_empty:
+            # Nothing lexical to match on - a query of pure stopwords, or
+            # one the tokenizer reduced to specials. Dense alone is still
+            # a correct answer, so degrade rather than fail.
+            return self.client.query_points(
+                collection_name=self.collection_name,
+                query=query_vector,
+                using=DENSE_VECTOR_NAME,
+                query_filter=query_filter,
+                limit=top_k,
+                with_payload=True,
+            ).points
+
+        # The budgets are deliberately unequal. Dense is the primary
+        # signal; lexical is a corrective for exact anchors, and given an
+        # equal list it drowns dense-only hits - see SPARSE_TOP_K.
+        return self.client.query_points(
+            collection_name=self.collection_name,
+            prefetch=[
+                Prefetch(
+                    query=query_vector,
+                    using=DENSE_VECTOR_NAME,
+                    filter=query_filter,
+                    limit=top_k,
+                ),
+                Prefetch(
+                    query=QdrantSparseVector(
+                        indices=sparse.indices,
+                        values=sparse.values,
+                    ),
+                    using=SPARSE_VECTOR_NAME,
+                    filter=query_filter,
+                    limit=min(sparse_top_k, top_k),
+                ),
+            ],
+            query=FusionQuery(fusion=Fusion.RRF),
+            limit=top_k,
+            with_payload=True,
+        ).points
 
 
 # ---------------------------------------------------------

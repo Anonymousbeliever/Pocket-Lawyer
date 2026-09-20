@@ -164,6 +164,8 @@ BGE-M3 embedding
 Qdrant (962 vectors: Constitution 279, Criminal Procedure Code 312,
         Penal Code 371)
    ↓
+Dense (top 30) + lexical (top 5), fused with RRF
+   ↓
 Top 30 candidates
    ↓
 BGE reranker, no single document taking every slot
@@ -184,18 +186,16 @@ registry, IR, chunker or vector store changing once. Per document the cost is a
 cleaner spec, a validator, and a structure adapter only for a genuinely new
 shape.
 
-**Current state:** 82 questions, baseline **79/82**. Adding the Penal Code
-caused **zero regressions**, where the Criminal Procedure Code had broken three
-questions at half the corpus size.
+**Current state:** 82 questions, **80/82**, with **retrieval at 67/67 — 100%**.
 
 **What limits the product now:**
 
-1. **Corpus breadth.** Three documents is a start, not a legal corpus.
-2. **Dense-only retrieval.** Measured concretely by `penal-murder-sentence`:
-   section 204 answers the question in eleven words and sits at rank 53,
-   because dense embeddings favour longer text sharing vocabulary. The sparse
-   vector slot is declared in the collection and unused. See *Architectural
-   gaps*.
+1. **Reranking, not retrieval.** Both remaining failures are now
+   `RETRIEVED THEN DROPPED`: the cross-encoder has the right passage in its
+   candidate list and discards it. Section 204 sits at rank 8 after hybrid
+   pulled it from 53. The same cross-encoder scored a correct answer at
+   0.042. It is the single weak link in the chain.
+2. **Corpus breadth.** Three documents is a start, not a legal corpus.
 3. **The application layer.** No conversation state, no persistence, no auth,
    no mobile app.
 
@@ -937,6 +937,40 @@ Priority order when trade-offs arise:
 - **2026-08-31** — **Ingestion foundation built.** Replaced the five per-document scripts with one generic, registry-driven pipeline (`python -m data_pipeline.run`). Renamed `data-pipeline/` to `data_pipeline/` so stages can share code; added a common document IR so chunking, embedding and storage no longer know the document type. Fixed all four ingestion blockers: deterministic `uuid5` point IDs, generic stages behind per-type adapters, streaming batched embed-and-upsert with no on-disk vectors, and one central config imported by both the pipeline and the AI layer. Collection schema moved to named vectors with a sparse slot declared for future hybrid search, and the payload now carries `version`, `effective_date`, `in_force` and `as_at`. Added the first tests (33). Constitution re-ingested: **279 chunks**, longest 3,996 characters — Schedule 6's 24,146-character chunk is now split. Re-running produced **279 → 279 points**, proving ingestion is idempotent and a second document can no longer overwrite the first. Retrieval parity confirmed (Article 49 still ranks first) and the divorce refusal still holds.
 - **2026-09-02** — **Version-aware, document-first ingestion.** Chunk identity became `document_id@vversion-slug`, so two editions of the same Act no longer produce identical ids and overwrite each other. Derived artifacts moved from five stage directories to one directory per document version (`data/documents/<id>@v<version>/`), with `raw/` kept separate as the immutable source. `effective_from` / `effective_to` joined `in_force` and `version` on the payload and in metadata. Adapter tables moved out of the orchestrator into `data_pipeline/adapters.py` behind a `StructureParser` Protocol, and `CleanerSpec.start_pattern` became optional — it was a Constitution assumption sitting in supposedly generic code. Added `tests/test_multi_document.py`, which proves two document shapes and two versions produce disjoint ids without needing a second real document. **The evaluation reproduced the baseline exactly — 41/41, 40/41, 33/41, no regressions** — confirming that identity and file locations moved without disturbing a single retrieval decision. Old `data/` directories deliberately left in place.
 - **2026-09-01** — **Contextual embedding.** Chunks are now embedded and reranked with their document, citation and article title prepended (`backend/app/core/passage.py`); the stored content sent to the LLM is unchanged. Diagnosed offline before changing anything, which also refuted a length-bias theory. Evaluation went **34/41 → 40/41**, six questions improved, none regressed. See *Measured: chunks must be embedded with their citation context*. The one remaining failure, `county-government-role`, is a suspected defect in the question rather than the system — the Fourth Schedule distributes county functions and was never listed as an acceptable authority. Awaiting legal review.
+- **2026-09-20** — **Hybrid retrieval: 100% retrieval, and the bottleneck
+  moves.** Dense-only left a measured hole. Asked *"What is the sentence for
+  murder in Kenya?"*, section 204 — *"Any person convicted of murder shall be
+  sentenced to death"*, eleven words answering it almost verbatim — came back
+  at **rank 53**, beaten by *"Conspiracy to murder"*, which is longer and
+  shares more vocabulary (content-only cosine 0.6992 against 0.6026). Dense
+  encodes meaning and blurs exact terms; legal queries need anchors.
+  BGE-M3's lexical head turned out to be unreachable as assumed:
+  `sentence_transformers` silently converts the model to a generic 4096-dim
+  projection that is not term-based, and FlagEmbedding would load a second
+  2.2 GB copy. The head is `Linear(1024, 1)`, so `backend/app/core/sparse.py`
+  applies it to token embeddings from the model already in memory — no new
+  dependency, no extra RAM. The sparse slot declared during the ingestion
+  refactor was finally populated; re-ingest reported **962 → 962**.
+  Fused with **Reciprocal Rank Fusion**, chosen because it combines *ranks*
+  rather than scores: dense cosine and sparse dot product are on different
+  scales, and this project has twice been burned reconciling incomparable
+  scores.
+  **The budgets are unequal, and that was measured rather than assumed.** At
+  equal budgets hybrid fixed three questions and broke one — the Criminal
+  Procedure Code's many sections containing the literal term "bail" filled the
+  list and pushed Article 49 out of range, RRF compounding it by rewarding
+  appearance in both lists. Sweep at tier 0: `SPARSE_TOP_K` 5 → 67/67,
+  10 → 67/67, 20 → 66/67, 30 → 66/67. Took 5, for margin and because erring
+  low merely fails to rescue while erring high displaces constitutional rights
+  with statutory detail.
+  **Result: retrieval 66/67 → 67/67, the first 100%.** `rerank_hit` 64 → 65,
+  no regressions. `county-government-role`, failing since before the Criminal
+  Procedure Code existed, is now retrieved.
+  **The bottleneck has moved.** Both remaining failures changed from `NEVER
+  RETRIEVED` to `RETRIEVED THEN DROPPED` — section 204 is at rank 8 and the
+  cross-encoder discards it. Retrieval is solved on this question set;
+  reranking is now the single weak link, and the same cross-encoder scored a
+  correct answer at 0.042 earlier in the week. 220 tests.
 - **2026-09-20** — **Third document, and an evaluation harness that scales.**
   The Penal Code (Cap. 63), 2023-12-11 consolidation: **371 chunks from 368
   live sections**, sections 1–398 complete with 18 lettered insertions, 48

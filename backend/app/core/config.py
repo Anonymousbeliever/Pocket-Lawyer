@@ -67,6 +67,20 @@ def _get_int(name: str, default: int) -> int:
         )
 
 
+def _get_bool(name: str, default: bool) -> bool:
+    raw = _get(name, str(default)).strip().lower()
+
+    if raw in ("1", "true", "yes", "on"):
+        return True
+
+    if raw in ("0", "false", "no", "off"):
+        return False
+
+    raise RuntimeError(
+        f"{name} must be true or false, got: {raw!r}"
+    )
+
+
 def _get_float(name: str, default: float) -> float:
     raw = _get(name, str(default))
 
@@ -122,7 +136,55 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # 41/41 and made no other question worse. The cost is real: reranking is
 # the dominant request latency and this doubles the passages scored.
 # Accuracy outranks speed here.
+# Fuse dense and lexical retrieval rather than dense alone.
+#
+# Dense encodes meaning and handles paraphrase; it blurs exact terms. Asked
+# "What is the sentence for murder in Kenya?", section 204 - eleven words
+# answering it almost verbatim - came back at rank 53, beaten by the longer
+# "Conspiracy to murder". Lexical matching on "murder" and "sentence" is
+# what rescues that, and section numbers and defined terms are the same
+# problem.
+#
+# Turn off to measure against dense-only. The sparse vectors stay in the
+# collection either way; only the query changes.
+HYBRID_RETRIEVAL = _get_bool("HYBRID_RETRIEVAL", True)
+
 RETRIEVAL_TOP_K = _get_int("RETRIEVAL_TOP_K", 30)
+
+# How many candidates the LEXICAL branch contributes to fusion, against
+# RETRIEVAL_TOP_K from the dense branch.
+#
+# Deliberately asymmetric. Dense carried 66/67 on its own; sparse exists to
+# rescue the cases where an eleven-word provision loses to mere vocabulary
+# overlap. Given an equal budget it does the opposite of helping: asked
+# "Can I be released on bail while waiting for my trial?", the Criminal
+# Procedure Code's many sections containing the literal term "bail" filled
+# the list and pushed Article 49 - the constitutional right - out of range
+# entirely. Reciprocal Rank Fusion compounds this, because it rewards
+# appearing in BOTH lists and Article 49 is a dense-only hit for that query.
+#
+# A smaller lexical budget means fewer sparse-only candidates can crowd out
+# a dense-only one, while a strong lexical match still arrives near the top
+# of its own short list.
+#
+# MEASURED, not chosen. Swept over all 82 questions at tier 0:
+#
+#      5   67/67   3 improved, 0 regressed
+#     10   67/67   3 improved, 0 regressed
+#     20   66/67   arrest-bail lost - Article 49 pushed out by CPC bail
+#     30   66/67   same, equal budgets
+#
+# Safe at <= 10, broken at >= 20; the transition between them is not
+# measured. 5 and 10 are indistinguishable on the evidence, so this takes
+# the one with margin - the same reasoning as CONVERSATIONAL_MARGIN, which
+# sits in open space between clusters rather than at the edge of one.
+#
+# Erring low is also the safer direction: too high displaces constitutional
+# rights with statutory detail, while too low merely fails to rescue a
+# lexical match, which is the behaviour before hybrid existed. Expect to
+# revisit as documents are added, since each one changes how crowded the
+# lexical list gets.
+SPARSE_TOP_K = _get_int("SPARSE_TOP_K", 5)
 
 RERANK_TOP_K = _get_int("RERANK_TOP_K", 5)
 

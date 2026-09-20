@@ -40,13 +40,16 @@ backend/app/api/
   schemas.py               request/response models; sources from the payload
 backend/app/ai/
   intent.py                IntentClassifier — nearest-centroid routing
-  retriever.py             LegalRetriever  — BGE-M3 → Qdrant, top 30
+  retriever.py             LegalRetriever  — BGE-M3 → Qdrant, top 30,
+                           dense + lexical fused with RRF
   reranker.py              LegalReranker   — cross-encoder, top 30 → top 5,
                            capped so one document cannot take every slot
   llm.py                   LegalLLM        — gpt-4o-mini + grounding prompt
   rag.py                   LegalRAG.answer() — chains retrieval/rerank/LLM
   generator.py, prompt.py  EMPTY placeholders, unused
 backend/app/core/config.py Single source of truth for config - BOTH sides import it
+backend/app/core/sparse.py LexicalEncoder — BGE-M3's sparse head on the
+                           ALREADY-LOADED model; no second model
 data_pipeline/
   run.py                   orchestrator: extract → clean → structure → chunk → store
   documents.yaml           document registry - add a document by adding an entry
@@ -222,6 +225,26 @@ are provisioned for.
   all resolve to LEGAL. `CONVERSATIONAL_MARGIN` is measured, not chosen — raise
   it if an unseen legal question ever scores positive, never lower it to rescue
   a greeting.
+- **Retrieval is hybrid, and the two budgets are deliberately unequal.**
+  Dense encodes meaning and handles paraphrase; it blurs exact terms. Asked
+  *"What is the sentence for murder in Kenya?"*, section 204 — eleven words
+  answering it almost verbatim — sat at **rank 53**, behind *"Conspiracy to
+  murder"*, which is longer and shares more vocabulary. Lexical matching on
+  `murder` and `sentence` is what rescues it. The two are fused with
+  **Reciprocal Rank Fusion**, which combines *ranks* not scores — the same
+  reason rerank floors do not work applies to reconciling cosine against dot
+  product. `SPARSE_TOP_K` is 5 against `RETRIEVAL_TOP_K` 30 because lexical
+  is a **corrective, not an equal partner**: at 20+ the Criminal Procedure
+  Code's many sections containing the literal word "bail" pushed Article 49
+  out of range entirely. Erring low merely fails to rescue; erring high
+  displaces constitutional rights with statutory detail. Full sweep in the
+  config comment.
+- **`sparse.py` exists instead of a dependency.** `sentence_transformers`
+  will not give you BGE-M3's lexical weights — asking its `SparseEncoder`
+  for the model silently converts it to a generic 4096-dim projection that
+  is not term-based. FlagEmbedding exposes the real head but loads a second
+  2.2 GB copy of the model. The head is `Linear(1024, 1)`, so it runs on the
+  token embeddings of the model already in memory.
 - **Retrieval breadth scales with the corpus.** `RETRIEVAL_TOP_K` was 15 for
   279 chunks; at 591 that put Article 49 out of range entirely for bail
   questions. It is 30 now. Expect to revisit it as the corpus grows, and note

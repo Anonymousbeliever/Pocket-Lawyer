@@ -19,6 +19,7 @@ from qdrant_client.models import (
     FilterSelector,
     MatchValue,
     PointStruct,
+    SparseVector as QdrantSparseVector,
 )
 from sentence_transformers import SentenceTransformer
 
@@ -27,9 +28,11 @@ from backend.app.core.config import (
     DENSE_VECTOR_NAME,
     EMBED_BATCH_SIZE,
     EMBEDDING_MODEL,
+    SPARSE_VECTOR_NAME,
     UPSERT_BATCH_SIZE,
 )
 from backend.app.core.passage import contextual_text
+from backend.app.core.sparse import LexicalEncoder
 from data_pipeline.chunking.ids import point_id
 
 
@@ -85,6 +88,10 @@ def ingest_chunks(
     if not chunks:
         raise ValueError("No chunks to ingest.")
 
+    # Lexical weights come from the same model, so this costs no extra
+    # memory - only the tiny Linear(1024, 1) head.
+    lexical = LexicalEncoder(model)
+
     pending: list[PointStruct] = []
     written = 0
 
@@ -93,16 +100,27 @@ def ingest_chunks(
         # Embed the chunk with its document, citation and title
         # prepended. The payload still stores the raw content, so the
         # header never reaches the LLM.
-        vectors = model.encode(
-            [contextual_text(chunk) for chunk in batch],
-            normalize_embeddings=True,
-        )
+        texts = [contextual_text(chunk) for chunk in batch]
 
-        for chunk, vector in zip(batch, vectors):
+        vectors = model.encode(texts, normalize_embeddings=True)
+
+        # The same text both ways: meaning for paraphrase, terms for
+        # exact anchors like "section 295" or "malice aforethought".
+        sparse_vectors = lexical.encode(texts)
+
+        for chunk, vector, sparse in zip(batch, vectors, sparse_vectors):
+            named = {DENSE_VECTOR_NAME: vector.tolist()}
+
+            if not sparse.is_empty:
+                named[SPARSE_VECTOR_NAME] = QdrantSparseVector(
+                    indices=sparse.indices,
+                    values=sparse.values,
+                )
+
             pending.append(
                 PointStruct(
                     id=point_id(chunk["chunk_id"]),
-                    vector={DENSE_VECTOR_NAME: vector.tolist()},
+                    vector=named,
                     payload=chunk,
                 )
             )
