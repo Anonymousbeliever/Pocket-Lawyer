@@ -773,6 +773,56 @@ honest conclusion is that this problem does not have a cheap interim.
 
 **`debt-inability` therefore remains an open, known false answer.**
 
+### Measured: reranking earns its place, and must keep overriding retrieval
+
+Recorded 2026-09-20, after hybrid retrieval reached 67/67 and both remaining
+failures changed from `NEVER RETRIEVED` to `RETRIEVED THEN DROPPED`. That made
+the cross-encoder look like the new bottleneck, and raised a fair question:
+reranking was added when retrieval was dense-only and noisy, so does it still
+earn 1.1 GB of RAM and the dominant request latency?
+
+Measured with `--no-rerank`, which takes retrieval's own top-k:
+
+| | reranked | retrieval top-k only |
+|---|---|---|
+| `rerank_hit` | **65/67** | 57/67 |
+| `rerank_top1` | **44/67** | 37/67 |
+
+**It rescues eight questions.** And the eight are all one pattern:
+
+```
+arrest-reason        Article 49 at retrieval rank 10
+arrest-silence       Article 49 at rank 6
+arrest-court-time    Article 49 at rank 18
+arrest-bail          Article 49 at rank 26
+state-funded-lawyer  Article 50 at rank 15
+privacy-search       Article 31 at rank 11
+```
+
+Retrieval fills the top with Criminal Procedure Code sections — they are
+lexically and semantically closer to how the question is phrased — and the
+**constitutional right sits buried**. The reranker plus the per-document
+diversity rule is what digs it out. Without it, "can police arrest me without
+telling me why" returns five CPC sections on arrest powers and never surfaces
+Article 49.
+
+**A planned change was abandoned because of this.** The intended fix for the
+two remaining failures was to fuse rerank order with retrieval order by RRF,
+so a passage retrieved at rank 8 could not be erased by a single bad
+cross-encoder score. The measurement shows that would break the eight above:
+they depend on the cross-encoder overriding retrieval order *hard*, Article 49
+moving from rank 26 into the top 5. Blending retrieval rank back in weakens
+precisely the behaviour doing the work — trading eight rescues for two.
+
+**Do not dilute the reranker's authority over ordering.** If the two remaining
+failures are ever worth fixing, it needs a different mechanism: a better
+cross-encoder, or per-question diagnosis. Not a blend.
+
+Left open deliberately. `county-government-role` is a suspected question
+defect awaiting legal review; `penal-murder-sentence` has s.204 at rank 8
+after hybrid moved it from 53, and the cross-encoder makes the final call
+badly. Two failures out of 67, against a risk of breaking eight.
+
 ### Evaluation will not scale as written
 
 Recorded 2026-09-03 after a full read of `evaluation/`. The harness is sound in

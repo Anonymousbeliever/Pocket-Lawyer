@@ -344,6 +344,32 @@ def test_comparing_across_tiers_is_refused():
     assert any("tier changed" in reason for reason in reasons)
 
 
+def test_a_no_rerank_run_is_flagged_not_hidden():
+    """
+    With --no-rerank the delta IS the measurement, so the numbers must still
+    print - this only stops them being read as regressions.
+    """
+
+    baseline = summarize([result(id="a")], tier=1,
+                         metadata={"tier": 1, "reranked": True})
+    measured = summarize([result(id="a", rerank_hit=False)], tier=1,
+                         metadata={"tier": 1, "reranked": False})
+
+    comparison = compare(measured, baseline)
+
+    assert any("reranking disabled" in r for r in comparison["incomparable"])
+    assert comparison["deltas"]["rerank_hit"]["delta"] == -1
+
+
+def test_a_reranked_run_is_not_flagged():
+    baseline = summarize([result(id="a")], tier=1,
+                         metadata={"tier": 1, "reranked": True})
+    current = summarize([result(id="a")], tier=1,
+                        metadata={"tier": 1, "reranked": True})
+
+    assert compare(current, baseline)["incomparable"] == []
+
+
 def test_same_tier_comparison_is_allowed():
     before = summarize([result(id="a")], tier=1, metadata={"tier": 1})
     after = summarize([result(id="a")], tier=1, metadata={"tier": 1})

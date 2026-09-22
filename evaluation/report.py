@@ -358,6 +358,15 @@ def _incomparable_reasons(current: dict, baseline: dict) -> list[str]:
                 "(pass criteria differ, so the comparison is not meaningful)"
             )
 
+    # Flagged rather than hidden: with --no-rerank the delta IS the
+    # measurement, so the numbers still print - this only says what changed
+    # so nobody reads it as a regression.
+    if current.get("metadata", {}).get("reranked") is False:
+        reasons.append(
+            "reranking disabled in this run - the deltas below measure what "
+            "the cross-encoder contributes, they are not regressions"
+        )
+
     return reasons
 
 

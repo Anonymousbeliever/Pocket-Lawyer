@@ -153,11 +153,28 @@ def evaluate_tier1(
     cache: ResultCache,
     fingerprint: str,
 ) -> list[QuestionResult]:
+    """
+    `reranker=None` skips the cross-encoder and takes retrieval's own top-k.
+
+    That is a measurement, not a mode to ship. Reranking was added when
+    retrieval was dense-only and noisy; retrieval is now hybrid and at
+    67/67, and the cross-encoder is discarding correct passages from ranks
+    8 and 11. Comparing the two answers whether it still earns its place -
+    and "delete it" is a legitimate outcome, worth ~1.1 GB and the dominant
+    request latency.
+    """
+
     retrieved = _retrieve_all(questions, retriever, cache, fingerprint)
 
     retrieved_ids = [
         [c.get("chunk_id") for c in chunks] for chunks in retrieved
     ]
+
+    if reranker is None:
+        return [
+            _score_question(question, ids, ids[:RERANK_TOP_K])
+            for question, ids in zip(questions, retrieved_ids)
+        ]
 
     # Level 2 is keyed on the CANDIDATES, not the corpus, so a question whose
     # top-k did not move survives the arrival of a whole new document.
@@ -272,6 +289,16 @@ def main() -> None:
             "only questions expecting chunks from this document, by id "
             "prefix, e.g. penal-code. Out-of-scope questions reference no "
             "document and are therefore excluded"
+        ),
+    )
+
+    parser.add_argument(
+        "--no-rerank",
+        action="store_true",
+        help=(
+            "tier 1 without the cross-encoder - take retrieval's own top-k. "
+            "A measurement of whether reranking still earns its place now "
+            "that retrieval is hybrid, not a mode to ship"
         ),
     )
 
@@ -424,6 +451,14 @@ def main() -> None:
                 questions, retriever, cache, fingerprint
             )
 
+        elif args.no_rerank:
+            print()
+            print("Running (NO reranking - retrieval top-k only)...")
+
+            results = evaluate_tier1(
+                questions, retriever, None, cache, fingerprint
+            )
+
         else:
             from backend.app.ai.reranker import LegalReranker
 
@@ -459,6 +494,7 @@ def main() -> None:
             "reranker_model": RERANKER_MODEL,
             "retrieval_top_k": RETRIEVAL_TOP_K,
             "rerank_top_k": RERANK_TOP_K,
+            "reranked": not args.no_rerank,
             "cache": cache.summary(),
         },
     )
@@ -486,9 +522,14 @@ def main() -> None:
 
     print_run(summary, results, by_id, tier=args.tier)
 
-    # Record every run so it can be promoted later with --accept-last
+    # Record every real run so it can be promoted later with --accept-last
     # instead of being regenerated.
-    if not args.id:
+    #
+    # Measurements are excluded. A --no-rerank run is not the pipeline, and
+    # letting it overwrite the record means a later --accept-last is looking
+    # at the wrong thing - which is exactly what happened the first time this
+    # flag was used.
+    if not args.id and not args.no_rerank:
         save_last_run(summary)
 
     # -----------------------------------------------------
@@ -512,6 +553,11 @@ def main() -> None:
     if args.save_baseline:
         if args.id:
             print("[FAIL] refusing to baseline a partial run (--id given)")
+            sys.exit(1)
+
+        if args.no_rerank:
+            print("[FAIL] refusing to baseline a run with reranking disabled")
+            print("       --no-rerank is a measurement, not the pipeline.")
             sys.exit(1)
 
         save_baseline(summary)

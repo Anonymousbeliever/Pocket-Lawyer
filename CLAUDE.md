@@ -239,6 +239,17 @@ are provisioned for.
   out of range entirely. Erring low merely fails to rescue; erring high
   displaces constitutional rights with statutory detail. Full sweep in the
   config comment.
+- **Do not dilute the reranker's authority over ordering.** Measured with
+  `--no-rerank`: without the cross-encoder, `rerank_hit` drops 65 → 57 and
+  `rerank_top1` 44 → 37. All eight rescues are the same pattern — retrieval
+  fills the top with Criminal Procedure Code sections while the
+  **constitutional right sits buried**, Article 49 at rank 26 for
+  `arrest-bail`, rank 18 for `arrest-court-time` — and the reranker plus
+  per-document diversity digs it out. A planned change to fuse rerank order
+  with retrieval order by RRF was **abandoned** because of this: it would
+  weaken exactly that override, trading eight rescues for two. If the two
+  remaining failures are ever worth fixing, it needs a different
+  cross-encoder, not a blend.
 - **`sparse.py` exists instead of a dependency.** `sentence_transformers`
   will not give you BGE-M3's lexical weights — asking its `SparseEncoder`
   for the model silently converts it to a generic 4096-dim projection that
