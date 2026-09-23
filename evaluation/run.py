@@ -538,7 +538,11 @@ def main() -> None:
 
     regressed = False
 
-    if not args.no_compare and not args.save_baseline:
+    # An --id run is excluded for the same reason it cannot be baselined: it
+    # is one question against a whole-set reference. Comparing them reports
+    # every other question as "removed from set" and calls the one question a
+    # regression, then exits 1 - noise, during the debugging --id exists for.
+    if not args.no_compare and not args.save_baseline and not args.id:
         baseline = load_baseline()
 
         if baseline is None:

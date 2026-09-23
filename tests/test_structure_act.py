@@ -25,6 +25,7 @@ from data_pipeline.validators import generic as generic_validator
 from data_pipeline.validators import (
     criminal_procedure_code as cpc_validator,
 )
+from data_pipeline.validators import employment_act as employment_validator
 
 
 DOCUMENT_ID = "criminal-procedure-code"
@@ -425,6 +426,120 @@ def test_an_act_without_chapters_is_unchanged(sample):
 
 
 # ---------------------------------------------------------
+# MIXED ARABIC AND ROMAN PART NUMBERING
+#
+# Found by the Employment Act, which opens with "Part 1 – PRELIMINARY" in
+# Arabic and then switches to Roman for Parts II to XIII.
+#
+# The failure this guards is silent, not loud. A Roman-only PART_PATTERN does
+# not mislabel Part 1 - it fails to match, so `_parse_tree` goes on treating
+# the text as the Act's opening block and drops every section until the next
+# Part heading. Sections 1 to 3 disappeared, taking the definitions in
+# section 2 with them, and the only downstream symptom was a section count
+# three short.
+# ---------------------------------------------------------
+
+MIXED_NUMBERING = """EMPLOYMENT ACT
+CAP. 226
+Published in Kenya Gazette Vol. CIX-No. 81 on 9 November 2007
+[Amended by Employment (Amendment) Act, 2022 (Act No. 15 of 2022)]
+An Act of Parliament to declare the fundamental rights of employees
+Part 1 – PRELIMINARY
+1.
+Short title
+This Act may be cited as the Employment Act.
+2.
+Interpretation
+In this Act, unless the context otherwise requires—
+"basic salary" means an employee's gross salary excluding allowances.
+Part VI – TERMINATION AND DISMISSAL
+35.
+Termination notice
+(1)
+A contract of service may be terminated by either party giving notice.
+Part XIII – MISCELLANEOUS PROVISIONS
+90.
+Rules
+The Cabinet Secretary may make rules generally for the better carrying out
+of the provisions of this Act.
+91.
+[Spent]
+"""
+
+
+@pytest.fixture(scope="module")
+def mixed(entry):
+    return act_structure.parse(MIXED_NUMBERING, entry)
+
+
+def test_an_arabic_part_number_is_matched(mixed):
+    assert unit(mixed, "1").path == ["Part 1", "Section 1"]
+
+
+def test_sections_under_an_arabic_part_are_not_dropped(mixed):
+    """
+    The regression itself. Before Arabic support these two were discarded
+    as opening-block text, in silence.
+    """
+
+    assert unit(mixed, "1") is not None
+    assert unit(mixed, "2") is not None
+
+    assert "basic salary" in unit(mixed, "2").text
+
+
+def test_arabic_and_roman_parts_coexist_in_one_act(mixed):
+    labels = {candidate.path[0] for candidate in mixed.units}
+
+    assert labels == {"Part 1", "Part VI", "Part XIII"}
+
+
+def test_an_arabic_part_keeps_chunk_ids_clean(mixed):
+    assert unit(mixed, "1").slug() == "part-1-section-1"
+
+    for chunk in build_chunks(mixed):
+        assert set(chunk["chunk_id"]) <= set(
+            "abcdefghijklmnopqrstuvwxyz0123456789-@."
+        )
+
+
+def test_spent_sections_are_dropped(mixed):
+    """
+    The third spelling of "no longer operative", after repealed and deleted.
+    Previously excluded only as an accident of having no body.
+    """
+
+    assert unit(mixed, "91") is None
+
+
+def test_roman_only_acts_are_unaffected_by_arabic_support(sample):
+    """
+    The Criminal Procedure Code regression. "III" cannot match `\\d+`, so
+    every Act already ingested must parse exactly as it did before - same
+    labels, therefore same chunk ids.
+    """
+
+    assert unit(sample, "1").path == ["Part I", "Section 1"]
+    assert unit(sample, "21").path == ["Part III", "Section 21"]
+    assert unit(sample, "329A").path == ["Part IXA", "Section 329A"]
+
+
+def test_a_part_reference_in_running_text_is_not_a_heading():
+    """
+    "Part IX or Division 1 of Part IV of that Act;" appears mid-sentence in
+    the Employment Act. A Part heading needs a dash straight after the
+    numeral, which prose does not supply.
+    """
+
+    assert not act_structure.PART_PATTERN.match(
+        "Part IX or Division 1 of Part IV of that Act;"
+    )
+    assert not act_structure.PART_PATTERN.match("Part 5 of the Schedule")
+
+    assert act_structure.PART_PATTERN.match("Part 1 – PRELIMINARY")
+
+
+# ---------------------------------------------------------
 # FRONT-MATTER DETECTION
 #
 # Found by this document: the dot-leader check was Constitution-only
@@ -481,3 +596,44 @@ def test_real_cpc_text_passes_its_validator(entry):
     text = entry.cleaned_path.read_text(encoding="utf-8")
 
     assert cpc_validator.validate_cleaned_text(text) == []
+
+
+EMPLOYMENT_ID = "employment-act"
+
+
+@pytest.fixture(scope="module")
+def employment_entry():
+    return get_document(EMPLOYMENT_ID)
+
+
+@pytest.fixture(scope="module")
+def real_employment_act(employment_entry):
+    if not employment_entry.cleaned_path.exists():
+        pytest.skip(
+            "cleaned artifact missing; run "
+            f"`python -m data_pipeline.run --document {EMPLOYMENT_ID}` first"
+        )
+
+    text = employment_entry.cleaned_path.read_text(encoding="utf-8")
+
+    return act_structure.parse(text, employment_entry)
+
+
+def test_employment_act_is_registered():
+    assert "employment-act" in registered_types()
+
+    assert cleaner_spec("employment-act").start_pattern
+    assert validator("employment-act") is not None
+
+
+def test_real_employment_act_parses_to_the_expected_shape(real_employment_act):
+    assert employment_validator.validate_document(real_employment_act) == []
+
+
+def test_real_employment_act_text_passes_its_validator(employment_entry):
+    if not employment_entry.cleaned_path.exists():
+        pytest.skip("cleaned artifact missing")
+
+    text = employment_entry.cleaned_path.read_text(encoding="utf-8")
+
+    assert employment_validator.validate_cleaned_text(text) == []

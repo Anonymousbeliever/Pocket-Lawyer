@@ -19,9 +19,17 @@ penalties, or citations. Never claim a source says something it does not.
 
 ## Current state
 
-Retrieval → reranking → grounded generation works end to end over **three
-documents, 962 chunks**: the Constitution of Kenya, 2010 (279), the Criminal
-Procedure Code, Cap. 75 (312) and the Penal Code, Cap. 63 (371).
+Retrieval → reranking → grounded generation works end to end over **four
+documents, 1054 chunks**: the Constitution of Kenya, 2010 (279), the Criminal
+Procedure Code, Cap. 75 (312), the Penal Code, Cap. 63 (371) and the
+Employment Act, Cap. 226 (92).
+
+**MVP scope is fixed at eight documents.** Still to come: the Law of Succession
+(Cap. 160), the Children Act 2022, the Marriage Act 2014 and the Small Claims
+Court Act 2016. Do not propose documents outside that set without saying it
+expands agreed scope — `docs/project-plan.md` records what was cut and why.
+
+**96 evaluation questions, 93/96 passing, retrieval 80/80.**
 
 **FastAPI now serves it.** Models load once at startup and are reused across
 requests, and a semantic router answers conversational input without touching
@@ -57,8 +65,9 @@ data_pipeline/
   registry.py              loads the registry, derives artifact paths
   adapters.py              the type registry - register a new document HERE only
   structure/<type>.py      per-TYPE and reusable: constitution.py, act.py
-                           act.py handles Part -> Section (CPC) and
-                           Part -> Chapter -> Section (Penal Code)
+                           act.py handles Part -> Section (CPC, Employment)
+                           and Part -> Chapter -> Section (Penal Code);
+                           Part numerals may be Roman OR Arabic
   cleaners/<document>.py   per-DOCUMENT: its patterns name the document itself
   validators/<document>.py per-DOCUMENT, plus generic.py for every document
   chunking/, vectorstore/
@@ -82,22 +91,30 @@ What that exercise corrected is the cost estimate. A new document needs:
   cannot be derived.
 - **a structure parser** — only for a genuinely new hierarchy. `act.py` handles
   the Part → Section shape every Kenya Law consolidated Act uses, so the next
-  Act reuses it.
+  Act reuses it. **But expect small pattern surprises per document.** The
+  Employment Act numbers its first Part in Arabic (`Part 1 – PRELIMINARY`) and
+  the rest in Roman. The Roman-only pattern did not mislabel it — it failed to
+  match, so the parser kept treating the text as the Act's opening block and
+  **dropped sections 1 to 3 in silence**, definitions included. Kenya Law is
+  not internally consistent, and the failures are quiet.
 - **a validator** (`validators/<document>.py`) — in practice always, because
   without one a parse failure is silent: a broken pattern yields zero units and
-  the only complaint is "No chunks were generated."
+  the only complaint is "No chunks were generated." Check the document's
+  specific risk **by name**, not only by count: a missing Part 1 shows up as a
+  section total three short, which nobody notices.
 
 ## Running things
 
 ```bash
 docker compose up -d              # Qdrant on localhost:6333
-pytest                            # 205 tests, no Qdrant or API key needed
+pytest                            # 234 tests, no Qdrant or API key needed
 
 python -m uvicorn backend.app.main:app --reload   # the API, models load once
 python -m backend.app.ai.intent                   # routing accuracy + margins
 
 python -m data_pipeline.run --document constitution-of-kenya-2010
 python -m data_pipeline.run --document criminal-procedure-code
+python -m data_pipeline.run --document employment-act
 python -m data_pipeline.run --all
 python -m data_pipeline.run --document X --from chunk   # resume a stage
 python -m data_pipeline.run --document X --to chunk     # stop before Qdrant
@@ -180,7 +197,15 @@ are provisioned for.
   `passage.py`, so editing any of them invalidates everything downstream.
   It cannot see a library upgrade: use `--no-cache` for that, which recomputes
   while still writing. **A baseline is never served from cache** -
-  `--accept-last` refuses a run with cache hits.
+  `--accept-last` refuses a run with cache hits, and `--id` and `--no-rerank`
+  runs never become the record.
+  **Measured, and it did not work as designed:** adding the Employment Act
+  reused **0 of 96** rerank results. Its 92 chunks moved the top-30 for all 82
+  existing questions - plausibly the sparse side, since ordinary employment
+  English enters the lexical top-5 for unrelated questions and perturbs the
+  fused list everywhere. Hybrid retrieval and candidate-keyed caching work
+  against each other. **Budget a full rerank per new document** until a
+  measurement says otherwise.
 - **Embed chunks with their citation context**, never the bare body. An
   article's topic often lives only in its title - Article 16 is "Dual
   citizenship" and its text never says "dual". Embedding content alone made it
@@ -250,6 +275,38 @@ are provisioned for.
   weaken exactly that override, trading eight rescues for two. If the two
   remaining failures are ever worth fixing, it needs a different
   cross-encoder, not a blend.
+- **The cross-encoder ranks by resemblance, not by answerhood — and no
+  tuning fixes that.** Both remaining evaluation failures are this one defect,
+  in two unrelated documents. *"How much notice must my employer give before
+  terminating my job?"* ranks **s.78** first — *"An employer shall notify the
+  termination of every employment... to the nearest employment service office
+  **within two weeks**"*, 192 characters, matching every content word and
+  offering a duration — over **s.35 "Termination notice"**, 2,166 characters
+  whose rule ("**twenty-eight days**") is buried in subsection (1)(c). s.78 is
+  an administrative duty to notify a government office, not notice to the
+  employee. Likewise s.204's eleven words lose to *"Conspiracy to murder"*.
+  This is **not** a plumbing bug: `passage.py` was verified to put
+  `"Section 35: Termination notice"` in front of the reranker. The model reads
+  the header and still prefers the resemblance, because a 568M relatedness
+  model has no representation of *answerhood*. You cannot reach a missing
+  capability with a threshold (tried, removed), a blend (tried, abandoned) or
+  a per-document boost (the enumeration trap). Two levers exist -
+  subsection-level chunking, and a model that can judge answerhood - and both
+  invalidate every cached result, so **do it once, after the corpus is complete
+  at eight documents**, and run the cheap experiment first. Full analysis and
+  the experiment design are in `docs/project-plan.md`. The grounding prompt
+  holds meanwhile: tier 2 gave `false answers 0`, the system **refused**
+  rather than repeating s.78's confident wrong number.
+- **A failing test is not automatically a failing system.**
+  `county-government-role` failed for eighteen runs. The cause was its
+  expectations: Article 186 does not list county functions - its operative
+  text is a pointer, *"as set out in the Fourth Schedule"* - and reranking had
+  been surfacing the Schedule correctly the whole time. Articles 183 (county
+  *executive committee* functions) and 174 (objects of devolution) were
+  removed as not answering the question. **Before tuning retrieval against a
+  failing question, read the law and check the expectation is right.** The
+  question set was drafted against article titles, not full text, and still
+  awaits legal review.
 - **`sparse.py` exists instead of a dependency.** `sentence_transformers`
   will not give you BGE-M3's lexical weights — asking its `SparseEncoder`
   for the model silently converts it to a generic 4096-dim projection that

@@ -1,0 +1,30 @@
+{
+  "document_id": "employment-act",
+  "title": "Employment Act (Cap. 226)",
+  "document_type": "act",
+  "jurisdiction": "Kenya",
+  "language": "English",
+  "source": {
+    "name": "Kenya Law",
+    "url": "https://new.kenyalaw.org/akn/ke/act/2007/11/eng@2024-04-26"
+  },
+  "version": "2024-04-26",
+  "effective_from": "2024-04-26",
+  "effective_to": null,
+  "in_force": true,
+  "files": {
+    "raw": "data\\raw\\legislation\\employment-act.pdf",
+    "extracted": "data\\documents\\employment-act@v2024-04-26\\extracted.txt",
+    "cleaned": "data\\documents\\employment-act@v2024-04-26\\cleaned.txt"
+  },
+  "checksums": {
+    "raw_sha256": "885b46dbf660b95dc98fd485dac785fc89b9261c559eac0fdd83879729781900",
+    "extracted_sha256": "6d6a354c103511ff4b443ac262edf36e42ed9594323517738bd96763a37c9b1a",
+    "cleaned_sha256": "8e3325d04073561abf539a682b842f4ccb2de3f488a3f53507637e1eb263555b"
+  },
+  "processing": {
+    "status": "ingested",
+    "chunk_count": 92,
+    "as_at": "2026-09-23"
+  }
+}

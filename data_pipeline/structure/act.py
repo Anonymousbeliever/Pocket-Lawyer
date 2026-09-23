@@ -30,13 +30,26 @@ from data_pipeline.ir import Document, Unit, document_from_entry
 from data_pipeline.registry import DocumentEntry
 
 
-# Part headings carry a Roman numeral that may take a letter suffix
-# (Part IXA was inserted between IX and X), then a dash and a title:
+# Part headings carry a numeral that may take a letter suffix (Part IXA was
+# inserted between IX and X), then a dash and a title:
 #
 #   Part III – GENERAL PROVISIONS ARREST, ESCAPE AND RETAKING
 #
+# The numeral is usually Roman, but Kenya Law is not consistent about it and
+# the inconsistency can occur *within one Act*. The Employment Act opens with
+#
+#   Part 1 – PRELIMINARY
+#
+# in Arabic, then switches to Roman for Parts II to XIII. A Roman-only
+# pattern does not merely mislabel that Part - it fails to match, so
+# `_parse_tree` keeps treating the text as the Act's opening block and drops
+# every section until the next Part heading. For the Employment Act that
+# silently discarded sections 1 to 3, including the definitions in section 2.
+#
+# Arabic is tried first; "II" cannot match `\d+`, so every Act already
+# ingested parses exactly as before.
 PART_PATTERN = re.compile(
-    r"^Part\s+([IVXLCDM]+[A-Z]?)\s*[–—-]\s*(.*)$"
+    r"^Part\s+(\d+|[IVXLCDM]+[A-Z]?)\s*[–—-]\s*(.*)$"
 )
 
 # Some Acts put a Chapter level between Part and Section. The Penal Code has
@@ -317,11 +330,16 @@ def _is_repealed(section: dict) -> bool:
     Checked explicitly rather than relying on the empty-content drop, so
     that the count is reportable and a repealed section can never be
     indexed just because a stray line landed in its text.
+
+    "Spent" is the third spelling of the same thing: a section that has done
+    its work and no longer operates. The Employment Act ends with two of
+    them. They were already excluded by the empty-content drop, but as an
+    accident of having no body rather than as a decision.
     """
 
     title = section["title"].strip().lower().lstrip("[")
 
-    return title.startswith(("repealed", "deleted"))
+    return title.startswith(("repealed", "deleted", "spent"))
 
 
 # ---------------------------------------------------------

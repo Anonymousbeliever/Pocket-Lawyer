@@ -152,7 +152,7 @@ This is now implemented end-to-end for the Constitution.
 
 ## Current position
 
-**Three documents, served over HTTP, with an evaluation harness that scales.**
+**Four documents, served over HTTP, with an evaluation harness that scales.**
 
 ```text
 Question
@@ -161,8 +161,8 @@ Intent routing (nearest centroid) ──→ conversational, no retrieval
    ↓ legal
 BGE-M3 embedding
    ↓
-Qdrant (962 vectors: Constitution 279, Criminal Procedure Code 312,
-        Penal Code 371)
+Qdrant (1054 vectors: Constitution 279, Criminal Procedure Code 312,
+        Penal Code 371, Employment Act 92)
    ↓
 Dense (top 30) + lexical (top 5), fused with RRF
    ↓
@@ -186,22 +186,46 @@ registry, IR, chunker or vector store changing once. Per document the cost is a
 cleaner spec, a validator, and a structure adapter only for a genuinely new
 shape.
 
-**Current state:** 82 questions, **80/82**, with **retrieval at 67/67 — 100%**.
+**Current state:** 96 questions, **93/96**, with **retrieval at 80/80 — 100%**.
+Reranking carries 77/80, first place 54/80.
+
+**MVP scope is fixed at eight documents.** Four are in: the Constitution, the
+Criminal Procedure Code, the Penal Code and the Employment Act. Four remain:
+the Law of Succession (Cap. 160), the Children Act 2022, the Marriage Act 2014
+and the Small Claims Court Act 2016. That set covers criminal justice end to
+end, employment, family formation and dissolution, children, inheritance, and a
+route to actually claim money.
+
+Deliberately cut, and not to be re-proposed without saying so: the Law of
+Contract Act (about four sections; it *imports* English common law rather than
+containing contract law), the Evidence Act and the Civil Procedure Act (written
+for advocates, and civil procedure's operative detail is in the Rules), and the
+Companies and Data Protection Acts (business users, not this product's
+citizen). The Land Act and Land Registration Act are deferred, not cut — high
+value, two large paired documents, and wrong answers about land do the most
+damage.
 
 **What limits the product now:**
 
-1. **Reranking, not retrieval.** Both remaining failures are now
-   `RETRIEVED THEN DROPPED`: the cross-encoder has the right passage in its
-   candidate list and discards it. Section 204 sits at rank 8 after hybrid
-   pulled it from 53. The same cross-encoder scored a correct answer at
-   0.042. It is the single weak link in the chain.
-2. **Corpus breadth.** Three documents is a start, not a legal corpus.
+1. **Reranking, not retrieval.** Both remaining failures are
+   `RETRIEVED THEN DROPPED`, and both are now understood to be the same
+   defect rather than two coincidences — see *Measured: the cross-encoder
+   ranks by resemblance, not by answerhood*. It is the single weak link in
+   the chain.
+2. **Corpus breadth.** Four documents of the eight.
 3. **The application layer.** No conversation state, no persistence, no auth,
    no mobile app.
 
-Still open and recorded: `debt-inability`'s false answer, the
-`delete_document` version bug, and `county-government-role` awaiting a
-lawyer's view.
+Still open and recorded: `debt-inability`'s false answer and the
+`delete_document` version bug.
+
+**Closed:** `county-government-role` was not a system failure. It failed for
+eighteen runs because its expectations named Article 186, which does not list
+county functions — its operative text is a pointer to the Fourth Schedule.
+Reranking had been surfacing the Schedule correctly the whole time. The
+expectations were corrected; Articles 183 (county *executive committee*
+functions) and 174 (objects of devolution) were removed as not answering the
+question. **A failing test is not automatically a failing system.**
 
 ---
 
@@ -247,7 +271,7 @@ The backend is still a minimal FastAPI app (`backend/app/main.py`) exposing only
 - Metadata: `data-pipeline/pipelines/metadata_builder.py` → `data/metadata/constitution.json`, including SHA-256 checksums of the raw, extracted, and cleaned files.
 - Structure: `data-pipeline/structure/constitution_structure.py` → `data/processed/constitution_structure.json` (chapters → articles → subsections → paragraphs → schedules).
 - `collectors/` and `ocr/` are still empty. Everything else in `data-pipeline/` is implemented.
-- **Remaining item — "Build ingestion pipeline":** the stages all exist but are separate, Constitution-specific scripts run by hand. The orchestrated, document-agnostic pipeline is the next piece of work.
+- ~~**Remaining item — "Build ingestion pipeline":**~~ **Done 2026-09-02.** The orchestrated, document-agnostic pipeline is `data_pipeline/run.py`, and four documents across three hierarchies have gone through it. The only outstanding Phase 1 item is the source inventory.
 - Kenya Law, Judiciary, and Supreme Court are investigated; Parliament is not yet.
 
 ### Target pipeline
@@ -286,7 +310,8 @@ Every stage above has been proven against the Constitution. What does not exist 
 
 ## Phase 2 — Legal Knowledge Base
 
-**Status:** Done and proven on two documents — corpus breadth outstanding
+**Status:** Done and proven on four documents — corpus breadth outstanding
+(four of the eight in MVP scope)
 
 **Objective:** Turn the processed legal corpus into a searchable knowledge base.
 
@@ -823,6 +848,140 @@ defect awaiting legal review; `penal-murder-sentence` has s.204 at rank 8
 after hybrid moved it from 53, and the cross-encoder makes the final call
 badly. Two failures out of 67, against a risk of breaking eight.
 
+> **Resolved 2026-09-23.** `county-government-role` was indeed a question
+> defect, and the suspicion is now confirmed rather than pending. See
+> *Current position*.
+
+---
+
+### Measured: a civil document costs nothing in retrieval — and the rerank cache nothing at all
+
+The Employment Act (Cap. 226) is the first document in the corpus that is
+neither criminal nor constitutional. It was added as a probe as much as for
+coverage: every retrieval finding this project had was drawn from criminal and
+constitutional text, and two load-bearing rules — per-document rerank
+diversity, and `SPARSE_TOP_K` held at 5 — were tuned on a corpus where the
+*right* is constitutional and the *procedure* is in a criminal Act.
+
+**Ingestion: 45 pages, 114,422 cleaned characters, 91 live sections, 92
+chunks.** Corpus 962 → 1054.
+
+**Retrieval was unaffected.** Tier 0 across all 96 questions: `retrieval_hit
+80/80`, **zero regressions**. The expected failure — employment vocabulary
+("notice", "rights", "pay", "termination") displacing constitutional articles
+the way Criminal Procedure Code sections pushed Article 49 out of range —
+did not happen. `RETRIEVAL_TOP_K = 30` holds at 1054 chunks.
+
+**Per-document diversity held too.** `employment-discrimination-at-work` was
+added deliberately as the cross-document probe, expecting both Article 27 and
+section 5. It keeps its authority through reranking. A civil Act does not shut
+the Constitution out.
+
+**The level-2 cache saved nothing, and this contradicts its design note.**
+
+```text
+Cache: retrieval 96 reused / 0 computed
+       rerank     0 reused / 96 computed
+```
+
+The rerank cache is keyed on the *retrieved candidates* rather than the corpus,
+specifically so that adding a document reranks only the questions whose top-k
+actually moved. The premise was that adding the Penal Code would not disturb
+`dual-citizenship` or `official-languages`.
+
+It moved the top-30 for **all 82 existing questions**. Not one was reused.
+Plausibly the sparse side: employment text is ordinary English, so it enters
+the lexical top-5 for questions that have nothing to do with employment, which
+perturbs the fused list everywhere. Hybrid retrieval and candidate-keyed
+caching work against each other.
+
+The cache design is not wrong, but its stated benefit did not materialise for
+document four, and the cost estimate for documents five through eight should
+assume a **full rerank per document** until measured otherwise.
+
+**One parser bug, and the silent kind.** The Act opens `Part 1 – PRELIMINARY`
+in Arabic and switches to Roman for Parts II–XIII. `act.py`'s Roman-only
+`PART_PATTERN` did not mislabel Part 1 — it failed to match, so `_parse_tree`
+went on treating the text as the Act's opening block and dropped every section
+until Part II. **Sections 1–3 disappeared, taking section 2's definitions of
+"employee", "wages" and "termination" with them**, and the only downstream
+symptom was a section count three short.
+
+This is exactly why a per-document validator is non-negotiable. The fix is one
+alternation, `(\d+|[IVXLCDM]+[A-Z]?)`, Arabic tried first — `"III"` cannot
+match `\d+`, so every Act already ingested parses identically and no chunk ids
+churn. `validators/employment_act.py` now checks Part 1's sections **by name**,
+so the regression cannot return as a count that merely looks three short.
+
+---
+
+### Measured: the cross-encoder ranks by resemblance, not by answerhood
+
+Both remaining failures are the same defect, seen in two unrelated documents.
+This is no longer an anecdote about one question.
+
+**`employment-notice`** — *"How much notice must my employer give before
+terminating my job?"* Section 35 *Termination notice* is retrieved at #7 of 30
+and dropped. What wins is section 78, *Notification of termination of
+employment*:
+
+| | chars | content |
+|---|---|---|
+| s.35 — correct, dropped | 2166 | the rule is buried in (1)(c): "terminable by either party at the end of the period of **twenty-eight days** next following the giving of notice" |
+| s.78 — reranked #1 | 192 | "An employer shall notify the termination of every employment... to the nearest employment service office **within two weeks**" |
+
+s.78 matches every content word of the question and supplies a duration — while
+being an administrative duty to notify a government office, not notice to the
+employee. **The top-ranked source states a period that is prominent and wrong.**
+
+**`penal-murder-sentence`** — section 204 is eleven words that answer the
+question verbatim, and loses to *"Conspiracy to murder"*, which is longer and
+shares more vocabulary.
+
+**This is not a plumbing bug.** `passage.py` was verified to include
+`"Section 35: Termination notice"` in what the reranker judges. The header is
+there. The model reads it and still prefers the resemblance.
+
+**The grounding prompt held.** Tier 2 on `employment-notice`:
+`false answers 0`, `wrong authority 0`, `false refusals 1`. Handed s.78 and its
+confident "two weeks", the system **refused** rather than answering wrongly.
+Under `accuracy > grounding > usefulness`, that is the failure mode to have.
+
+**Why no amount of tuning fixes this.** `bge-reranker-v2-m3` is not
+malfunctioning; it scores how *related* a passage is, and s.78 genuinely is
+related. What separates it from s.35 is **answerhood**, which a 568M relatedness
+model does not represent. A capability the model lacks cannot be reached by a
+threshold (tried, removed), a blend (tried, abandoned), or a per-document boost
+(the enumeration trap the regex router died of).
+
+**Two levers, and they attack different halves:**
+
+1. **Subsection-level chunking.** s.35(1)(c) as its own chunk is short, dense
+   and beats s.78 outright. Deterministic, keeps the caching design intact, no
+   new model. Fixes `employment-notice`. **Cannot** fix
+   `penal-murder-sentence` — eleven words have nothing to split.
+2. **A model that can judge answerhood.** A much larger cross-encoder (GPU —
+   reranking already dominates latency at 568M) or an LLM selection pass over
+   the top 10. Fixes both. Costs **determinism**, which the caching, baselines
+   and regression detection all depend on.
+
+**Test before building either.** Hand the 30 retrieved candidates for
+`penal-murder-sentence` to `gpt-4o-mini` and ask which five answer the
+question. If an LLM cannot rescue eleven words that answer verbatim, neither
+lever is worth building.
+
+**Do it once, after the corpus is complete at eight documents.** Both levers
+invalidate the baseline and every cached rerank result; doing it before
+document five means paying that five times. Two failures in 96 — about 2%, and
+the failure mode is a refusal, not a wrong answer — is affordable to carry.
+
+**A third instance of the same chunking weakness.** The Fourth Schedule is cut
+mid-list by the 4,000-character cap: county functions 1–4 end `-part-1` and 5
+onward open `-part-2`, and `-part-1` mixes *national* and *county* functions in
+one blob. A character cap split a legal list, and ignored the Schedule's own
+Part 1 / Part 2 boundary. Same root as s.35's buried subsection, and further
+evidence for lever 1.
+
 ### Evaluation will not scale as written
 
 Recorded 2026-09-03 after a full read of `evaluation/`. The harness is sound in
@@ -872,39 +1031,48 @@ retrieves the right law.
 
 ## Roadmap
 
-Revised 2026-08-31. The ordering changed for two reasons: the ingestion layer must be safe before the corpus grows, and nothing downstream can be measured without an evaluation set.
+Revised 2026-09-23. The ordering changed for two reasons: the ingestion layer must be safe before the corpus grows, and nothing downstream can be measured without an evaluation set.
 
 ```text
-1. Ingestion foundation        ← current work
+1. Ingestion foundation                  ← DONE
    Generic, idempotent, registry-driven pipeline.
    Stable IDs, batched ingest, central config,
    versioning fields, named vectors.
 
 2. Evaluation set                        ← DONE
-   56 questions, two tiers, baseline recorded.
-   Question set still needs legal review.
+   96 questions, three tiers, baseline recorded.
+   Question set still needs legal review - and the
+   county-government-role correction shows why.
 
-3. Corpus expansion                      ← IN PROGRESS
-   Criminal Procedure Code (Cap. 75) ingested 2026-09-03.
-   It validated the generic pipeline and broke retrieval
-   ranking in three arrest questions - both findings recorded.
+3. Corpus expansion                      ← IN PROGRESS, 4 of 8
+   Criminal Procedure Code 2026-09-03, Penal Code
+   2026-09-19, Employment Act 2026-09-23.
+   Remaining: Law of Succession (Cap. 160), Children
+   Act 2022, Marriage Act 2014, Small Claims Court
+   Act 2016. Scope is FIXED at eight - see
+   "Current position" for what was cut and why.
 
-3b. Evaluation scoping                   ← NEW, blocks 3 at scale
-   Tag questions by document; run only what a change can
-   affect; cache between runs; parallelise tier 2. Without
-   this, every added document makes every future change
-   more expensive to verify.
+3b. Evaluation scoping                   ← DONE
+   Tier 0, --document, two-level cache, batched
+   reranking. Caveat: the rerank cache reused
+   nothing when document four landed.
 
-4. Evidence sufficiency
+4. Evidence sufficiency                  ← OPEN, hardest item
    NOT an absolute rerank threshold - that was tried and
    removed; see "rerank scores are not a confidence signal".
-   Calibrate against the evaluation set, or verify claims
-   against cited passages.
+   A subject-matter gate was also tried and removed.
+   debt-inability's false answer is still open.
 
-5. FastAPI service
-   Load models once at startup. Structured answer + sources.
-   Moved much earlier: it forces the right serving design
-   and lets the product be used and dogfooded.
+5. FastAPI service                       ← DONE
+   Models load once at startup; semantic intent routing;
+   structured answer + sources. No state, no auth.
+
+5b. Reranker intervention                ← NEW, blocks nothing yet
+   Both remaining failures are one defect: the
+   cross-encoder ranks by resemblance, not answerhood.
+   Two levers, both invalidating every cached result -
+   so do it ONCE, after the corpus is complete at
+   eight. Run the cheap experiment first.
 
 6. Scenario understanding
    Fact extraction, legal-issue identification, multi-query.
@@ -912,7 +1080,10 @@ Revised 2026-08-31. The ordering changed for two reasons: the ingestion layer mu
 7. Reasoning and structured citations
    fact → rule → application → conclusion.
 
-8. Flutter application
+8. Application layer + Flutter
+   Conversations, persistence, auth, feedback - none of
+   which exist. Four documents and a stateless endpoint
+   is not yet a product.
 ```
 
 **Why scenario understanding moved after corpus breadth:** with a Constitution-only corpus, a perfect scenario analyser produces perfectly decomposed queries that still retrieve nothing. The divorce test already demonstrated this. Better analysis over a thin corpus yields better-worded refusals, not better answers.
@@ -987,6 +1158,34 @@ Priority order when trade-offs arise:
 - **2026-08-31** — **Ingestion foundation built.** Replaced the five per-document scripts with one generic, registry-driven pipeline (`python -m data_pipeline.run`). Renamed `data-pipeline/` to `data_pipeline/` so stages can share code; added a common document IR so chunking, embedding and storage no longer know the document type. Fixed all four ingestion blockers: deterministic `uuid5` point IDs, generic stages behind per-type adapters, streaming batched embed-and-upsert with no on-disk vectors, and one central config imported by both the pipeline and the AI layer. Collection schema moved to named vectors with a sparse slot declared for future hybrid search, and the payload now carries `version`, `effective_date`, `in_force` and `as_at`. Added the first tests (33). Constitution re-ingested: **279 chunks**, longest 3,996 characters — Schedule 6's 24,146-character chunk is now split. Re-running produced **279 → 279 points**, proving ingestion is idempotent and a second document can no longer overwrite the first. Retrieval parity confirmed (Article 49 still ranks first) and the divorce refusal still holds.
 - **2026-09-02** — **Version-aware, document-first ingestion.** Chunk identity became `document_id@vversion-slug`, so two editions of the same Act no longer produce identical ids and overwrite each other. Derived artifacts moved from five stage directories to one directory per document version (`data/documents/<id>@v<version>/`), with `raw/` kept separate as the immutable source. `effective_from` / `effective_to` joined `in_force` and `version` on the payload and in metadata. Adapter tables moved out of the orchestrator into `data_pipeline/adapters.py` behind a `StructureParser` Protocol, and `CleanerSpec.start_pattern` became optional — it was a Constitution assumption sitting in supposedly generic code. Added `tests/test_multi_document.py`, which proves two document shapes and two versions produce disjoint ids without needing a second real document. **The evaluation reproduced the baseline exactly — 41/41, 40/41, 33/41, no regressions** — confirming that identity and file locations moved without disturbing a single retrieval decision. Old `data/` directories deliberately left in place.
 - **2026-09-01** — **Contextual embedding.** Chunks are now embedded and reranked with their document, citation and article title prepended (`backend/app/core/passage.py`); the stored content sent to the LLM is unchanged. Diagnosed offline before changing anything, which also refuted a length-bias theory. Evaluation went **34/41 → 40/41**, six questions improved, none regressed. See *Measured: chunks must be embedded with their citation context*. The one remaining failure, `county-government-role`, is a suspected defect in the question rather than the system — the Fourth Schedule distributes county functions and was never listed as an acceptable authority. Awaiting legal review.
+- **2026-09-23** — **Fourth document, and a failing test that was not a
+  failing system.** Ingested the **Employment Act (Cap. 226)**, the first
+  civil document in the corpus: 45 pages, 91 live sections, 92 chunks,
+  collection **962 → 1054**. Question set 82 → **96**; `employment-notice`
+  flipped from out-of-scope to answerable. Tier 0 reported `retrieval_hit`
+  **80/80 with zero regressions** — the expected displacement of
+  constitutional articles by ordinary employment vocabulary did not happen,
+  and `RETRIEVAL_TOP_K = 30` holds. Tier 1: **93/96**, rerank 77/80,
+  first-place 54/80.
+  Three findings, all recorded in full above. **(1)** `act.py` was silently
+  dropping sections 1–3: the Act numbers its first Part in Arabic
+  (`Part 1`) and the rest in Roman, and a Roman-only pattern did not
+  mislabel it but failed to match, discarding every section until Part II —
+  including section 2's definitions. Fixed with one alternation; the
+  validator now checks those sections by name. **(2)** The level-2 rerank
+  cache **saved nothing** — 0 reused, 96 computed — because adding 92 chunks
+  moved the top-30 for all 82 existing questions, contradicting its own
+  design note; assume a full rerank per document until measured otherwise.
+  **(3)** `county-government-role`, failing since the harness was built, was
+  a **question defect, not a system defect**: Article 186 does not list
+  county functions, it points to the Fourth Schedule, which reranking had
+  been surfacing correctly all along. Expectations corrected, Articles 183
+  and 174 removed. Failures 3 → 2, and both survivors are one defect —
+  the cross-encoder ranking by resemblance rather than answerhood, now seen
+  in two unrelated documents with a fix direction and a cheap experiment to
+  choose between levers. Also fixed `--id` runs printing a meaningless
+  baseline comparison and exiting 1 on a phantom regression. MVP scope fixed
+  at **eight documents**. 234 tests.
 - **2026-09-20** — **Hybrid retrieval: 100% retrieval, and the bottleneck
   moves.** Dense-only left a measured hole. Asked *"What is the sentence for
   murder in Kenya?"*, section 204 — *"Any person convicted of murder shall be

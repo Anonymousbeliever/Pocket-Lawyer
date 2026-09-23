@@ -300,10 +300,30 @@
   question: "What are county governments responsible for?"
   answerable: true
   expect_any_of:
+    - constitution-of-kenya-2010@v2010-fourth-schedule-part-1
+    - constitution-of-kenya-2010@v2010-fourth-schedule-part-2
     - constitution-of-kenya-2010@v2010-chapter-eleven-article-186
-    - constitution-of-kenya-2010@v2010-chapter-eleven-article-183
-    - constitution-of-kenya-2010@v2010-chapter-eleven-article-174
-  note: "Article 186 functions; 183 county executive; 174 objects of devolution."
+  note: >
+    Corrected 2026-09-23. This question failed for eighteen runs because the
+    expectations were wrong, not the system.
+
+    Article 186 does not list county functions. Its operative text is a
+    pointer: the functions "are as set out in the Fourth Schedule". The list
+    itself - agriculture, county health services, county transport, trade
+    regulation, pre-primary education - lives in the Schedule, and reranking
+    was surfacing it correctly while the harness scored that a miss.
+
+    Article 186 is kept because it is the provision that assigns the
+    functions, so citing it alongside the Schedule is legitimate. Articles
+    183 and 174 were REMOVED: 183 is the functions of the county executive
+    *committee*, a different question, and 174 is the objects of devolution
+    - why devolution exists, not what a county does. Leaving them in would
+    let this question pass on authority that does not answer it.
+
+    Note the Schedule spans two chunks because a 4,000-character cap split
+    it mid-list: county functions 1-4 end `-part-1`, and 5 onward open
+    `-part-2`. Both are legitimate hits until chunking respects the
+    Schedule's own Part 1 / Part 2 boundary.
 
 - id: governor-removal
   question: "Can a county governor be removed from office?"
@@ -349,8 +369,14 @@
 
 - id: employment-notice
   question: "How much notice must my employer give before terminating my job?"
-  answerable: false
-  note: "Employment Act 2007. Not constitutional."
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-vi-section-35
+    - employment-act@v2024-04-26-part-vi-section-36
+  note: >
+    Was the standing example of a question the corpus could not answer.
+    Flipped when the Employment Act landed; the wording is unchanged on
+    purpose, so the baseline diff shows the flip honestly.
 
 - id: tenant-eviction-notice
   question: "How many days notice must a landlord give before evicting a tenant?"
@@ -674,3 +700,122 @@
     Criminal Procedure Code says when arrest without warrant is permitted.
     This is the regression test for reranking diversity across three
     documents rather than two.
+
+# ---------------------------------------------------------
+# EMPLOYMENT ACT (Cap. 226)
+#
+# The first civil document in the corpus. Every retrieval finding before
+# this one was drawn from criminal or constitutional text, so these
+# questions are a probe as much as a coverage check: they use ordinary
+# workplace vocabulary ("notice", "leave", "pay") rather than the distinct
+# legal terms criminal questions supply.
+# ---------------------------------------------------------
+
+- id: employment-summary-dismissal
+  question: "Can my employer fire me on the spot without notice?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-vi-section-44
+  note: "Section 44 - summary dismissal and the grounds that justify it."
+
+- id: employment-unfair-termination
+  question: "What makes a termination unfair under Kenyan law?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-vi-section-45
+    - employment-act@v2024-04-26-part-vi-section-43
+  note: >
+    Section 45 defines unfair termination; section 43 puts the burden of
+    proving the reason on the employer.
+
+- id: employment-dismissal-hearing
+  question: "Does my employer have to hear my side before dismissing me?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-vi-section-41
+  note: "Section 41 - notification and hearing before termination."
+
+- id: employment-redundancy
+  question: "What are my rights if I am declared redundant?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-vi-section-40
+  note: "Section 40 - termination on account of redundancy."
+
+- id: employment-annual-leave
+  question: "How many days of annual leave am I entitled to?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-v-section-28
+  note: "Section 28 - annual leave."
+
+- id: employment-maternity-leave
+  question: "How much maternity leave does the law give?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-v-section-29
+  note: "Section 29 - maternity leave."
+
+- id: employment-sick-leave
+  question: "Am I entitled to paid sick leave?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-v-section-30
+  note: "Section 30 - sick leave."
+
+- id: employment-working-hours
+  question: "How many hours a week can my employer make me work?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-v-section-27
+  note: "Section 27 - hours of work."
+
+- id: employment-wage-deductions
+  question: "Can my employer deduct money from my salary?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-iv-section-19
+  note: "Section 19 - deduction of wages."
+
+- id: employment-sexual-harassment
+  question: "What does the law say about sexual harassment at work?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-ii-section-6
+  note: "Section 6 - sexual harassment, including the employer's duty."
+
+- id: employment-certificate-of-service
+  question: "Must my employer give me a certificate when I leave my job?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-vi-section-51
+  note: "Section 51 - certificate of service."
+
+- id: employment-discrimination-at-work
+  question: "Can an employer refuse to hire me because I am a woman?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-ii-section-5
+    - constitution-of-kenya-2010@v2010-chapter-four-article-27
+  note: >
+    Deliberately cross-document, and the counterpart to
+    penal-robbery-arrest: the right is constitutional (Article 27), the
+    workplace duty is statutory (section 5). This is the regression test
+    for reranking diversity between the Constitution and a civil Act -
+    the first document that is neither criminal nor constitutional.
+
+- id: employment-minimum-wage
+  question: "What is the minimum wage in Kenya?"
+  answerable: false
+  note: >
+    Out of scope on purpose. The Employment Act sets minimum conditions
+    but never states an amount; wage figures live in Regulation of Wages
+    orders made under the Labour Institutions Act. A plausible-looking
+    near miss for a corpus that now contains employment law.
+
+- id: employment-nssf-contribution
+  question: "How much must my employer contribute to NSSF for me?"
+  answerable: false
+  note: >
+    Out of scope. NSSF Act, not the Employment Act. Keeps refusal
+    pressure on the new document rather than only coverage.

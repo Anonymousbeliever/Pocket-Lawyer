@@ -7,8 +7,11 @@ because both fail in the same dangerous way: a marker that silently does not
 match ships publisher matter as law.
 """
 
+import re
+
 import pytest
 
+from data_pipeline.cleaners import employment_act as employment_act_cleaner
 from data_pipeline.cleaners.base import (
     CleanerSpec,
     clean,
@@ -17,6 +20,64 @@ from data_pipeline.cleaners.base import (
     normalize_lines,
     remove_page_markers,
 )
+
+
+# ---------------------------------------------------------
+# A START MARKER MUST NOT MATCH THE FRONT MATTER IT IS CUTTING
+#
+# `cut_to_start` takes the FIRST match, so a pattern that also matches the
+# cover keeps the cover - and the table of contents behind it - as law. The
+# Employment Act has two decoys: "THE EMPLOYMENT ACT" on the cover and
+# "Employment Act" on the licence page.
+# ---------------------------------------------------------
+
+EMPLOYMENT_FRONT_MATTER = """LAWS OF KENYA
+THE EMPLOYMENT ACT
+CAP. 226
+Revised and published by the National Council for Law Reporting
+Kenya
+Employment Act
+Cap. 226
+Legislation as at 26 April 2024
+FRBR URI: /akn/ke/act/2007/11/eng@2024-04-26
+Employment Act (Cap. 226)
+Contents
+Part 1 – PRELIMINARY ....................................................... 1
+EMPLOYMENT ACT
+CAP. 226
+Published in Kenya Gazette Vol. CIX-No. 81 on 9 November 2007
+Assented to on 22 October 2007
+Part 1 – PRELIMINARY
+1.
+Short title
+"""
+
+
+def test_employment_act_start_marker_skips_the_cover_and_the_contents():
+    cut = cut_to_start(
+        EMPLOYMENT_FRONT_MATTER,
+        employment_act_cleaner.SPEC.start_pattern,
+    )
+
+    assert cut.startswith("EMPLOYMENT ACT\nCAP. 226\nPublished in Kenya")
+
+    # The decoys and everything between them are gone.
+    assert "LAWS OF KENYA" not in cut
+    assert "THE EMPLOYMENT ACT" not in cut
+    assert "Legislation as at" not in cut
+    assert "Contents" not in cut
+
+
+def test_employment_act_running_header_matches_the_real_shape():
+    """Header and jurisdiction on consecutive lines, each with stray space."""
+
+    page = "Employment Act (Cap. 226) \n Kenya\n35.\nTermination notice\n"
+
+    stripped = re.sub(
+        employment_act_cleaner.SPEC.running_header_pattern, "", page
+    )
+
+    assert stripped == "35.\nTermination notice\n"
 
 
 # ---------------------------------------------------------

@@ -77,3 +77,29 @@
   cleaner: penal-code
   structure: act
   validator: penal-code
+
+# The first civil document in the corpus, and the first to be cited by its
+# consolidated Chapter rather than its year: enacted as the Employment Act,
+# 2007, published here as Cap. 226. `version` is the consolidation date, not
+# 2007 - the Act commenced on 2 June 2008, which is a fact about the Act and
+# has no field.
+#
+# Reuses the `act` structure parser, which needed one fix: this Act numbers
+# its first Part in Arabic ("Part 1") and the rest in Roman, and the
+# Roman-only pattern was dropping sections 1 to 3 in silence.
+- document_id: employment-act
+  title: "Employment Act (Cap. 226)"
+  document_type: act
+  jurisdiction: Kenya
+  language: English
+  version: "2024-04-26"
+  effective_from: "2024-04-26"
+  effective_to: null
+  in_force: true
+  source:
+    name: "Kenya Law"
+    url: "https://new.kenyalaw.org/akn/ke/act/2007/11/eng@2024-04-26"
+  raw_path: "data/raw/legislation/employment-act.pdf"
+  cleaner: employment-act
+  structure: act
+  validator: employment-act
