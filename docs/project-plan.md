@@ -186,8 +186,8 @@ registry, IR, chunker or vector store changing once. Per document the cost is a
 cleaner spec, a validator, and a structure adapter only for a genuinely new
 shape.
 
-**Current state:** 96 questions, **93/96**, with **retrieval at 80/80 — 100%**.
-Reranking carries 77/80, first place 54/80.
+**Current state:** 96 questions, **94/96**, with **retrieval at 80/80 — 100%**.
+Reranking carries 78/80, first place 54/80. Baselined 2026-09-23.
 
 **MVP scope is fixed at eight documents.** Four are in: the Constitution, the
 Criminal Procedure Code, the Penal Code and the Employment Act. Four remain:
@@ -208,10 +208,11 @@ damage.
 **What limits the product now:**
 
 1. **Reranking, not retrieval.** Both remaining failures are
-   `RETRIEVED THEN DROPPED`, and both are now understood to be the same
-   defect rather than two coincidences — see *Measured: the cross-encoder
-   ranks by resemblance, not by answerhood*. It is the single weak link in
-   the chain.
+   `RETRIEVED THEN DROPPED`, and both are the same defect rather than two
+   coincidences — see *Measured: the cross-encoder ranks by resemblance, not
+   by answerhood*. **Both proposed fixes were measured and rejected**; the
+   limit turned out to be legal domain knowledge, not model class. It is the
+   single weak link in the chain, and it is being carried deliberately.
 2. **Corpus breadth.** Four documents of the eight.
 3. **The application layer.** No conversation state, no persistence, no auth,
    no mobile app.
@@ -954,33 +955,105 @@ model does not represent. A capability the model lacks cannot be reached by a
 threshold (tried, removed), a blend (tried, abandoned), or a per-document boost
 (the enumeration trap the regex router died of).
 
-**Two levers, and they attack different halves:**
+Two levers were proposed, and **both were then measured. Neither is worth
+building.** See the section below — it supersedes the hypotheses that stood
+here, one of which was wrong.
 
-1. **Subsection-level chunking.** s.35(1)(c) as its own chunk is short, dense
-   and beats s.78 outright. Deterministic, keeps the caching design intact, no
-   new model. Fixes `employment-notice`. **Cannot** fix
-   `penal-murder-sentence` — eleven words have nothing to split.
-2. **A model that can judge answerhood.** A much larger cross-encoder (GPU —
-   reranking already dominates latency at 568M) or an LLM selection pass over
-   the top 10. Fixes both. Costs **determinism**, which the caching, baselines
-   and regression detection all depend on.
+**A related chunking weakness, recorded separately because it is real even
+though lever 1 failed.** The Fourth Schedule is cut mid-list by the
+4,000-character cap: county functions 1–4 end `-part-1` and 5 onward open
+`-part-2`, and `-part-1` mixes *national* and *county* functions in one blob.
+A character cap split a legal list and ignored the Schedule's own
+Part 1 / Part 2 boundary. That is a citation-quality problem worth fixing on
+its own merits; it is **not** a fix for reranking.
 
-**Test before building either.** Hand the 30 retrieved candidates for
-`penal-murder-sentence` to `gpt-4o-mini` and ask which five answer the
-question. If an LLM cannot rescue eleven words that answer verbatim, neither
-lever is worth building.
+---
 
-**Do it once, after the corpus is complete at eight documents.** Both levers
-invalidate the baseline and every cached rerank result; doing it before
-document five means paying that five times. Two failures in 96 — about 2%, and
-the failure mode is a refusal, not a wrong answer — is affordable to carry.
+### Measured: neither lever fixes the reranker — and the experiment paid for itself
 
-**A third instance of the same chunking weakness.** The Fourth Schedule is cut
-mid-list by the 4,000-character cap: county functions 1–4 end `-part-1` and 5
-onward open `-part-2`, and `-part-1` mixes *national* and *county* functions in
-one blob. A character cap split a legal list, and ignored the Schedule's own
-Part 1 / Part 2 boundary. Same root as s.35's buried subsection, and further
-evidence for lever 1.
+Run 2026-09-23, before any production code was written. Both levers tested
+against the real corpus; scripts were throwaway and are not in the repo.
+
+**The decision rule, set before running:** the judge must *lose nothing*.
+Fixing 2 and breaking 0 is a build. Fixing 2 and breaking 3 is not, whatever
+the aggregate says. The cross-encoder already gets **78 of 80** right, so
+there was far more to lose than to gain.
+
+#### Lever 1 — subsection chunking: no effect whatsoever
+
+The hypothesis recorded above — that s.35(1)(c) as its own chunk would be
+"short, dense and beat s.78 outright" — was **wrong**, and it was written here
+as a finding when it was only a guess. Section 35 was split into six
+subsection chunks, dropped into the same 30 candidates, and reranked by the
+unchanged cross-encoder. The top five came back **byte-identical** to before.
+Not one piece reached contention.
+
+The cross-encoder does not prefer s.78 because s.35 is long. It prefers it
+because s.78 **resembles the question more**, and reshaping s.35 does not
+change that. Chunking is not a reranking fix.
+
+#### Lever 2 — an LLM judge: fixes one, breaks one, and the break is worse
+
+Every answerable question run through the proposed production shape —
+`retrieve 30 → cross-encoder narrows to 10 → gpt-4o-mini picks 5`:
+
+```text
+             current        judge
+  hit@5       78/80         78/80        no change
+  top1        54/80         66/80        +12
+  FIXED       employment-notice
+  BROKEN      arrest-bail
+```
+
+**`arrest-bail` is a legal error, not a near-miss.** Asked *"Can I be released
+on bail while waiting for my trial?"*, the judge returned CPC **s.356**
+(*bail pending the entering of an appeal*), **s.357** (*bail pending appeal*)
+and **s.124** (*bail bond* — the mechanics), dropping **Article 49**, which the
+cross-encoder had at **rank 1**. It also failed to pick **s.123 "Bail in
+certain cases"**, the correct pre-trial provision, which was in front of it.
+
+It answered a **pre-trial** question with **post-conviction** law. The same
+result holds when judging all 30, so it is not a narrowing artifact.
+
+**`penal-murder-sentence` was lost before the judge saw it.** s.204 is outside
+the cross-encoder's top 10, so narrowing to 10 is too tight; given all 30 the
+judge finds it at rank 1. But an all-30 design still **fixes 2 and breaks 1**,
+which fails the rule.
+
+#### The conclusion, which is not the one expected
+
+The judge's error is **the same class as the cross-encoder's** — matching on
+"bail" without distinguishing the stage of proceedings, exactly as the
+cross-encoder matched "notify/termination" without distinguishing who is
+notified.
+
+The earlier framing here — *"a 568M relatedness model has no representation of
+answerhood"* — was too flattering to the alternative. `gpt-4o-mini` does have
+that representation and **still** makes stage-confusion errors on Kenyan
+criminal procedure. **The limit is legal domain knowledge, not model class.**
+
+`top1` +12 is a genuine gain and was not bought, because `hit@5` stayed flat —
+the judge only reordered what was already reachable — and the price was one
+wrong-stage bail answer.
+
+#### Do not tune the prompt
+
+The obvious next move is an instruction about procedural stage, then re-run
+the 80. That is **prompt-fitting to the test set**: a prompt that works on
+these 80 questions and generalises to nothing — the hand-listed regex router's
+failure, one level up. One break in 80 is not enough signal to tune against.
+
+#### Standing position
+
+**Carry the two failures.** They are false refusals on questions the corpus
+answers — bad for usefulness, and exactly the failure mode
+`accuracy > grounding > usefulness` accepts. Revisit only with a materially
+stronger judge, not a differently-worded one, and re-run this experiment
+rather than reasoning about it.
+
+The experiment cost about twenty cents and stopped a build that would have
+shipped appeal-stage bail law to someone asking about pre-trial release.
+**Measure the lever before pulling it.**
 
 ### Evaluation will not scale as written
 
@@ -1067,12 +1140,16 @@ Revised 2026-09-23. The ordering changed for two reasons: the ingestion layer mu
    Models load once at startup; semantic intent routing;
    structured answer + sources. No state, no auth.
 
-5b. Reranker intervention                ← NEW, blocks nothing yet
+5b. Reranker intervention                ← CLOSED, measured, not built
    Both remaining failures are one defect: the
    cross-encoder ranks by resemblance, not answerhood.
-   Two levers, both invalidating every cached result -
-   so do it ONCE, after the corpus is complete at
-   eight. Run the cheap experiment first.
+   Both proposed levers were measured 2026-09-23 and
+   BOTH FAILED. Subsection chunking changed nothing;
+   an LLM judge fixed one question and answered a
+   pre-trial bail question with post-conviction law.
+   Carry the two failures. Reopen only with a
+   materially stronger judge, and re-run the
+   experiment rather than reasoning about it.
 
 6. Scenario understanding
    Fact extraction, legal-issue identification, multi-query.
@@ -1158,6 +1235,26 @@ Priority order when trade-offs arise:
 - **2026-08-31** — **Ingestion foundation built.** Replaced the five per-document scripts with one generic, registry-driven pipeline (`python -m data_pipeline.run`). Renamed `data-pipeline/` to `data_pipeline/` so stages can share code; added a common document IR so chunking, embedding and storage no longer know the document type. Fixed all four ingestion blockers: deterministic `uuid5` point IDs, generic stages behind per-type adapters, streaming batched embed-and-upsert with no on-disk vectors, and one central config imported by both the pipeline and the AI layer. Collection schema moved to named vectors with a sparse slot declared for future hybrid search, and the payload now carries `version`, `effective_date`, `in_force` and `as_at`. Added the first tests (33). Constitution re-ingested: **279 chunks**, longest 3,996 characters — Schedule 6's 24,146-character chunk is now split. Re-running produced **279 → 279 points**, proving ingestion is idempotent and a second document can no longer overwrite the first. Retrieval parity confirmed (Article 49 still ranks first) and the divorce refusal still holds.
 - **2026-09-02** — **Version-aware, document-first ingestion.** Chunk identity became `document_id@vversion-slug`, so two editions of the same Act no longer produce identical ids and overwrite each other. Derived artifacts moved from five stage directories to one directory per document version (`data/documents/<id>@v<version>/`), with `raw/` kept separate as the immutable source. `effective_from` / `effective_to` joined `in_force` and `version` on the payload and in metadata. Adapter tables moved out of the orchestrator into `data_pipeline/adapters.py` behind a `StructureParser` Protocol, and `CleanerSpec.start_pattern` became optional — it was a Constitution assumption sitting in supposedly generic code. Added `tests/test_multi_document.py`, which proves two document shapes and two versions produce disjoint ids without needing a second real document. **The evaluation reproduced the baseline exactly — 41/41, 40/41, 33/41, no regressions** — confirming that identity and file locations moved without disturbing a single retrieval decision. Old `data/` directories deliberately left in place.
 - **2026-09-01** — **Contextual embedding.** Chunks are now embedded and reranked with their document, citation and article title prepended (`backend/app/core/passage.py`); the stored content sent to the LLM is unchanged. Diagnosed offline before changing anything, which also refuted a length-bias theory. Evaluation went **34/41 → 40/41**, six questions improved, none regressed. See *Measured: chunks must be embedded with their citation context*. The one remaining failure, `county-government-role`, is a suspected defect in the question rather than the system — the Fourth Schedule distributes county functions and was never listed as an acceptable authority. Awaiting legal review.
+- **2026-09-23** — **Measured both proposed reranker fixes. Built neither.**
+  The two remaining failures are one defect — the cross-encoder ranking by
+  resemblance rather than answerhood — and two levers had been recorded as
+  the way out. Both were tested against the real corpus before any production
+  code, under a rule set in advance: *fix something, break nothing*.
+  **Subsection chunking changed nothing** — splitting section 35 into six
+  subsection chunks left the reranked top five byte-identical, disproving a
+  hypothesis that had been written into these docs as a finding. **An LLM
+  judge fixed one and broke one**: `hit@5` flat at 78/80, `top1` 54 → 66, but
+  asked *"Can I be released on bail while waiting for my trial?"* it returned
+  Criminal Procedure Code s.356 and s.357 — both *pending appeal* — plus the
+  bail-bond mechanics, dropping Article 49 which the cross-encoder had at rank
+  1, and missing s.123 entirely. **Pre-trial question, post-conviction law.**
+  Consistent when judging all 30, so not a narrowing artifact. The
+  unexpected conclusion: the judge makes the *same class* of error as the
+  cross-encoder, so the limit is legal domain knowledge, not model class.
+  Declined to tune the prompt — one break in 80 is prompt-fitting to the test
+  set. Two failures carried; both are false refusals, the failure mode the
+  priority order accepts. Cost about twenty cents, and prevented shipping
+  appeal-stage bail law to someone asking about pre-trial release.
 - **2026-09-23** — **Fourth document, and a failing test that was not a
   failing system.** Ingested the **Employment Act (Cap. 226)**, the first
   civil document in the corpus: 45 pages, 91 live sections, 92 chunks,

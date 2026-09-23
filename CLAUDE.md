@@ -287,16 +287,26 @@ are provisioned for.
   employee. Likewise s.204's eleven words lose to *"Conspiracy to murder"*.
   This is **not** a plumbing bug: `passage.py` was verified to put
   `"Section 35: Termination notice"` in front of the reranker. The model reads
-  the header and still prefers the resemblance, because a 568M relatedness
-  model has no representation of *answerhood*. You cannot reach a missing
+  the header and still prefers the resemblance. You cannot reach the missing
   capability with a threshold (tried, removed), a blend (tried, abandoned) or
-  a per-document boost (the enumeration trap). Two levers exist -
-  subsection-level chunking, and a model that can judge answerhood - and both
-  invalidate every cached result, so **do it once, after the corpus is complete
-  at eight documents**, and run the cheap experiment first. Full analysis and
-  the experiment design are in `docs/project-plan.md`. The grounding prompt
-  holds meanwhile: tier 2 gave `false answers 0`, the system **refused**
-  rather than repeating s.78's confident wrong number.
+  a per-document boost (the enumeration trap).
+  **Two levers were proposed and BOTH were measured on 2026-09-23. Neither is
+  worth building. Do not re-propose either without re-running the experiment.**
+  *Subsection chunking changed nothing* - splitting s.35 into six subsection
+  chunks left the reranked top five byte-identical, so the problem is not that
+  s.35 is long. *An LLM judge* (`gpt-4o-mini` over the candidates) fixed
+  `employment-notice` and **broke `arrest-bail`**, answering a **pre-trial**
+  bail question with **post-conviction** law - CPC s.356 and s.357, both
+  *pending appeal* - while dropping Article 49, which the cross-encoder had at
+  rank 1. `hit@5` stayed flat at 78/80; only `top1` improved, 54 → 66.
+  The lesson is the one that was not expected: the judge makes the **same
+  class of error** as the cross-encoder. **The limit is legal domain
+  knowledge, not model class.** Do not tune the judge's prompt to rescue
+  `arrest-bail` either - one break in 80 is prompt-fitting to the test set.
+  Full numbers in `docs/project-plan.md`. The grounding prompt holds
+  meanwhile: tier 2 gave `false answers 0`, the system **refused** rather than
+  repeating s.78's confident wrong number, so these are false refusals - the
+  failure mode `accuracy > grounding > usefulness` accepts.
 - **A failing test is not automatically a failing system.**
   `county-government-role` failed for eighteen runs. The cause was its
   expectations: Article 186 does not list county functions - its operative
