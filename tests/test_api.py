@@ -12,7 +12,7 @@ bypass exists rather than merely appearing to.
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app.ai.answer import LegalAnswer
+from backend.app.ai.answer import Grounded, LegalAnswer
 from backend.app.ai.intent import Intent, exact_match
 from backend.app.api.routes import get_classifier, get_rag
 from backend.app.main import app
@@ -89,9 +89,23 @@ class StubRAG:
                 sufficient=True,
                 question_type="polar",
                 verdict="no",
-                explanation="An arrested person has the right to remain silent.",
-                qualifications=["Subject to the twenty-four hour limit."],
-                cited_chunk_ids=[ARTICLE_49],
+                statements=[
+                    Grounded(
+                        text=(
+                            "An arrested person has the right to remain "
+                            "silent."
+                        ),
+                        chunk_id=ARTICLE_49,
+                        quote="the right to remain silent",
+                    )
+                ],
+                qualifications=[
+                    Grounded(
+                        text="Subject to the twenty-four hour limit.",
+                        chunk_id=ARTICLE_49,
+                        quote="not later than twenty-four hours",
+                    )
+                ],
             ),
             "sources": [chunk(ARTICLE_49)],
             "considered": [chunk(ARTICLE_49), chunk(CPC_29)],
@@ -105,9 +119,9 @@ class StubRAG:
                 sufficient=False,
                 question_type="open",
                 verdict="not_applicable",
-                explanation="The sources do not cover the Penal Code.",
+                statements=[],
                 qualifications=[],
-                cited_chunk_ids=[],
+                missing="The sources do not cover the Penal Code.",
             ),
             "sources": [],
             "considered": [chunk(CPC_29)],
@@ -242,17 +256,23 @@ def test_cited_and_considered_stay_separate(client):
     assert len(body["considered"]) == 1
 
 
-def test_unverified_citations_are_surfaced(client):
+def test_ungrounded_claims_are_surfaced(client):
     """Stripped before the user sees them, but reported rather than buried."""
 
     outcome = StubRAG.grounded()
-    outcome["structured"].unverified_citations = ["invented-section-99"]
+    outcome["structured"].ungrounded = [
+        Grounded(
+            text="You must be told at the exact moment of arrest.",
+            chunk_id=ARTICLE_49,
+            quote="a quote that is not in the source",
+        )
+    ]
 
     app.dependency_overrides[get_rag] = lambda: StubRAG(outcome)
 
     body = client.post("/ask", json={"question": "What are my rights?"}).json()
 
-    assert body["unverified_citations"] == ["invented-section-99"]
+    assert body["ungrounded_claims"] == 1
 
 
 # ---------------------------------------------------------

@@ -80,10 +80,28 @@ SUBSECTION_PATTERN = re.compile(r"^\((\d+)\)$")
 # existing behaviour.
 PARAGRAPH_PATTERN = re.compile(r"^\(([a-z]{1,4})\)$")
 
+# A schedule heading ends the operative text, so a false positive here does
+# not mislabel anything - it TRUNCATES THE ACT, and silently.
+#
+# The Children Act proved how easily that happens. Section 218 ends "...shall
+# be carried out in accordance with the Fifth Schedule.", the line wrapped,
+# and "Fifth Schedule." landed at the start of a line. A case-insensitive
+# prefix match treated it as the start of the schedules and discarded
+# sections 219 to 250 - the whole of Part XV, Children in Conflict with the
+# Law.
+#
+# Two things separate a real heading from a sentence fragment, and both are
+# now required. Real headings are UPPERCASE, and the whole line is the
+# heading, optionally followed by a bracketed source reference:
+#
+#   FIRST SCHEDULE                     Criminal Procedure Code
+#   FIFTH SCHEDULE [s. 218(5)]         Children Act
+#
+# A wrapped fragment is title-case and carries the sentence's punctuation,
+# so it fails both tests.
 SCHEDULE_PATTERN = re.compile(
     r"^(FIRST|SECOND|THIRD|FOURTH|FIFTH|SIXTH|SEVENTH|EIGHTH|NINTH|TENTH)"
-    r"\s+SCHEDULE\b",
-    re.IGNORECASE,
+    r"\s+SCHEDULE\b\s*(?:\[[^\]]*\])?\s*$"
 )
 
 # Amendment annotations: "[Act No. 5 of 2003, s. 61.]" after a section,
@@ -147,7 +165,10 @@ def _is_cross_heading(line: str, next_line: str) -> bool:
 def _parse_tree(text: str) -> dict:
     lines = _clean_lines(text)
 
-    tree: dict = {"parts": []}
+    # `unparted` holds sections that appear before any Part heading. Most
+    # Acts have none; the Law of Succession Act has four. See the comment at
+    # the opening-block guard below.
+    tree: dict = {"parts": [], "unparted": []}
 
     current_part = None
     current_chapter = None
@@ -199,11 +220,22 @@ def _parse_tree(text: str) -> dict:
 
             continue
 
-        # Everything before the first Part is the Act's opening block:
-        # gazette details and the "[Amended by ...]" log. It is an
+        # Everything before the first Part is NORMALLY the Act's opening
+        # block: gazette details and the "[Amended by ...]" log, which is
         # amendment history, not law.
+        #
+        # But not always, and the exception is silent. The Law of Succession
+        # Act has no Part I - its divisions begin at "Part II – WILLS" - and
+        # sections 1 to 4 sit above them ungrouped, section 3 being
+        # Interpretation. Dropping everything until the first Part would
+        # discard four sections of operative law without a word.
+        #
+        # So a SECTION heading up here opens an unparted bucket, and its
+        # body follows it. Anything else before the first Part is still the
+        # opening block, and is still dropped.
         if current_part is None:
-            continue
+            if not SECTION_NUMBER_PATTERN.match(line) and current_section is None:
+                continue
 
         # CROSS-HEADING
         if _is_cross_heading(line, next_line):
@@ -221,7 +253,10 @@ def _parse_tree(text: str) -> dict:
                 "text": [],
             }
 
-            current_part["sections"].append(current_section)
+            if current_part is None:
+                tree["unparted"].append(current_section)
+            else:
+                current_part["sections"].append(current_section)
 
             current_subsection = None
             current_paragraph = None
@@ -296,22 +331,26 @@ def _section_text(section: dict) -> str:
     return "\n".join(lines).strip()
 
 
-def _path(part_label: str, section: dict) -> list[str]:
+def _path(part_label: str | None, section: dict) -> list[str]:
     """
-    The citation breadcrumb, with the Chapter included when the Act has one.
+    The citation breadcrumb, with each level included only when it exists.
 
     Labels only, never titles - the Constitution adapter does the same with
     "Chapter Four". It keeps the citation short and keeps the commas and en
     dashes that live in Act headings out of `Unit.slug()`, and therefore out
     of chunk ids.
 
-    An Act without Chapters produces exactly what it did before:
-
         ["Part III", "Section 21"]                     Criminal Procedure Code
         ["Part II", "Chapter XV", "Section 203"]       Penal Code
+        ["Section 3"]                                  Law of Succession Act
+
+    The one-level form is for a section that belongs to no Part, and it is
+    deliberately short rather than invented. The Law of Succession Act simply
+    has no Part I; synthesising one so every path looks alike would put a
+    division in the citation that the Act does not contain.
     """
 
-    path = [part_label]
+    path = [part_label] if part_label else []
 
     chapter = section.get("chapter")
 
@@ -351,14 +390,19 @@ def parse(text: str, entry: DocumentEntry) -> Document:
 
     units: list[Unit] = []
 
-    for part in tree["parts"]:
-        # The Part label, not the Part title, goes in the path — the
-        # Constitution adapter does the same with "Chapter Four". It
-        # keeps the citation short and the chunk id free of the commas
-        # and en dashes that Part titles contain.
-        part_label = f"Part {part['number']}"
+    # Sections above the first Part come first, in document order. The Part
+    # label, not the Part title, goes in the path — the Constitution adapter
+    # does the same with "Chapter Four". It keeps the citation short and the
+    # chunk id free of the commas and en dashes that Part titles contain.
+    groups: list[tuple[str | None, list[dict]]] = [(None, tree["unparted"])]
 
-        for section in part["sections"]:
+    groups += [
+        (f"Part {part['number']}", part["sections"])
+        for part in tree["parts"]
+    ]
+
+    for part_label, sections in groups:
+        for section in sections:
             if _is_repealed(section):
                 continue
 

@@ -17,6 +17,15 @@ from backend.app.core.config import DOCUMENTS_DIR
 
 QUESTIONS_PATH = Path(__file__).resolve().parent / "questions.yaml"
 
+PRODUCT_PATH = Path(__file__).resolve().parent / "questions_product.yaml"
+
+# Suite is a property of the FILE, never of an individual question, so a
+# question cannot be quietly moved between suites to flatter a number.
+SUITE_FILES = {
+    "statutory": QUESTIONS_PATH,
+    "product": PRODUCT_PATH,
+}
+
 
 @dataclass
 class Question:
@@ -28,6 +37,14 @@ class Question:
     expect_any_of: list[str] = field(default_factory=list)
     note: str = ""
 
+    # "statutory": worded like the statute, a retrieval regression test.
+    # "product":   worded like a person, the test of whether anyone is served.
+    suite: str = "statutory"
+
+    # Optional sub-category. "advice" marks a question asking for a course of
+    # action rather than what the law says - out of scope for now.
+    kind: str = ""
+
 
 @dataclass
 class QuestionResult:
@@ -35,6 +52,9 @@ class QuestionResult:
 
     id: str
     answerable: bool
+
+    # Copied from the Question, so results can be reported per suite.
+    suite: str = "statutory"
 
     # None where the metric is not observable:
     #  - for questions the corpus cannot answer, there is no expected
@@ -59,6 +79,45 @@ class QuestionResult:
     # Whether the answer actually leaned on an expected authority, as
     # opposed to merely having been shown one.
     cited_expected: bool | None = None
+
+    # Assertions dropped because their quote was not found in the source
+    # they cited. Zero is the healthy value; a rising count means the
+    # model is asserting more than the sources support, which is the
+    # failure this project exists to prevent.
+    ungrounded: int = 0
+
+    # WHICH mechanism refused, when the system refused. The model can
+    # decline on its own, or it can answer and have the grounding check
+    # overrule it because too few of its statements survived verification.
+    # Those need opposite fixes - one is retrieval or prompting, the other
+    # is the matcher or the refusal rule - and before this was recorded
+    # they were indistinguishable in the output.
+    refused_by_grounding: bool = False
+
+    # The evidence behind a grounding refusal: what survived, and what was
+    # dropped and why. Enough to check each dropped quote against the chunk
+    # it cited without re-running anything.
+    statements_kept: list[str] = field(default_factory=list)
+    statements_dropped: int = 0
+    dropped: list[dict] = field(default_factory=list)
+
+    # The rendered answer, exactly as a user would read it - verdict,
+    # explanation and qualifications. Without it, an answer that should
+    # have been a refusal could be counted but never read.
+    answer_text: str = ""
+
+    # The tier-2 judge's reading of the answer itself - the first metric
+    # in this harness that looks at what the user would actually see.
+    # None means not judged (a refusal, or the judge errored), which is
+    # kept distinct from judged-and-failed.
+    answer_quality: bool | None = None
+    judge_defect: str | None = None
+    judge_reason: str = ""
+
+    # The judge's check of each claim: the claim, the words of the section
+    # it copied, its finding, and why. Kept so a rejected answer shows WHICH
+    # claim failed rather than only that one did.
+    judge_claims: list[dict] = field(default_factory=list)
 
     @property
     def refusal_correct(self) -> bool | None:
@@ -151,25 +210,52 @@ class QuestionResult:
 # LOADING AND VALIDATION
 # ---------------------------------------------------------
 
-def load_questions(path: Path = QUESTIONS_PATH) -> list[Question]:
-    if not path.exists():
-        raise FileNotFoundError(f"Question set not found: {path}")
+def load_questions(
+    path: Path | None = None,
+    suites: tuple[str, ...] = ("statutory", "product"),
+) -> list[Question]:
+    """
+    Load the question set.
 
-    raw = yaml.safe_load(path.read_text(encoding="utf-8")) or []
+    With `path`, only that file is read, as the statutory suite - which is
+    how the tests and any older caller behave. Without it, every suite named
+    in `suites` is read from its own file and tagged accordingly.
+    """
 
-    if not isinstance(raw, list):
-        raise ValueError("questions.yaml must contain a list.")
+    sources = (
+        [("statutory", path)]
+        if path is not None
+        else [(name, SUITE_FILES[name]) for name in suites]
+    )
 
-    questions = [
-        Question(
-            id=entry["id"],
-            question=entry["question"],
-            answerable=bool(entry["answerable"]),
-            expect_any_of=list(entry.get("expect_any_of") or []),
-            note=entry.get("note", ""),
-        )
-        for entry in raw
-    ]
+    questions: list[Question] = []
+
+    for suite, source in sources:
+        if not source.exists():
+            if suite == "statutory" or path is not None:
+                raise FileNotFoundError(f"Question set not found: {source}")
+
+            # The product suite is optional: a checkout without it still
+            # runs the statutory suite rather than failing.
+            continue
+
+        raw = yaml.safe_load(source.read_text(encoding="utf-8")) or []
+
+        if not isinstance(raw, list):
+            raise ValueError(f"{source.name} must contain a list.")
+
+        questions += [
+            Question(
+                id=entry["id"],
+                question=entry["question"],
+                answerable=bool(entry["answerable"]),
+                expect_any_of=list(entry.get("expect_any_of") or []),
+                note=entry.get("note", ""),
+                suite=suite,
+                kind=entry.get("kind", ""),
+            )
+            for entry in raw
+        ]
 
     errors = validate_questions(questions)
 

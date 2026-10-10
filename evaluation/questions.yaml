@@ -364,8 +364,22 @@
 
 - id: divorce-process
   question: "What is the legal process for filing for divorce in Kenya?"
-  answerable: false
-  note: "Marriage Act / Matrimonial Causes. The original refusal test case."
+  answerable: true
+  expect_any_of:
+    - marriage-act@v2022-12-31-part-x-section-66
+    - marriage-act@v2022-12-31-part-x-section-65
+    - marriage-act@v2022-12-31-part-x-section-69
+  note: >
+    **The original refusal test case**, and the reason the corpus exists in
+    its present shape. In the very first Phase 3 tests this question was
+    correctly refused over a Constitution-only corpus, and that refusal was
+    recorded as desired behaviour rather than a bug. It stayed out of scope
+    for five documents.
+
+    Section 66 is the right to petition for separation or divorce; 65 gives
+    the grounds for dissolving a Christian marriage and 69 for a customary
+    one. Wording unchanged from the day it was written, so the flip is
+    honest.
 
 - id: employment-notice
   question: "How much notice must my employer give before terminating my job?"
@@ -395,13 +409,27 @@
 
 - id: writing-a-will
   question: "How do I write a valid will in Kenya?"
-  answerable: false
-  note: "Law of Succession Act."
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-ii-section-8
+    - law-of-succession-act@v2022-12-31-part-ii-section-11
+    - law-of-succession-act@v2022-12-31-part-ii-section-5
+  note: >
+    Flipped when the Law of Succession Act landed. Section 8 gives the form
+    a will may take, 11 the requirements of a written will, 5 who may make
+    one. Wording unchanged so the baseline diff shows the flip honestly.
 
 - id: small-claims-filing
   question: "How do I file a case in the small claims court?"
-  answerable: false
-  note: "Small Claims Court Act and court rules."
+  answerable: true
+  expect_any_of:
+    - small-claims-court-act@v2022-12-31-part-iv-section-23
+    - small-claims-court-act@v2022-12-31-part-iv-section-24
+  note: >
+    Flipped when the Small Claims Court Act landed. Section 23 is filing of
+    claims, 24 the form of the statement of claim. The detailed steps live
+    in the Rules, which are subsidiary legislation and not in the corpus -
+    so a good answer here cites the Act and stops.
 
 - id: work-permit
   question: "How do I apply for a work permit in Kenya?"
@@ -819,3 +847,366 @@
   note: >
     Out of scope. NSSF Act, not the Employment Act. Keeps refusal
     pressure on the new document rather than only coverage.
+
+# ---------------------------------------------------------
+# LAW OF SUCCESSION ACT (Cap. 160)
+#
+# Document five, and the highest-stakes civil area in the corpus: someone
+# dies without a will and relatives move on the land. Note that sections 1
+# to 4 carry a one-level citation path - this Act has no Part I.
+# ---------------------------------------------------------
+
+- id: succession-oral-will
+  question: "Is a will someone speaks out loud before dying valid?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-ii-section-9
+    - law-of-succession-act@v2022-12-31-part-ii-section-10
+  note: "Section 9 permits oral wills; section 10 is how they are proved."
+
+- id: succession-witness-inherits
+  question: "Can someone who witnessed my will also inherit from it?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-ii-section-13
+  note: "Section 13 - effect of a gift to an attesting witness."
+
+- id: succession-revoke-will
+  question: "Can I cancel a will I already made?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-ii-section-17
+    - law-of-succession-act@v2022-12-31-part-ii-section-18
+  note: "Section 17 the power to revoke or alter; 18 how revocation happens."
+
+- id: succession-marriage-revokes-will
+  question: "Does getting married cancel a will I wrote before?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-ii-section-19
+  note: >
+    Section 19 - revocation by the testator's marriage. A rule almost nobody
+    knows, which is exactly the kind of question this product exists for.
+
+- id: succession-left-out-of-will
+  question: "My father's will left me nothing. Can I do anything?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-iii-section-26
+    - law-of-succession-act@v2022-12-31-part-iii-section-29
+  note: "Section 26 provision for dependants; 29 who counts as a dependant."
+
+- id: succession-no-will-spouse-and-children
+  question: "If someone dies without a will, what do the wife and children get?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-v-section-35
+  note: "Section 35 - surviving spouse and children."
+
+- id: succession-no-will-children-only
+  question: "Who inherits if a parent dies without a will and the spouse is already dead?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-v-section-38
+  note: "Section 38 - surviving children but no spouse."
+
+- id: succession-no-will-no-family
+  question: "What happens to property when someone dies with no spouse or children?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-v-section-39
+  note: "Section 39 - the order of relatives, and failing all, the State."
+
+- id: succession-polygamous-estate
+  question: "How is an estate divided when a man had more than one wife?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-v-section-40
+  note: "Section 40 - where the intestate was polygamous."
+
+- id: succession-intermeddling
+  question: "Can relatives start sharing out property before the court allows it?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-vii-section-45
+    - law-of-succession-act@v2022-12-31-part-vii-section-55
+    - law-of-succession-act@v2022-12-31-part-vii-section-71
+  note: >
+    Corrected 2026-09-23, the day it was written. As worded this question
+    is ambiguous between two different legal situations, and the original
+    expectation named only one of them.
+
+    Section 45 covers people with NO grant helping themselves - taking
+    possession or disposing of a deceased's property, which is an offence.
+    Section 55 covers an administrator who HAS a grant distributing capital
+    before the grant is confirmed under section 71.
+
+    "Relatives sharing out property before the court allows it" describes
+    both. Reranking returned 55 first and 71 third - a coherent and legally
+    correct answer to one reading - and the harness scored it a miss. All
+    three are legitimate; the question is kept as a citizen would phrase it,
+    and succession-taking-property-before-grant below tests section 45
+    unambiguously.
+
+- id: succession-taking-property-before-grant
+  question: "Can relatives take a dead person's property before anyone is appointed to handle the estate?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-vii-section-45
+  note: >
+    Section 45 alone, and deliberately narrow. Written because
+    succession-intermeddling turned out to admit two readings; this one
+    names the situation - no grant, no appointment - that only section 45
+    answers. The single most common real dispute in Kenyan succession.
+
+- id: succession-grant-application
+  question: "How do I get legal authority to deal with a dead relative's estate?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-vii-section-51
+    - law-of-succession-act@v2022-12-31-part-vii-section-53
+  note: "Section 51 application for a grant; 53 the forms of grant."
+
+- id: succession-confirmation-of-grant
+  question: "How long before an estate can actually be distributed?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-vii-section-71
+    - law-of-succession-act@v2022-12-31-part-vii-section-55
+  note: "Section 71 confirmation of grants; 55 no distribution before it."
+
+- id: succession-killer-inherits
+  question: "Can someone inherit from a person they murdered?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-viii-section-96
+  note: >
+    Section 96. Deliberately cross-document in spirit: the crime is in the
+    Penal Code, the inheritance consequence is here.
+
+- id: succession-muslim-estate
+  question: "Does this law apply to the estate of a Muslim who has died?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-section-2
+  note: >
+    Section 2(3) excludes Muslim estates, which are governed by Muslim law.
+    Also the regression test for the unparted sections: section 2 has a
+    ONE-LEVEL citation path because this Act has no Part I, and if the
+    parser ever drops sections above the first Part this question fails.
+
+- id: succession-inheritance-tax
+  question: "How much inheritance tax must I pay on property I inherit?"
+  answerable: false
+  note: >
+    Out of scope on purpose. The Law of Succession Act says nothing about
+    tax; estate duty was abolished and any tax question belongs to revenue
+    legislation. A plausible near miss now that succession law is indexed.
+
+# ---------------------------------------------------------
+# CHILDREN ACT (Cap. 141)
+#
+# Document six. Child maintenance and custody are among the highest-frequency
+# real legal problems in Kenya, and rarely the asker's own choice to be in.
+# The Constitution already carries Article 53; these test the statute that
+# implements it.
+# ---------------------------------------------------------
+
+- id: children-maintenance-order
+  question: "My child's father refuses to support them. Can I make him pay?"
+  answerable: true
+  expect_any_of:
+    - children-act@v2022-12-31-part-ix-section-111
+    - children-act@v2022-12-31-part-ix-section-110
+  note: "Section 111 power to make a maintenance order; 110 joint maintenance."
+
+- id: children-maintenance-enforcement
+  question: "What happens if someone ignores a maintenance order for a child?"
+  answerable: true
+  expect_any_of:
+    - children-act@v2022-12-31-part-ix-section-121-part-1
+    - children-act@v2022-12-31-part-ix-section-121-part-2
+  note: >
+    Section 121 - enforcement of orders for maintenance or contribution.
+    At 5,532 characters it exceeds the 4,000 chunk cap and is split, so both
+    halves are listed; either is a legitimate hit.
+
+- id: children-custody
+  question: "Who decides which parent a child lives with after separation?"
+  answerable: true
+  expect_any_of:
+    - children-act@v2022-12-31-part-ix-section-102
+    - children-act@v2022-12-31-part-ix-section-103
+    - children-act@v2022-12-31-part-ix-section-101
+  note: >
+    Section 102 custody orders; 103 the principles applied; 101 custody,
+    care and control.
+
+- id: children-parental-responsibility
+  question: "Does an unmarried father have any legal duty towards his child?"
+  answerable: true
+  expect_any_of:
+    - children-act@v2022-12-31-part-iii-section-31
+    - children-act@v2022-12-31-part-iii-section-32
+  note: "Section 31 parental responsibility; 32 equal parental responsibility."
+
+- id: children-criminal-age
+  question: "How old must a child be before they can be charged with a crime?"
+  answerable: true
+  expect_any_of:
+    - children-act@v2022-12-31-part-xv-section-221
+  note: >
+    Section 221 - criminal liability of a child. Also the regression test
+    for the wrapped "Fifth Schedule." bug: this section sits inside the
+    block of 32 that a false schedule match silently discarded.
+
+- id: children-cruelty
+  question: "What is the punishment for neglecting or mistreating a child?"
+  answerable: true
+  expect_any_of:
+    - children-act@v2022-12-31-part-xii-section-152
+  note: "Section 152 - penalty for cruelty to and neglect of children."
+
+- id: children-adoption-eligibility
+  question: "Who is allowed to adopt a child in Kenya?"
+  answerable: true
+  expect_any_of:
+    - children-act@v2022-12-31-part-xiv-section-186
+    - children-act@v2022-12-31-part-xiv-section-184
+  note: "Section 186 who may apply to adopt; 184 the pre-requisites."
+
+- id: children-child-labour
+  question: "Is it legal to employ a child in Kenya?"
+  answerable: true
+  expect_any_of:
+    - children-act@v2022-12-31-part-ii-section-18
+  note: >
+    Section 18 - protection from child labour. Deliberately overlaps the
+    Employment Act's Part VII on children: a legitimate answer may come
+    from either, so this also tests reranking diversity across two civil
+    Acts rather than between the Constitution and an Act.
+
+- id: children-guardian-appointment
+  question: "Can I name someone in my will to look after my children if I die?"
+  answerable: true
+  expect_any_of:
+    - children-act@v2022-12-31-part-x-section-124
+    - children-act@v2022-12-31-part-x-section-122
+  note: >
+    Section 124 testamentary guardian; 122 appointment of a guardian.
+    Cross-document in spirit - the will itself is Law of Succession
+    territory.
+
+# ---------------------------------------------------------
+# MARRIAGE ACT (Cap. 150)
+#
+# Document seven, and the one that closes divorce-process.
+# ---------------------------------------------------------
+
+- id: marriage-minimum-age
+  question: "How old do you have to be to get married in Kenya?"
+  answerable: true
+  expect_any_of:
+    - marriage-act@v2022-12-31-part-ii-section-4
+    - marriage-act@v2022-12-31-part-xiii-section-87
+  note: "Section 4 minimum age; 87 the offence of marrying someone under it."
+
+- id: marriage-types
+  question: "What kinds of marriage are recognised in Kenya?"
+  answerable: true
+  expect_any_of:
+    - marriage-act@v2022-12-31-part-ii-section-6
+    - marriage-act@v2022-12-31-part-ii-section-3
+  note: "Section 6 kinds of marriages; 3 the meaning of marriage."
+
+- id: marriage-second-wife
+  question: "Can a man marry another wife while still married?"
+  answerable: true
+  expect_any_of:
+    - marriage-act@v2022-12-31-part-ii-section-9
+    - marriage-act@v2022-12-31-part-ii-section-6
+  note: >
+    Section 9 subsisting marriages, read with section 6 - the answer depends
+    entirely on which kind of marriage it is, which is why both are listed.
+
+- id: marriage-void
+  question: "When is a marriage not valid at all?"
+  answerable: true
+  expect_any_of:
+    - marriage-act@v2022-12-31-part-ii-section-11
+    - marriage-act@v2022-12-31-part-ii-section-12
+  note: >
+    Section 11 void marriages; 12 voidable ones - a distinction people
+    routinely conflate.
+
+- id: marriage-spouse-maintenance
+  question: "Can I claim maintenance from my husband after we separate?"
+  answerable: true
+  expect_any_of:
+    - marriage-act@v2022-12-31-part-xii-section-77
+    - marriage-act@v2022-12-31-part-xii-section-81
+  note: "Section 77 grounds for a maintenance order; 81 how it is assessed."
+
+- id: marriage-broken-engagement
+  question: "He promised to marry me and then refused. Can I sue?"
+  answerable: true
+  expect_any_of:
+    - marriage-act@v2022-12-31-part-xi-section-76
+  note: >
+    Section 76 - effect of a promise to marry. A question people genuinely
+    ask and almost always guess wrong about.
+
+# ---------------------------------------------------------
+# SMALL CLAIMS COURT ACT (Cap. 10A)
+#
+# Document eight. Every other document tells someone they have a right;
+# this one tells them where to go.
+# ---------------------------------------------------------
+
+- id: smallclaims-limit
+  question: "How much money can I claim in the small claims court?"
+  answerable: true
+  expect_any_of:
+    - small-claims-court-act@v2022-12-31-part-iii-section-12
+  note: "Section 12 - nature of claims and pecuniary jurisdiction."
+
+- id: smallclaims-what-cases
+  question: "What kinds of disputes can the small claims court not handle?"
+  answerable: true
+  expect_any_of:
+    - small-claims-court-act@v2022-12-31-part-iii-section-13
+    - small-claims-court-act@v2022-12-31-part-iii-section-12
+  note: "Section 13 exclusion of jurisdiction; 12 what it does cover."
+
+- id: smallclaims-lawyer
+  question: "Do I need an advocate to go to the small claims court?"
+  answerable: true
+  expect_any_of:
+    - small-claims-court-act@v2022-12-31-part-iv-section-20
+  note: "Section 20 - representation before the Court."
+
+- id: smallclaims-appeal
+  question: "Can I appeal a small claims court decision?"
+  answerable: true
+  expect_any_of:
+    - small-claims-court-act@v2022-12-31-part-iv-section-38
+  note: "Section 38 - appeals, and the narrow grounds for them."
+
+- id: smallclaims-enforcement
+  question: "I won my case but they still will not pay. What now?"
+  answerable: true
+  expect_any_of:
+    - small-claims-court-act@v2022-12-31-part-v-section-39
+    - small-claims-court-act@v2022-12-31-part-v-section-40
+    - small-claims-court-act@v2022-12-31-part-iv-section-37
+  note: >
+    Sections 39 and 40 execution; 37 enforcement of orders to pay money.
+    The question most likely to follow a win, and rarely answered anywhere.
+
+- id: smallclaims-court-fees
+  question: "How much does it cost to file a claim in the small claims court?"
+  answerable: false
+  note: >
+    Out of scope on purpose. Fee scales are set in the Rules, which are
+    subsidiary legislation and not in the corpus. A plausible near miss now
+    that the Act is indexed.

@@ -169,10 +169,11 @@ verdict
   Use "not_applicable" for open or procedural questions, and
   whenever sufficient is false.
 
-explanation
-  The legal explanation in plain language.
+statements
+  The legal explanation, broken into one assertion per item, in
+  the order they should be read.
 
-  Do NOT begin it with "Yes" or "No" — the verdict field already
+  Do NOT begin with "Yes" or "No" — the verdict field already
   carries the direct answer, and it is presented to the user
   before this text. Starting with a polarity word produces a
   contradictory answer.
@@ -183,14 +184,45 @@ explanation
   it as "immediately" or "at the exact moment" — those are
   different legal standards.
 
+  Each item has three parts:
+
+    text      the assertion, in plain language
+    chunk_id  the exact Chunk ID of the source it rests on,
+              copied character for character from the context
+    quote     a VERBATIM span copied out of that source's
+              Legal Text which supports the assertion
+
+  The quote is checked against the source automatically. Copy
+  it exactly — do not paraphrase and do not tidy the
+  punctuation. Give at least a full clause; a handful of words
+  will be rejected.
+
+  Legal text is enumerated, so the words you need are often a
+  stem plus ONE of its paragraphs, with other paragraphs in
+  between. Skip the middle with "...":
+
+    "the Court may ... order the attachment of the salary of
+     the judgement debtor"
+
+  Each side of the "..." is checked separately and must appear
+  in the source, in the order you wrote them. Use it at most
+  twice in one quote, and never to join single words — a quote
+  assembled that way asserts something the source does not.
+
+  An assertion whose quote cannot be found in its source is
+  DISCARDED before the user sees it. If every assertion is
+  discarded, the whole answer becomes a refusal. So make a
+  claim only where you can point to the words that support it.
+
 qualifications
   Important limits, exceptions or conditions that appear in the
-  sources. Empty list if there are none. Do not invent them.
+  sources. Same three parts, same checking. Empty list if there
+  are none. Do not invent them.
 
-cited_chunk_ids
-  The exact Chunk ID values of the sources you relied on, copied
-  character for character from the context. Never invent one, and
-  never cite a source that was not provided.
+missing
+  Only when sufficient is false: what the sources do not contain.
+  Empty string otherwise. This is the one field with no quote,
+  because absence cannot be quoted.
 
 Remember:
 
@@ -357,6 +389,18 @@ retrieved sources.
         response = self.client.responses.create(
             model=self.model_name,
             instructions=SYSTEM_PROMPT,
+            # Sampling was left at the API default until grounding made
+            # the task partly one of VERBATIM REPRODUCTION, which is the
+            # worst possible task to sample on. Measured on one question,
+            # four runs: the model dropped 1, 1, 3 and 1 of its own
+            # claims, flipping the same question between a real answer
+            # and a refusal - not because the law changed, but because it
+            # reproduced the statute less carefully on some calls.
+            #
+            # This narrows that spread. It does not eliminate it: the API
+            # gives no determinism guarantee even at zero, so tier 2 stays
+            # non-deterministic and must never be cached.
+            temperature=0,
             input=user_prompt,
             text={
                 "format": {
@@ -473,14 +517,18 @@ compelling reasons not to be released.
     print(f"sufficient      : {answer.sufficient}")
     print(f"question_type   : {answer.question_type}")
     print(f"verdict         : {answer.verdict}")
+    print(f"statements      : {len(answer.statements)}")
     print(f"qualifications  : {len(answer.qualifications)}")
     print(f"cited_chunk_ids : {answer.cited_chunk_ids}")
 
-    if answer.unverified_citations:
+    if answer.ungrounded:
         print(
-            f"[WARN] fabricated citations removed: "
-            f"{answer.unverified_citations}"
+            f"[WARN] {len(answer.ungrounded)} assertion(s) dropped - the "
+            f"quote was not found in the source cited:"
         )
+
+        for item in answer.ungrounded:
+            print(f"        {item.chunk_id}: {item.quote[:70]!r}")
 
     print()
     print("=" * 60)

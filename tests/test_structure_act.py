@@ -26,6 +26,9 @@ from data_pipeline.validators import (
     criminal_procedure_code as cpc_validator,
 )
 from data_pipeline.validators import employment_act as employment_validator
+from data_pipeline.validators import (
+    law_of_succession_act as succession_validator,
+)
 
 
 DOCUMENT_ID = "criminal-procedure-code"
@@ -540,6 +543,164 @@ def test_a_part_reference_in_running_text_is_not_a_heading():
 
 
 # ---------------------------------------------------------
+# SECTIONS THAT BELONG TO NO PART
+#
+# Found by the Law of Succession Act, which has no Part I: its divisions begin
+# at "Part II – WILLS" and sections 1 to 4 sit above them ungrouped.
+#
+# The guard that drops everything before the first Part exists for a good
+# reason - the gazette block and the "[Amended by ...]" log are not law - so
+# it cannot simply be removed. A SECTION heading opens an unparted bucket;
+# anything else up there is still discarded.
+# ---------------------------------------------------------
+
+NO_FIRST_PART = """LAW OF SUCCESSION ACT
+CAP. 160
+Published in Kenya Gazette Vol. LXXIV-No. 55 on 17 November 1972
+[Amended by Statute Law (Miscellaneous Amendments) Act, 1975 (Act No. 7 of 1975)]
+An ACT of Parliament to consolidate the law relating to succession
+1.
+Short title
+This Act may be cited as the Law of Succession Act.
+3.
+Interpretation
+In this Act, unless the context otherwise requires—
+"will" means the legal declaration by a person of his wishes.
+Part II – WILLS
+5.
+Persons capable of making wills and freedom of testation
+(1)
+Any person who is of sound mind and not a minor may dispose of all or any of
+his free property by will.
+Part VIII – MISCELLANEOUS
+96.
+Sane murderer not to share in victim's estate
+A person who has been convicted of murdering another shall not be entitled to
+share in the estate of the murdered person.
+"""
+
+
+@pytest.fixture(scope="module")
+def unparted(entry):
+    return act_structure.parse(NO_FIRST_PART, entry)
+
+
+def test_sections_above_the_first_part_survive(unparted):
+    """The regression. Before this, sections 1 and 3 were dropped silently."""
+
+    assert unit(unparted, "1") is not None
+    assert unit(unparted, "3") is not None
+
+    assert "legal declaration" in unit(unparted, "3").text
+
+
+def test_an_unparted_section_gets_a_one_level_path(unparted):
+    """
+    Deliberately short rather than invented. Synthesising "Part I" so every
+    path looks alike would put a division in the citation that the Act does
+    not contain.
+    """
+
+    assert unit(unparted, "3").path == ["Section 3"]
+    assert unit(unparted, "3").slug() == "section-3"
+
+
+def test_parted_sections_are_unaffected_by_the_unparted_bucket(unparted):
+    assert unit(unparted, "5").path == ["Part II", "Section 5"]
+    assert unit(unparted, "96").path == ["Part VIII", "Section 96"]
+
+
+def test_the_opening_block_is_still_dropped_when_there_is_no_part_i(unparted):
+    """
+    The amendment log and the long title precede section 1 here, with no Part
+    heading to stop them. They must not be swept into the first section.
+    """
+
+    for candidate in unparted.units:
+        assert "Amended by" not in candidate.text
+        assert "ACT of Parliament" not in candidate.text
+
+
+def test_unparted_sections_keep_chunk_ids_clean(unparted):
+    for chunk in build_chunks(unparted):
+        assert set(chunk["chunk_id"]) <= set(
+            "abcdefghijklmnopqrstuvwxyz0123456789-@."
+        )
+
+
+def test_acts_that_open_with_a_part_gain_no_unparted_sections(sample):
+    """
+    The Criminal Procedure Code regression. Its first Part precedes its first
+    section, so every unit keeps a Part in its path and no chunk id moves.
+    """
+
+    for candidate in sample.units:
+        assert len(candidate.path) >= 2
+        assert candidate.path[0].startswith("Part ")
+
+
+# ---------------------------------------------------------
+# A WRAPPED SENTENCE MUST NOT END THE ACT
+#
+# Found by the Children Act. A schedule heading stops the parse, so a false
+# positive here does not mislabel a unit - it TRUNCATES THE DOCUMENT.
+#
+# Section 218 ends "...shall be carried out in accordance with the Fifth
+# Schedule.", the line wrapped, and "Fifth Schedule." landed at the start of
+# a line. The old case-insensitive prefix match took it for the start of the
+# schedules and silently discarded sections 219 to 250 - the whole of Part
+# XV, Children in Conflict with the Law.
+# ---------------------------------------------------------
+
+def test_a_wrapped_schedule_reference_is_not_a_schedule_heading():
+    assert not act_structure.SCHEDULE_PATTERN.match("Fifth Schedule.")
+    assert not act_structure.SCHEDULE_PATTERN.match("Fifth Schedule")
+    assert not act_structure.SCHEDULE_PATTERN.match(
+        "as set out in the First Schedule to this Act."
+    )
+
+
+def test_real_schedule_headings_still_match():
+    """Bare, and with the bracketed source reference Kenya Law uses."""
+
+    assert act_structure.SCHEDULE_PATTERN.match("FIRST SCHEDULE")
+    assert act_structure.SCHEDULE_PATTERN.match("FIFTH SCHEDULE [s. 218(5)]")
+    assert act_structure.SCHEDULE_PATTERN.match(
+        "THIRD SCHEDULE [s. 66(2), 144 (aa), 174, 186(6)]"
+    )
+
+
+def test_the_act_is_not_truncated_by_a_wrapped_reference():
+    """End to end: the sentence fragment must not stop the parse."""
+
+    text = """CHILDREN ACT
+CAP. 141
+Published in Kenya Gazette Vol. CXXIV-No. 146 on 29 July 2022
+Part XIV – ADOPTION
+218.
+Assessment of a child
+(1)
+The assessment of a child for purposes of this section shall be carried out in
+accordance with the
+Fifth Schedule.
+219.
+Criminal liability of a child
+A child under twelve years of age shall not be criminally responsible.
+FIRST SCHEDULE [s. 8(1)]
+BEST INTEREST CONSIDERATIONS
+1.
+This paragraph belongs to a schedule and must not be emitted.
+"""
+
+    document = act_structure.parse(text, get_document("children-act"))
+
+    numbers = {candidate.number for candidate in document.units}
+
+    assert "219" in numbers, "the wrapped reference truncated the Act"
+    assert "1" not in numbers, "schedule content leaked into the units"
+
+
+# ---------------------------------------------------------
 # FRONT-MATTER DETECTION
 #
 # Found by this document: the dot-leader check was Constitution-only
@@ -637,3 +798,101 @@ def test_real_employment_act_text_passes_its_validator(employment_entry):
     text = employment_entry.cleaned_path.read_text(encoding="utf-8")
 
     assert employment_validator.validate_cleaned_text(text) == []
+
+
+SUCCESSION_ID = "law-of-succession-act"
+
+
+@pytest.fixture(scope="module")
+def succession_entry():
+    return get_document(SUCCESSION_ID)
+
+
+@pytest.fixture(scope="module")
+def real_succession_act(succession_entry):
+    if not succession_entry.cleaned_path.exists():
+        pytest.skip(
+            "cleaned artifact missing; run "
+            f"`python -m data_pipeline.run --document {SUCCESSION_ID}` first"
+        )
+
+    text = succession_entry.cleaned_path.read_text(encoding="utf-8")
+
+    return act_structure.parse(text, succession_entry)
+
+
+def test_succession_act_is_registered():
+    assert "law-of-succession-act" in registered_types()
+
+    assert cleaner_spec("law-of-succession-act").start_pattern
+    assert validator("law-of-succession-act") is not None
+
+
+def test_real_succession_act_parses_to_the_expected_shape(real_succession_act):
+    assert succession_validator.validate_document(real_succession_act) == []
+
+
+def test_real_succession_act_text_passes_its_validator(succession_entry):
+    if not succession_entry.cleaned_path.exists():
+        pytest.skip("cleaned artifact missing")
+
+    text = succession_entry.cleaned_path.read_text(encoding="utf-8")
+
+    assert succession_validator.validate_cleaned_text(text) == []
+
+
+# ---------------------------------------------------------
+# DOCUMENTS SIX, SEVEN AND EIGHT
+#
+# Parametrised rather than given a fixture each: all three reuse `act`
+# unchanged, so the only per-document knowledge is which validator to call.
+# ---------------------------------------------------------
+
+LAST_THREE = [
+    ("children-act", "children_act"),
+    ("marriage-act", "marriage_act"),
+    ("small-claims-court-act", "small_claims_court_act"),
+]
+
+
+@pytest.mark.parametrize("document_id, validator_module", LAST_THREE)
+def test_last_three_documents_are_registered(document_id, validator_module):
+    assert document_id in registered_types()
+
+    assert cleaner_spec(document_id).start_pattern
+    assert validator(document_id) is not None
+
+
+@pytest.mark.parametrize("document_id, validator_module", LAST_THREE)
+def test_last_three_parse_to_their_expected_shape(document_id, validator_module):
+    import importlib
+
+    entry = get_document(document_id)
+
+    if not entry.cleaned_path.exists():
+        pytest.skip(
+            "cleaned artifact missing; run "
+            f"`python -m data_pipeline.run --document {document_id}` first"
+        )
+
+    module = importlib.import_module(
+        f"data_pipeline.validators.{validator_module}"
+    )
+
+    text = entry.cleaned_path.read_text(encoding="utf-8")
+
+    assert module.validate_cleaned_text(text) == []
+    assert module.validate_document(act_structure.parse(text, entry)) == []
+
+
+def test_only_the_first_four_succession_sections_lack_a_part(real_succession_act):
+    """
+    The whole Act must not quietly fall into the unparted bucket if a Part
+    heading ever stops matching. Exactly four sections belong to no Part.
+    """
+
+    unparted = {
+        u.number for u in real_succession_act.units if len(u.path) == 1
+    }
+
+    assert unparted == {"1", "2", "3", "4"}

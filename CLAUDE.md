@@ -19,17 +19,29 @@ penalties, or citations. Never claim a source says something it does not.
 
 ## Current state
 
-Retrieval → reranking → grounded generation works end to end over **four
-documents, 1054 chunks**: the Constitution of Kenya, 2010 (279), the Criminal
-Procedure Code, Cap. 75 (312), the Penal Code, Cap. 63 (371) and the
-Employment Act, Cap. 226 (92).
+Retrieval → reranking → grounded generation works end to end over the
+**complete MVP corpus: eight documents, 1,564 chunks.**
 
-**MVP scope is fixed at eight documents.** Still to come: the Law of Succession
-(Cap. 160), the Children Act 2022, the Marriage Act 2014 and the Small Claims
-Court Act 2016. Do not propose documents outside that set without saying it
-expands agreed scope — `docs/project-plan.md` records what was cut and why.
+| Document | Chunks |
+|---|---|
+| Constitution of Kenya, 2010 | 279 |
+| Criminal Procedure Code (Cap. 75) | 312 |
+| Penal Code (Cap. 63) | 371 |
+| Children Act (Cap. 141) | 258 |
+| Law of Succession Act (Cap. 160) | 103 |
+| Marriage Act (Cap. 150) | 97 |
+| Employment Act (Cap. 226) | 92 |
+| Small Claims Court Act (Cap. 10A) | 52 |
 
-**96 evaluation questions, 93/96 passing, retrieval 80/80.**
+**MVP corpus scope is CLOSED at these eight.** Do not propose another document
+without saying it expands agreed scope — `docs/project-plan.md` records what
+was cut and why.
+
+**Baselined 2026-09-23: 133 questions, 121 passing** — retrieval 116/118,
+rerank_hit 106/118, rerank_top1 74/118. The twelve failures sort into four
+classes and `docs/project-plan.md` names each; **nine of the twelve are the
+cross-encoder resemblance defect**, whose two proposed fixes were measured and
+rejected. Two of those nine are retrieved at rank **#1** and discarded.
 
 **FastAPI now serves it.** Models load once at startup and are reused across
 requests, and a semantic router answers conversational input without touching
@@ -65,9 +77,12 @@ data_pipeline/
   registry.py              loads the registry, derives artifact paths
   adapters.py              the type registry - register a new document HERE only
   structure/<type>.py      per-TYPE and reusable: constitution.py, act.py
-                           act.py handles Part -> Section (CPC, Employment)
-                           and Part -> Chapter -> Section (Penal Code);
-                           Part numerals may be Roman OR Arabic
+                           act.py handles Part -> Section, Part -> Chapter
+                           -> Section (Penal Code), and sections belonging
+                           to NO Part (Law of Succession, which has no
+                           Part I). Part numerals may be Roman OR Arabic.
+                           Schedule headings must be UPPERCASE and whole-line
+                           - see the wrapped-marker rule below
   cleaners/<document>.py   per-DOCUMENT: its patterns name the document itself
   validators/<document>.py per-DOCUMENT, plus generic.py for every document
   chunking/, vectorstore/
@@ -115,6 +130,10 @@ python -m backend.app.ai.intent                   # routing accuracy + margins
 python -m data_pipeline.run --document constitution-of-kenya-2010
 python -m data_pipeline.run --document criminal-procedure-code
 python -m data_pipeline.run --document employment-act
+python -m data_pipeline.run --document law-of-succession-act
+python -m data_pipeline.run --document children-act
+python -m data_pipeline.run --document marriage-act
+python -m data_pipeline.run --document small-claims-court-act
 python -m data_pipeline.run --all
 python -m data_pipeline.run --document X --from chunk   # resume a stage
 python -m data_pipeline.run --document X --to chunk     # stop before Qdrant
@@ -127,6 +146,7 @@ python -m evaluation.run --document penal-code   # only that document's question
 python -m evaluation.run --no-cache  # recompute; still writes results
 python -m evaluation.run --accept-last   # record the last run as baseline
 python -m evaluation.run --id <qid>  # one question, repeatable, for debugging
+python -m evaluation.judge           # the answer judge vs judge_cases.yaml
 
 python -m backend.app.ai.rag         # full pipeline, interactive CLI
 python -m backend.app.ai.retriever   # retrieval only
@@ -182,6 +202,37 @@ are provisioned for.
 - **Scope the evaluation while iterating; run it whole before baselining.**
   `--id` and `--document` are the scoping tools, and `--id` runs are
   deliberately excluded from `--save-baseline` and from `last_run.json`.
+  **Adding a document costs exactly ONE expensive run if sequenced right:**
+
+      python -m evaluation.run --tier 0      # seconds, catches retrieval loss
+      python -m evaluation.run --no-cache    # THE expensive one, promotable
+      python -m evaluation.run --accept-last # instant
+
+  The plain invocation is for iterating, **not** for adding a document: its
+  cache hits make it unpromotable, and since a new document invalidates the
+  rerank cache wholesale it saves nothing anyway. Running plain and then
+  `--no-cache` pays the cross-encoder twice - which has happened.
+  **Baselines are per suite AND per tier** - `evaluation/baselines/`
+  holds `statutory-tier1.json`, `product-tier2.json` and so on, and a run
+  is compared with, and promotable over, only its own suite and tier. This
+  closed a real gap: with one `baseline.json`, a cold-cache tier-0 or
+  `--document` run could be promoted over the tier-1 record and silently
+  become a partial baseline. Every run now records its scope, and
+  `promotion_refusal()` - shared by `--save-baseline` and `--accept-last` -
+  refuses `--id`, `--document`, `--no-rerank`, cache hits, and any run
+  that predates scope tracking. A `--suite product` run is complete for its
+  suite and may be promoted; it writes only `product-tier<N>.json`.
+- **Tier 0 is NOT a sufficient regression canary when a document is added.**
+  This project asserted the opposite, acted on it, and was wrong within a day.
+  `county-government-role` **passed tier 0** — the Fourth Schedule sat at #6
+  of 30, comfortably retrieved — and **failed tier 1**, because the Children
+  Act's Part VI, *Role of County Governments*, now reranks above it.
+  **Cross-document rerank displacement is invisible to tier 0 by
+  construction:** tier 0 asks whether the authority is in the candidate pool,
+  and displacement happens after that. Tier 0 keeps its value for breadth
+  failures — it caught both of those at eight documents, in seconds — but a
+  plan of "tier 0 per document, tier 1 only at the end" accepts displacement
+  risk, and that should be named rather than assumed away.
 - **Know which tier a change actually needs.** A full tier 1 run is warranted
   only when something can move a *retrieval decision*: `retriever.py`,
   `reranker.py`, `passage.py`, the retrieval settings in `config.py`, anything
@@ -264,9 +315,18 @@ are provisioned for.
   out of range entirely. Erring low merely fails to rescue; erring high
   displaces constitutional rights with statutory detail. Full sweep in the
   config comment.
-- **Do not dilute the reranker's authority over ordering.** Measured with
-  `--no-rerank`: without the cross-encoder, `rerank_hit` drops 65 → 57 and
-  `rerank_top1` 44 → 37. All eight rescues are the same pattern — retrieval
+- **Do not dilute the reranker's authority over ordering — and at eight
+  documents it earns MORE than it did at four.** Re-measured with
+  `--no-rerank` over the complete corpus: **121/133 with it, 110/133 without**
+  — `rerank_hit` 106 → 95, `rerank_top1` 74 → 62. **Thirteen rescues against
+  two breaks, net +11 questions**, up from +8 at four documents. Twelve
+  failures made it reasonable to suspect the cross-encoder had turned
+  net-harmful; measuring showed the opposite, because a bigger corpus buries
+  the right passage deeper and digging it out is exactly its job. Without it,
+  *"Can police arrest me without telling me why?"* returns five Criminal
+  Procedure Code sections and **no constitutional right at all**.
+  The original four-document measurement, which still holds: `rerank_hit`
+  65 → 57 and `rerank_top1` 44 → 37. All eight rescues are the same pattern — retrieval
   fills the top with Criminal Procedure Code sections while the
   **constitutional right sits buried**, Article 49 at rank 26 for
   `arrest-bail`, rank 18 for `arrest-court-time` — and the reranker plus
@@ -276,8 +336,13 @@ are provisioned for.
   remaining failures are ever worth fixing, it needs a different
   cross-encoder, not a blend.
 - **The cross-encoder ranks by resemblance, not by answerhood — and no
-  tuning fixes that.** Both remaining evaluation failures are this one defect,
-  in two unrelated documents. *"How much notice must my employer give before
+  tuning fixes that. This is now the single largest source of failure in the
+  system.** Five evaluation failures across four documents are this one
+  defect: `employment-notice`, `penal-murder-sentence`,
+  `succession-left-out-of-will`, `succession-grant-application` and
+  `divorce-process` — the last confirmed to fail at retrieval breadths of 30,
+  50 and 75, so it is not a breadth problem.
+  *"How much notice must my employer give before
   terminating my job?"* ranks **s.78** first — *"An employer shall notify the
   termination of every employment... to the nearest employment service office
   **within two weeks**"*, 192 characters, matching every content word and
@@ -317,16 +382,60 @@ are provisioned for.
   failing question, read the law and check the expectation is right.** The
   question set was drafted against article titles, not full text, and still
   awaits legal review.
+- **A wrapped line can manufacture a false structural marker, and the
+  damage scales with what the marker does.** Three documents in a row hit
+  this. PDF extraction breaks sentences at column width, so a fragment can
+  land at the start of a line looking exactly like a heading.
+  **Worst case — the Children Act.** Section 218 ends *"...carried out in
+  accordance with the **Fifth Schedule.**"*, the line wrapped, and
+  `SCHEDULE_PATTERN` was a case-insensitive prefix match. A schedule heading
+  *ends the parse*, so this did not mislabel a unit - it **truncated the Act
+  at section 218 and silently discarded 219 to 250**, the whole of Part XV,
+  Children in Conflict with the Law. Now fixed by requiring what real
+  headings look like: UPPERCASE, whole-line, optionally followed by a
+  bracketed reference (`FIFTH SCHEDULE [s. 218(5)]`).
+  **Benign case — the Marriage Act.** Section 18 ends *"...appointed by the
+  registrar under section **50.**"*, wrapping "50." onto its own line, which
+  `SECTION_NUMBER_PATTERN` reads as a heading. That spurious section has no
+  body, so the empty-content drop discards it and no chunk id collides; the
+  only cost is section 18 losing its last token. Recorded in
+  `validators/marriage_act.py` as `KNOWN_TEXT_DUPLICATES` rather than
+  papered over, with an assertion that the surviving section 50 is the real
+  one in Part VIII.
+  **The rule:** when a pattern's match *terminates* parsing or *creates* a
+  unit, make it as strict as the real thing allows - case, anchoring,
+  full-line. And always check the parsed section count against a measured
+  expectation, because every one of these failed silently.
 - **`sparse.py` exists instead of a dependency.** `sentence_transformers`
   will not give you BGE-M3's lexical weights — asking its `SparseEncoder`
   for the model silently converts it to a generic 4096-dim projection that
   is not term-based. FlagEmbedding exposes the real head but loads a second
   2.2 GB copy of the model. The head is `Linear(1024, 1)`, so it runs on the
   token embeddings of the model already in memory.
-- **Retrieval breadth scales with the corpus.** `RETRIEVAL_TOP_K` was 15 for
-  279 chunks; at 591 that put Article 49 out of range entirely for bail
-  questions. It is 30 now. Expect to revisit it as the corpus grows, and note
-  it doubles the reranking work — the dominant latency.
+- **Retrieval breadth scales with the corpus — but 30 was MEASURED and kept
+  at 1,564 chunks. Do not raise it without re-running the sweep.**
+  `RETRIEVAL_TOP_K` was 15 for 279 chunks; at 591 that put Article 49 out of
+  range entirely for bail questions, so it became 30. Completing the corpus
+  produced two `NEVER RETRIEVED` failures — `state-funded-lawyer` (Article 50
+  at rank 42) and `divorce-process` (s.66 at rank 74) — and raising k was
+  measured, not assumed.
+  **Sweep:** k=40 and k=60 buy nothing. k=50 gives 117/118, k=75 gives
+  118/118. **But recall is not the measurement that matters.** Reranked end
+  to end: `state-funded-lawyer` PASSES at k=50 (the cross-encoder promotes
+  Article 50 from retrieval rank 42 to **rank 1** — the reranker does rescue
+  from deep), while **`divorce-process` fails at 30, 50 AND 75** — the
+  resemblance-over-answerhood defect, not a breadth problem.
+  **k=75 is strictly dominated:** same single fix as k=50 at 2.5x instead of
+  1.7x, and it makes the fix *worse* — Article 50 falls from rank 1 to rank 3,
+  displaced by two generic *Interpretation* sections. Deeper retrieval is not
+  monotonically better.
+  **Decision: stay at 30.** One question in 118 is not worth **+67% on
+  reranking, the dominant request latency**, on every query forever, when the
+  failure being bought off is a refusal rather than a wrong answer.
+  Also measured and **wrong**: the hypothesis that Constitution schedules were
+  eating the budget. One query showed 7 of 30 slots going to schedules; across
+  all 118 questions it is **0.5 slots, 1.8%**. Do not generalise retrieval
+  behaviour from a single query.
 
 ## Gotchas
 

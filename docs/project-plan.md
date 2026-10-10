@@ -152,7 +152,8 @@ This is now implemented end-to-end for the Constitution.
 
 ## Current position
 
-**Four documents, served over HTTP, with an evaluation harness that scales.**
+**Five documents served over HTTP, three more ready to ingest, with an
+evaluation harness that scales.**
 
 ```text
 Question
@@ -161,8 +162,9 @@ Intent routing (nearest centroid) ──→ conversational, no retrieval
    ↓ legal
 BGE-M3 embedding
    ↓
-Qdrant (1054 vectors: Constitution 279, Criminal Procedure Code 312,
-        Penal Code 371, Employment Act 92)
+Qdrant (1157 vectors: Constitution 279, Criminal Procedure Code 312,
+        Penal Code 371, Law of Succession 103, Employment Act 92)
+        + 407 prepared: Children 258, Marriage 97, Small Claims 52
    ↓
 Dense (top 30) + lexical (top 5), fused with RRF
    ↓
@@ -180,21 +182,64 @@ Grounded answer + verified citations
 `python -m uvicorn backend.app.main:app` serves it, loading models once.
 `python -m backend.app.ai.rag` is still the CLI.
 
-The generic pipeline has now absorbed three hierarchies — Chapter → Article,
-Part → Section, and Part → Chapter → Section — without the orchestrator,
-registry, IR, chunker or vector store changing once. Per document the cost is a
-cleaner spec, a validator, and a structure adapter only for a genuinely new
-shape.
+The generic pipeline has now absorbed four hierarchies — Chapter → Article,
+Part → Section, Part → Chapter → Section, and sections belonging to no Part at
+all — without the orchestrator, registry, IR, chunker or vector store changing
+once. Per document the cost is a cleaner spec, a validator, and a small,
+*document-specific* fix to `act.py` that nobody predicts in advance. Three
+documents running, that fix has been mandatory; see *Measured: Kenya Law is
+not internally consistent*.
 
-**Current state:** 96 questions, **94/96**, with **retrieval at 80/80 — 100%**.
-Reranking carries 78/80, first place 54/80. Baselined 2026-09-23.
+**Current state — baselined 2026-09-23 over the complete corpus:**
 
-**MVP scope is fixed at eight documents.** Four are in: the Constitution, the
-Criminal Procedure Code, the Penal Code and the Employment Act. Four remain:
-the Law of Succession (Cap. 160), the Children Act 2022, the Marriage Act 2014
-and the Small Claims Court Act 2016. That set covers criminal justice end to
-end, employment, family formation and dissolution, children, inheritance, and a
-route to actually claim money.
+```text
+133 questions (118 answerable, 15 out of scope)
+121/133 passing
+
+retrieval_hit   116/118   98.3%
+rerank_hit      106/118   89.8%
+rerank_top1      74/118   62.7%
+```
+
+**Twelve failures, in four distinct classes** — the distinction matters
+because they need different fixes, and three of the four are not fixable by
+anything currently on the table:
+
+| Class | Questions | Cause |
+|---|---|---|
+| **Retrieval breadth** | `state-funded-lawyer`, `divorce-process` | outside `RETRIEVAL_TOP_K` 30 — a **measured, deliberate** trade, see *Measured: RETRIEVAL_TOP_K stays at 30* |
+| **Cross-document displacement** | `county-government-role` | **a regression** — the Children Act's Part VI, *Role of County Governments*, now outranks the Fourth Schedule |
+| **Cross-encoder resemblance** | `employment-notice`, `penal-murder-sentence`, `succession-left-out-of-will`, `succession-grant-application`, `children-maintenance-order`, `children-adoption-eligibility`, `children-child-labour` | the measured defect, both fixes rejected |
+| **Rank-#1 pathologies** | `children-parental-responsibility`, `smallclaims-lawyer` | retrieved **first** and discarded — the starkest form of the same defect |
+
+`smallclaims-lawyer` is the one to look at when this needs explaining: the
+question is *"Do I need an advocate to go to the small claims court?"*,
+section 20 is titled **"Representation before the Court"**, retrieval ranks it
+**first**, and the cross-encoder replaces it with the appointment of
+Adjudicators and the interpretation section.
+
+**MVP scope is fixed at eight documents**, and all eight are now written.
+
+| | Document | Chunks | State |
+|---|---|---|---|
+| 1 | Constitution of Kenya, 2010 | 279 | ingested |
+| 2 | Criminal Procedure Code (Cap. 75) | 312 | ingested |
+| 3 | Penal Code (Cap. 63) | 371 | ingested |
+| 4 | Employment Act (Cap. 226) | 92 | ingested |
+| 5 | Law of Succession Act (Cap. 160) | 103 | ingested |
+| 6 | Children Act (Cap. 141) | 258 | **prepared, dry-run verified** |
+| 7 | Marriage Act (Cap. 150) | 97 | **prepared, dry-run verified** |
+| 8 | Small Claims Court Act (Cap. 10A) | 52 | **prepared, dry-run verified** |
+
+**1,564 chunks** once the last three are in. That set covers criminal justice
+end to end, employment, inheritance, family formation and dissolution,
+children, and a route to actually claim money.
+
+Two question flips are worth naming. `writing-a-will` opened with document
+five. `divorce-process` opens with document seven — **the original refusal
+test case**, the question this system correctly declined over a
+Constitution-only corpus in the very first Phase 3 tests, and which stayed out
+of scope for five documents. Its wording is unchanged, so the flip is honest.
 
 Deliberately cut, and not to be re-proposed without saying so: the Law of
 Contract Act (about four sections; it *imports* English common law rather than
@@ -916,6 +961,49 @@ so the regression cannot return as a count that merely looks three short.
 
 ---
 
+### Measured: Kenya Law is not internally consistent, and every failure is silent
+
+Documents four through eight each needed a `act.py` change that nobody
+predicted. The claim that "the next Act reuses the parser unchanged" has now
+been **false four times running**. What survives is the weaker, true claim:
+the orchestrator, registry, IR, chunker and vector store need no changes, and
+the parser needs a small one.
+
+Every one of these failed **silently**. None raised. In each case the only
+symptom was a section count lower than it should be, and the only reason it
+was caught is that per-document validators assert a measured count.
+
+| Document | What broke | Cost if unnoticed |
+|---|---|---|
+| **Employment (Cap. 226)** | `Part 1` in Arabic, rest Roman. Roman-only pattern did not mislabel it — it failed to match, so the parser kept treating text as the opening block | sections 1–3 dropped, including s.2 **Interpretation** |
+| **Succession (Cap. 160)** | **No Part I at all.** Divisions begin at `Part II – WILLS` and ss. 1–4 sit above them ungrouped | 4 sections dropped, including s.3 **Interpretation** |
+| **Children (Cap. 141)** | s.218 ends *"...in accordance with the **Fifth Schedule.**"*; the line wrapped and a case-insensitive prefix match read it as a schedule heading | **32 sections dropped** — the parse *stopped* at 218, discarding all of Part XV, Children in Conflict with the Law |
+| **Marriage (Cap. 150)** | s.18 ends *"...under section **50.**"*, wrapping `50.` onto its own line; and the lone schedule is headed bare `SCHEDULE [s. 97]`, not `FIRST SCHEDULE` | a phantom s.50 (benign — empty, so dropped) and the repealed-acts schedule attaching to the last section |
+
+**The generalisation, learned the expensive way.** A pattern whose match
+*terminates* the parse is categorically more dangerous than one that creates a
+unit. `SCHEDULE_PATTERN` ends the operative text, so one false positive cost
+32 sections; `SECTION_NUMBER_PATTERN` merely creates a unit, and its false
+positive self-healed through the empty-content drop. **Make terminating
+patterns as strict as the real thing allows** — case, anchoring, full-line.
+Real schedule headings are UPPERCASE and occupy the whole line, optionally
+with a bracketed reference (`FIFTH SCHEDULE [s. 218(5)]`); a wrapped sentence
+fragment is title-case and carries the sentence's punctuation, so requiring
+both excludes it.
+
+**Two structural decisions worth keeping.** Sections belonging to no Part get
+a **one-level citation path** (`["Section 3"]`) rather than a synthesised
+`Part I` — inventing a division the Act does not contain would put a false
+citation in front of a user. And the Marriage Act's phantom section 50 is
+recorded in its validator as `KNOWN_TEXT_DUPLICATES` with an assertion that
+the *surviving* section 50 is the real one in Part VIII, rather than the
+duplicate check simply being switched off.
+
+**Every change was verified non-destructive**: after each, all
+already-ingested Acts reparsed to **byte-identical chunk ids**.
+
+---
+
 ### Measured: the cross-encoder ranks by resemblance, not by answerhood
 
 Both remaining failures are the same defect, seen in two unrelated documents.
@@ -1055,6 +1143,161 @@ The experiment cost about twenty cents and stopped a build that would have
 shipped appeal-stage bail law to someone asking about pre-trial release.
 **Measure the lever before pulling it.**
 
+### Measured: at eight documents the reranker earns MORE than it did at four
+
+Re-run of `--no-rerank` over the complete corpus, because the previous
+measurement was two documents and a thousand chunks out of date, and twelve
+failures made it reasonable to suspect the cross-encoder had turned
+net-harmful. **It has not. The opposite.**
+
+| | with reranking | retrieval order only |
+|---|---|---|
+| questions passing | **121/133** | 110/133 |
+| rerank_hit | **106/118** | 95/118 |
+| rerank_top1 | **74/118** | 62/118 |
+
+**Thirteen rescues against two breaks — net +11 questions.** At four documents
+the contribution was +8. It grows with the corpus, because a bigger corpus
+buries the right passage deeper under plausible statutory detail, and digging
+it out is precisely what the cross-encoder does.
+
+What it rescues is the documented pattern, now at scale:
+
+```text
+arrest-reason        Article 49 at #10, behind five CPC arrest sections
+arrest-court-time    Article 49 at #18
+arrest-bail          Article 49 at #26
+privacy-search       Article 31 at #11, behind CPC search provisions
+unfair-government-   Articles 22/47 at #12
+```
+
+Without it, *"Can police arrest me without telling me why?"* returns five
+Criminal Procedure Code sections and **no constitutional right at all**.
+
+What it breaks is the two rank-#1 pathologies. Real, and the sharpest
+statement of the defect available — but 2 against 13. **The reranker stays,
+and the case for it is stronger than when it was first justified.**
+
+---
+
+### Measured: tier 0 is NOT a sufficient regression canary
+
+Recorded because the opposite was asserted in this project, acted on, and
+proved wrong within a day.
+
+The reasoning was: retrieval regressions are the likely failure when a
+document is added, tier 0 catches those in seconds, so tier 0 after each
+document plus one full tier 1 at the end is a safe way to save hours.
+
+`county-government-role` disproves it. **Tier 0 passed the question** — the
+Fourth Schedule was retrieved at #6 of 30, comfortably inside the budget. Only
+tier 1 revealed the failure: the Children Act's Part VI, *Role of County
+Governments*, now reranks **above** it, and the expected authority is dropped
+from the top five.
+
+**Cross-document rerank displacement is invisible to tier 0 by construction.**
+Tier 0 asks whether the authority is in the candidate pool; displacement
+happens after that, when a newly-added document's sections out-score it. The
+two are different questions and only one of them is cheap.
+
+Tier 0 keeps its value — it catches breadth failures in seconds and it caught
+both of those at eight documents. But **it does not substitute for tier 1
+when a document is added.** If the full run is deferred, the risk being
+accepted is displacement, not breadth, and it should be named as such.
+
+---
+
+### Measured: RETRIEVAL_TOP_K stays at 30 at 1,564 chunks — the arithmetic says so
+
+Completing the corpus produced the first retrieval regressions since 591
+chunks. Tier 0 at eight documents caught two `NEVER RETRIEVED` failures in
+seconds — `state-funded-lawyer` and `divorce-process` — which is precisely
+what tier 0 exists for, and it cost nothing.
+
+`RETRIEVAL_TOP_K` was 15 at 279 chunks and 30 at 591. At 1,564 it had not
+moved, so raising it was the obvious hypothesis. It was measured rather than
+assumed, and the answer is **no**.
+
+#### A hypothesis that was wrong, and worth recording as such
+
+Inspecting the divorce query showed **13 of its 30 slots** going to chunks
+that cannot answer a citizen question: seven Constitution schedules, six
+unrelated articles (the swearing-in of the Deputy President, electoral
+disputes, the Cabinet). The obvious conclusion was that schedules were eating
+the retrieval budget and that curating them would recover the slots.
+
+Measured across all 118 answerable questions, Constitution schedules other
+than the Fourth occupy **0.5 slots per question — 1.8% of the budget.** The
+divorce query was an outlier. There is nothing meaningful to reclaim, and
+generalising from one query was the error.
+
+#### The sweep
+
+Each value retrieved for real rather than inferred from one deep run, because
+RRF fuses a dense prefetch of `limit=top_k` with a sparse one of
+`limit=min(5, top_k)`, so a deeper dense list can reorder the fused result.
+
+| k | retrieval hit | recovers | rerank pairs/question |
+|---|---|---|---|
+| 30 | 116/118 | — | 30 |
+| 40 | 116/118 | nothing | 40 |
+| **50** | **117/118** | `state-funded-lawyer` (rank 42) | 50 |
+| 60 | 117/118 | nothing | 60 |
+| **75** | **118/118** | `divorce-process` (rank 74) | 75 |
+| 100 | 118/118 | nothing | 100 |
+
+No deeper k ever lost a hit. Only 50 and 75 are meaningful steps.
+
+#### Recall is not the measurement that matters
+
+`retrieval_hit` is necessary, not sufficient — a passage entering at rank 74
+of 75 still has to survive the cross-encoder into the top 5. Reranking the two
+questions end to end at each k:
+
+```text
+question                k=30     k=50     k=75
+state-funded-lawyer     fail     PASS     PASS
+divorce-process         fail     fail     fail
+```
+
+**`state-funded-lawyer` is genuinely a breadth problem.** Article 50 enters at
+retrieval rank 42 and the cross-encoder promotes it to **rank 1**. Useful in
+its own right: the reranker demonstrably rescues from deep in the candidate
+list, which had been doubted.
+
+**`divorce-process` is not.** It fails at every k. Even entering at rank 74,
+s.66 never reaches the top 5 — the same three registration and
+foreign-recognition sections win every time, because the Act says
+*"dissolution"* where the question says *"divorce"* and "divorce" appears
+literally in the registration sections' titles. This is the **sixth** instance
+of the defect in *Measured: the cross-encoder ranks by resemblance*.
+
+#### k=75 is strictly dominated
+
+It fixes exactly what k=50 fixes at 2.5× instead of 1.7×, and it *degrades*
+the fix: `state-funded-lawyer` reranks to #1 at k=50 but falls to **#3** at
+k=75, displaced by Article 260 *Interpretation* and s.4 *Interpretation* —
+generic definitional sections that rerank well against anything. **Deeper
+retrieval is not monotonically better.**
+
+#### The decision
+
+Stay at **30**. The trade is **one question in 118** against **+67% on
+reranking, which is the dominant request latency** — every user waiting longer
+on every question, permanently, and every future evaluation costing 70% more.
+The failure mode being bought off is a *refusal*, not a wrong answer, which is
+the failure `accuracy > grounding > usefulness` accepts.
+
+There is also an unmeasured displacement risk: 20 additional candidates could
+knock out questions that currently pass, and measuring that means a full run
+at k=50.
+
+**Revisit when the corpus grows again** — the pattern is real, just not yet
+worth paying for. And measure end to end, not on `retrieval_hit`: this is the
+case that shows a question can be retrieved and still fail.
+
+---
+
 ### Evaluation will not scale as written
 
 Recorded 2026-09-03 after a full read of `evaluation/`. The harness is sound in
@@ -1117,13 +1360,12 @@ Revised 2026-09-23. The ordering changed for two reasons: the ingestion layer mu
    Question set still needs legal review - and the
    county-government-role correction shows why.
 
-3. Corpus expansion                      ← IN PROGRESS, 4 of 8
-   Criminal Procedure Code 2026-09-03, Penal Code
-   2026-09-19, Employment Act 2026-09-23.
-   Remaining: Law of Succession (Cap. 160), Children
-   Act 2022, Marriage Act 2014, Small Claims Court
-   Act 2016. Scope is FIXED at eight - see
-   "Current position" for what was cut and why.
+3. Corpus expansion                      ← 5 of 8 ingested, 8 of 8 written
+   CPC 2026-09-03, Penal Code 2026-09-19, Employment
+   Act and Law of Succession 2026-09-23. Children,
+   Marriage and Small Claims are registered and
+   dry-run verified, awaiting ingestion. Scope is
+   FIXED at eight - see "Current position".
 
 3b. Evaluation scoping                   ← DONE
    Tier 0, --document, two-level cache, batched
@@ -1235,6 +1477,53 @@ Priority order when trade-offs arise:
 - **2026-08-31** — **Ingestion foundation built.** Replaced the five per-document scripts with one generic, registry-driven pipeline (`python -m data_pipeline.run`). Renamed `data-pipeline/` to `data_pipeline/` so stages can share code; added a common document IR so chunking, embedding and storage no longer know the document type. Fixed all four ingestion blockers: deterministic `uuid5` point IDs, generic stages behind per-type adapters, streaming batched embed-and-upsert with no on-disk vectors, and one central config imported by both the pipeline and the AI layer. Collection schema moved to named vectors with a sparse slot declared for future hybrid search, and the payload now carries `version`, `effective_date`, `in_force` and `as_at`. Added the first tests (33). Constitution re-ingested: **279 chunks**, longest 3,996 characters — Schedule 6's 24,146-character chunk is now split. Re-running produced **279 → 279 points**, proving ingestion is idempotent and a second document can no longer overwrite the first. Retrieval parity confirmed (Article 49 still ranks first) and the divorce refusal still holds.
 - **2026-09-02** — **Version-aware, document-first ingestion.** Chunk identity became `document_id@vversion-slug`, so two editions of the same Act no longer produce identical ids and overwrite each other. Derived artifacts moved from five stage directories to one directory per document version (`data/documents/<id>@v<version>/`), with `raw/` kept separate as the immutable source. `effective_from` / `effective_to` joined `in_force` and `version` on the payload and in metadata. Adapter tables moved out of the orchestrator into `data_pipeline/adapters.py` behind a `StructureParser` Protocol, and `CleanerSpec.start_pattern` became optional — it was a Constitution assumption sitting in supposedly generic code. Added `tests/test_multi_document.py`, which proves two document shapes and two versions produce disjoint ids without needing a second real document. **The evaluation reproduced the baseline exactly — 41/41, 40/41, 33/41, no regressions** — confirming that identity and file locations moved without disturbing a single retrieval decision. Old `data/` directories deliberately left in place.
 - **2026-09-01** — **Contextual embedding.** Chunks are now embedded and reranked with their document, citation and article title prepended (`backend/app/core/passage.py`); the stored content sent to the LLM is unchanged. Diagnosed offline before changing anything, which also refuted a length-bias theory. Evaluation went **34/41 → 40/41**, six questions improved, none regressed. See *Measured: chunks must be embedded with their citation context*. The one remaining failure, `county-government-role`, is a suspected defect in the question rather than the system — the Fourth Schedule distributes county functions and was never listed as an acceptable authority. Awaiting legal review.
+- **2026-09-23** — **The MVP corpus is complete and baselined: eight
+  documents, 1,564 chunks, 121/133.** Ingested the Children Act (249 sections,
+  258 chunks), Marriage Act (97/97) and Small Claims Court Act (52/52), every
+  count matching its dry run. 253 tests. Baseline promoted over 133 questions:
+  retrieval **116/118**, rerank_hit **106/118**, rerank_top1 **74/118**.
+  `divorce-process` — the original refusal test case — is answerable at last,
+  though it does not yet pass.
+  Three measurements, all recorded above. **(1)** `RETRIEVAL_TOP_K` stays at
+  30: the sweep showed k=50 fixes exactly one question of 118 and k=75 is
+  strictly dominated, against +67% on the dominant request latency. The
+  hypothesis that Constitution schedules were eating the budget was measured
+  and **wrong** — 1.8%, not the 23% one query suggested. **(2)** The reranker
+  now contributes **+11 questions** (13 rescues, 2 breaks), up from +8 at four
+  documents; the suspicion that it had turned net-harmful was wrong.
+  **(3)** **Tier 0 is not a sufficient canary** — `county-government-role`
+  regressed through cross-document rerank displacement (the Children Act's
+  *Role of County Governments* outranking the Fourth Schedule) and tier 0
+  passed it. That correction matters: an earlier plan to run tier 0 per
+  document and tier 1 only at the end would have missed this.
+  Twelve failures now sort into four classes, and the cross-encoder's
+  resemblance defect accounts for nine of them, including two questions whose
+  answer is retrieved **first** and discarded.
+- **2026-09-23** — **Documents five to eight: the corpus is written.** Ingested
+  the **Law of Succession Act (Cap. 160)** — 101 sections, 103 chunks,
+  collection 1054 → 1157 — and prepared the **Children Act (Cap. 141)**,
+  **Marriage Act (Cap. 150)** and **Small Claims Court Act (Cap. 10A)**: 258,
+  97 and 52 chunks, all dry-run verified against their validators but not yet
+  ingested. Question set 112 → **133**, 118 answerable. `writing-a-will`
+  flipped to answerable with document five; **`divorce-process` flips with
+  document seven — the original refusal test case**, correctly declined over a
+  Constitution-only corpus in the first Phase 3 tests and out of scope ever
+  since.
+  Four more silent parser failures, all found by per-document validators and
+  all recorded in *Measured: Kenya Law is not internally consistent*. The
+  worst by a wide margin: the Children Act's section 218 ends *"...in
+  accordance with the Fifth Schedule."*, the line wrapped, and a
+  case-insensitive prefix match read the fragment as a schedule heading —
+  **stopping the parse and discarding sections 219 to 250**, the whole of Part
+  XV, Children in Conflict with the Law. Fixed by requiring what a real
+  heading looks like: uppercase, whole-line, optional bracketed reference.
+  Also: the Law of Succession has **no Part I**, so sections 1 to 4 sit above
+  the first Part and now get a one-level citation path rather than a
+  synthesised one; the Marriage Act's lone schedule is headed bare `SCHEDULE`
+  so the cleaner cuts it, and its apparent duplicate section 50 is a wrapped
+  cross-reference, recorded rather than suppressed. Every change verified
+  non-destructive — all previously ingested Acts reparse to byte-identical
+  chunk ids. Tier 0 at five documents: **retrieval 95/95**.
 - **2026-09-23** — **Measured both proposed reranker fixes. Built neither.**
   The two remaining failures are one defect — the cross-encoder ranking by
   resemblance rather than answerhood — and two levers had been recorded as

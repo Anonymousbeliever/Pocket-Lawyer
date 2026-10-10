@@ -1,12 +1,13 @@
 {
   "metadata": {
-    "created": "2026-09-20T13:18:22",
+    "created": "2026-09-23T17:26:49",
     "tier": 1,
     "collection": "pocket_lawyer_legal",
     "embedding_model": "BAAI/bge-m3",
     "reranker_model": "BAAI/bge-reranker-v2-m3",
     "retrieval_top_k": 30,
     "rerank_top_k": 5,
+    "reranked": true,
     "cache": {
       "read": false,
       "write": true,
@@ -15,30 +16,30 @@
         "rerank": 0
       },
       "misses": {
-        "retrieval": 82,
-        "rerank": 82
+        "retrieval": 133,
+        "rerank": 133
       }
     }
   },
   "metrics": {
     "retrieval_hit": {
-      "passed": 67,
-      "total": 67
+      "passed": 116,
+      "total": 118
     },
     "rerank_hit": {
-      "passed": 65,
-      "total": 67
+      "passed": 106,
+      "total": 118
     },
     "rerank_top1": {
-      "passed": 44,
-      "total": 67
+      "passed": 74,
+      "total": 118
     }
   },
   "counts": {
-    "questions": 82,
-    "answerable": 67,
+    "questions": 133,
+    "answerable": 118,
     "out_of_scope": 15,
-    "passed": 80
+    "passed": 121
   },
   "questions": {
     "arrest-reason": {
@@ -96,10 +97,10 @@
       "cited_expected": null
     },
     "state-funded-lawyer": {
-      "passed": true,
+      "passed": false,
       "answerable": true,
-      "retrieval_hit": true,
-      "rerank_hit": true,
+      "retrieval_hit": false,
+      "rerank_hit": false,
       "rerank_top1": false,
       "sufficient": null,
       "cited_expected": null
@@ -199,7 +200,7 @@
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": true,
+      "rerank_top1": false,
       "sufficient": null,
       "cited_expected": null
     },
@@ -235,7 +236,7 @@
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": true,
+      "rerank_top1": false,
       "sufficient": null,
       "cited_expected": null
     },
@@ -411,20 +412,20 @@
       "cited_expected": null
     },
     "divorce-process": {
-      "passed": true,
-      "answerable": false,
-      "retrieval_hit": null,
-      "rerank_hit": null,
-      "rerank_top1": null,
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": false,
+      "rerank_hit": false,
+      "rerank_top1": false,
       "sufficient": null,
       "cited_expected": null
     },
     "employment-notice": {
-      "passed": true,
-      "answerable": false,
-      "retrieval_hit": null,
-      "rerank_hit": null,
-      "rerank_top1": null,
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": false,
+      "rerank_top1": false,
       "sufficient": null,
       "cited_expected": null
     },
@@ -457,19 +458,19 @@
     },
     "writing-a-will": {
       "passed": true,
-      "answerable": false,
-      "retrieval_hit": null,
-      "rerank_hit": null,
-      "rerank_top1": null,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
       "sufficient": null,
       "cited_expected": null
     },
     "small-claims-filing": {
       "passed": true,
-      "answerable": false,
-      "retrieval_hit": null,
-      "rerank_hit": null,
-      "rerank_top1": null,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
       "sufficient": null,
       "cited_expected": null
     },
@@ -776,6 +777,465 @@
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "employment-summary-dismissal": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "employment-unfair-termination": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "employment-dismissal-hearing": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "employment-redundancy": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "employment-annual-leave": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "employment-maternity-leave": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "employment-sick-leave": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "employment-working-hours": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "employment-wage-deductions": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "employment-sexual-harassment": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "employment-certificate-of-service": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "employment-discrimination-at-work": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "employment-minimum-wage": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "employment-nssf-contribution": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-oral-will": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-witness-inherits": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-revoke-will": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-marriage-revokes-will": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-left-out-of-will": {
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-no-will-spouse-and-children": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-no-will-children-only": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-no-will-no-family": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-polygamous-estate": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-intermeddling": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-taking-property-before-grant": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-grant-application": {
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-confirmation-of-grant": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-killer-inherits": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-muslim-estate": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "succession-inheritance-tax": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "children-maintenance-order": {
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "children-maintenance-enforcement": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "children-custody": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "children-parental-responsibility": {
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "children-criminal-age": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "children-cruelty": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "children-adoption-eligibility": {
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "children-child-labour": {
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "children-guardian-appointment": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "marriage-minimum-age": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "marriage-types": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "marriage-second-wife": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "marriage-void": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "marriage-spouse-maintenance": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "marriage-broken-engagement": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "smallclaims-limit": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "smallclaims-what-cases": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "smallclaims-lawyer": {
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "smallclaims-appeal": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "smallclaims-enforcement": {
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "cited_expected": null
+    },
+    "smallclaims-court-fees": {
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
       "sufficient": null,
       "cited_expected": null
     }

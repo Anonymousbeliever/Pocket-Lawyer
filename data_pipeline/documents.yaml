@@ -103,3 +103,85 @@
   cleaner: employment-act
   structure: act
   validator: employment-act
+
+# Document five of the eight in MVP scope, and the second civil one.
+# Enacted 1972, commenced 1981, consolidated as at 2022-12-31 - `version` is
+# the consolidation, as always.
+#
+# Reuses the `act` structure parser, which needed one change: this Act has no
+# Part I. Its divisions begin at "Part II – WILLS" and sections 1 to 4 sit
+# above them ungrouped, so a parser that drops everything before the first
+# Part heading loses four sections including Interpretation.
+- document_id: law-of-succession-act
+  title: "Law of Succession Act (Cap. 160)"
+  document_type: act
+  jurisdiction: Kenya
+  language: English
+  version: "2022-12-31"
+  effective_from: "2022-12-31"
+  effective_to: null
+  in_force: true
+  source:
+    name: "Kenya Law"
+    url: "https://new.kenyalaw.org/akn/ke/act/1972/14/eng@2022-12-31"
+  raw_path: "data/raw/legislation/law-of-succession-act.pdf"
+  cleaner: law-of-succession-act
+  structure: act
+  validator: law-of-succession-act
+
+# Documents six, seven and eight - the last of the agreed MVP scope. All
+# three are consolidated as at 2022-12-31 and all three reuse the `act`
+# structure parser with no changes to it.
+- document_id: children-act
+  title: "Children Act (Cap. 141)"
+  document_type: act
+  jurisdiction: Kenya
+  language: English
+  version: "2022-12-31"
+  effective_from: "2022-12-31"
+  effective_to: null
+  in_force: true
+  source:
+    name: "Kenya Law"
+    url: "https://new.kenyalaw.org/akn/ke/act/2022/29/eng@2022-12-31"
+  raw_path: "data/raw/legislation/children-act.pdf"
+  cleaner: children-act
+  structure: act
+  validator: children-act
+
+# The lone schedule is headed "SCHEDULE [s. 97]" rather than "FIRST
+# SCHEDULE", which act.py's ordinal-prefixed pattern does not stop at, so the
+# cleaner cuts it with an end_pattern instead.
+- document_id: marriage-act
+  title: "Marriage Act (Cap. 150)"
+  document_type: act
+  jurisdiction: Kenya
+  language: English
+  version: "2022-12-31"
+  effective_from: "2022-12-31"
+  effective_to: null
+  in_force: true
+  source:
+    name: "Kenya Law"
+    url: "https://new.kenyalaw.org/akn/ke/act/2014/4/eng@2022-12-31"
+  raw_path: "data/raw/legislation/marriage-act.pdf"
+  cleaner: marriage-act
+  structure: act
+  validator: marriage-act
+
+- document_id: small-claims-court-act
+  title: "Small Claims Court Act (Cap. 10A)"
+  document_type: act
+  jurisdiction: Kenya
+  language: English
+  version: "2022-12-31"
+  effective_from: "2022-12-31"
+  effective_to: null
+  in_force: true
+  source:
+    name: "Kenya Law"
+    url: "https://new.kenyalaw.org/akn/ke/act/2016/2/eng@2022-12-31"
+  raw_path: "data/raw/legislation/small-claims-court-act.pdf"
+  cleaner: small-claims-court-act
+  structure: act
+  validator: small-claims-court-act

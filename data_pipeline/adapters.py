@@ -31,7 +31,15 @@ from data_pipeline.cleaners import constitution as constitution_cleaner
 from data_pipeline.cleaners import (
     criminal_procedure_code as criminal_procedure_code_cleaner,
 )
+from data_pipeline.cleaners import children_act as children_act_cleaner
 from data_pipeline.cleaners import employment_act as employment_act_cleaner
+from data_pipeline.cleaners import marriage_act as marriage_act_cleaner
+from data_pipeline.cleaners import (
+    small_claims_court_act as small_claims_court_act_cleaner,
+)
+from data_pipeline.cleaners import (
+    law_of_succession_act as law_of_succession_act_cleaner,
+)
 from data_pipeline.cleaners import penal_code as penal_code_cleaner
 from data_pipeline.cleaners.base import CleanerSpec
 from data_pipeline.ir import Document
@@ -42,7 +50,15 @@ from data_pipeline.validators import constitution as constitution_validator
 from data_pipeline.validators import (
     criminal_procedure_code as criminal_procedure_code_validator,
 )
+from data_pipeline.validators import children_act as children_act_validator
 from data_pipeline.validators import employment_act as employment_act_validator
+from data_pipeline.validators import marriage_act as marriage_act_validator
+from data_pipeline.validators import (
+    small_claims_court_act as small_claims_court_act_validator,
+)
+from data_pipeline.validators import (
+    law_of_succession_act as law_of_succession_act_validator,
+)
 from data_pipeline.validators import penal_code as penal_code_validator
 
 
@@ -70,6 +86,10 @@ CLEANERS: dict[str, CleanerSpec] = {
     "criminal-procedure-code": criminal_procedure_code_cleaner.SPEC,
     "penal-code": penal_code_cleaner.SPEC,
     "employment-act": employment_act_cleaner.SPEC,
+    "law-of-succession-act": law_of_succession_act_cleaner.SPEC,
+    "children-act": children_act_cleaner.SPEC,
+    "marriage-act": marriage_act_cleaner.SPEC,
+    "small-claims-court-act": small_claims_court_act_cleaner.SPEC,
 }
 
 # Structure parsers are per-type and reusable. "act" handles the
@@ -85,6 +105,10 @@ VALIDATORS: dict[str, object] = {
     "criminal-procedure-code": criminal_procedure_code_validator,
     "penal-code": penal_code_validator,
     "employment-act": employment_act_validator,
+    "law-of-succession-act": law_of_succession_act_validator,
+    "children-act": children_act_validator,
+    "marriage-act": marriage_act_validator,
+    "small-claims-court-act": small_claims_court_act_validator,
 }
 
 

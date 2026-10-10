@@ -1,0 +1,343 @@
+# Pocket Lawyer - PRODUCT question suite
+#
+# Written the way people actually ask, not the way statutes are worded.
+#
+# Why this file exists: the statutory suite (questions.yaml) was drafted
+# against section headings, and 35% of its questions restate the heading
+# of the section they expect. Because passage.py embeds those headings into
+# the index, it measured vocabulary matching, not question answering - it
+# reported 98.3% retrieval while real phrasing retrieved 62%.
+#
+# The rule for this file: every expectation was READ FROM THE SECTION TEXT
+# before it was written. Three candidates were changed by that reading:
+#   - s.46 does not cover being fired for claiming wages (s.45/s.43 do)
+#   - s.34 'Medical attention' covers illness, not work injury
+#   - s.191 'Fouling water' covers springs and reservoirs, not rivers
+#
+# Questions are verbatim as supplied. Ids resolved from the corpus by
+# script, never typed. Reported separately from the statutory suite and
+# never combined into one headline figure.
+
+# =========================================================
+# ANSWERABLE
+# =========================================================
+
+- id: product-emp-paid-leave
+  question: "I've been working at the same company for three years. How many days of paid leave am I supposed to get every year?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-v-section-28
+  note: >
+    s.28(1)(a): after every twelve consecutive months, not less than
+    twenty-one working days of leave with full pay.
+
+- id: product-emp-fired-for-overtime
+  question: "My boss just fired me after I asked for the overtime they still owe me. Can they do that?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-vi-section-45
+    - employment-act@v2024-04-26-part-vi-section-43
+  note: >
+    s.45(2): termination is unfair unless the employer proves a valid and
+    fair reason; s.43(1): if the employer cannot prove the reason, it is
+    deemed unfair. NOT s.46 - read in full, its list of unfair reasons
+    covers pregnancy, leave, trade union and tribe, and does not mention
+    claiming unpaid wages.
+
+- id: product-emp-probation
+  question: "I'm on probation and they want to end my contract after only two months. Do I have any rights?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-vi-section-42
+  note: >
+    s.42: the section 41 hearing does not apply to probationary contracts;
+    probation may not exceed six months.
+
+- id: product-pol-beaten-in-custody
+  question: "The police beat me while they were questioning me at the station. Is that legal?"
+  answerable: true
+  expect_any_of:
+    - constitution-of-kenya-2010@v2010-chapter-four-article-29
+    - constitution-of-kenya-2010@v2010-chapter-four-article-25
+  note: >
+    Art 29(c) and (d): the right not to be subjected to any form of
+    violence, or to torture in any manner, physical or psychological. Art
+    25(a): freedom from torture may not be limited. Rank 1 when asked as 'Is
+    torture allowed in Kenya?', beyond rank 100 in these words - the
+    canonical vocabulary-gap case.
+
+- id: product-pol-held-two-days
+  question: "I was arrested two days ago and they still haven't taken me to court. How long can they keep me?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-iii-section-36
+    - constitution-of-kenya-2010@v2010-chapter-four-article-49
+  note: >
+    CPC s.36: a person held without warrant must be brought before a court
+    within twenty-four hours. Art 49: the rights of arrested persons,
+    including the twenty-four hour rule.
+
+- id: product-pol-search-without-warrant
+  question: "Can the police search my house without a warrant if they just show up?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-iv-section-118
+    - criminal-procedure-code@v2023-12-11-part-iv-section-119
+    - constitution-of-kenya-2010@v2010-chapter-four-article-31
+  note: >
+    Art 31(a): the right not to have one's home searched. CPC s.118: a
+    search warrant is issued on proof on oath; s.119: its execution.
+
+- id: product-pol-property-seized
+  question: "The police took my phone and laptop when they arrested me. Do they have to give them back?"
+  answerable: true
+  expect_any_of:
+    - criminal-procedure-code@v2023-12-11-part-iv-section-177
+    - criminal-procedure-code@v2023-12-11-part-iii-section-25
+  note: >
+    CPC s.177: property taken on apprehension may be ordered restored to the
+    person entitled to it. s.25: the power to search an arrested person and
+    take property. Found by searching the Code, not by retrieval - neither
+    retrieves near the top for these words.
+
+- id: product-suc-leave-to-children
+  question: "I want to leave everything I own to my children when I die. What do I actually need to do?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-ii-section-5
+    - law-of-succession-act@v2022-12-31-part-ii-section-8
+    - law-of-succession-act@v2022-12-31-part-ii-section-11
+  note: >
+    s.5: anyone of sound mind and not a minor may dispose of property by
+    will; s.8: a will may be oral or written; s.11: a written will needs the
+    testator's signature and attestation by two or more competent witnesses.
+    The question that exposed the vocabulary gap: s.11 is rank 2 for 'How do
+    I write a valid will?' and beyond rank 100 for these words.
+
+- id: product-suc-father-no-will
+  question: "My father died without writing a will. How is the property supposed to be shared?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-v-section-34
+    - law-of-succession-act@v2022-12-31-part-v-section-35
+    - law-of-succession-act@v2022-12-31-part-v-section-38
+    - law-of-succession-act@v2022-12-31-part-v-section-39
+  note: >
+    s.34 defines intestacy; the shares depend on who survives - s.35 spouse
+    and children, s.38 children only, s.39 neither.
+
+- id: product-suc-uncle-collecting-rent
+  question: "My uncle has been living in our family land and collecting rent since my dad passed. Can he just do that?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-vii-section-45
+  note: >
+    s.45: no person may take possession of, dispose of or otherwise
+    intermeddle with a deceased person's property without authority; doing
+    so is an offence.
+
+- id: product-suc-will-on-phone
+  question: "Can I write a will on my phone or does it have to be on paper with witnesses?"
+  answerable: true
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-ii-section-11
+    - law-of-succession-act@v2022-12-31-part-ii-section-9
+    - law-of-succession-act@v2022-12-31-part-ii-section-8
+  note: >
+    s.11: a written will needs signature and two witnesses; s.9: an oral
+    will needs two witnesses AND the testator's death within three months.
+    The Act says nothing about phones or electronic wills - a good answer
+    should say so rather than imply one is fine.
+
+- id: product-fam-adopt-sisters-child
+  question: "I want to adopt my sister's child because she can't take care of him. What's the process in Kenya?"
+  answerable: true
+  expect_any_of:
+    - children-act@v2022-12-31-part-xiv-section-183
+    - children-act@v2022-12-31-part-xiv-section-185
+    - children-act@v2022-12-31-part-xiv-section-186
+  note: >
+    s.183(3) expressly includes KINSHIP adoption; s.185(2)(a) requires three
+    months' continuous care before application; s.186 sets the applicant's
+    age limits.
+
+- id: product-fam-ex-blocks-contact
+  question: "My ex is refusing to let me see our kids. What can I do?"
+  answerable: true
+  expect_any_of:
+    - children-act@v2022-12-31-part-ix-section-102
+    - children-act@v2022-12-31-part-ix-section-103
+    - children-act@v2022-12-31-part-ix-section-101
+  note: >
+    s.102: a parent may apply for a custody order; s.103: the principles the
+    court applies; s.101: custody, care and control.
+
+- id: product-fam-rights-on-separation
+  question: "Do children have any special rights if their parents separate?"
+  answerable: true
+  expect_any_of:
+    - children-act@v2022-12-31-part-ii-section-11
+    - children-act@v2022-12-31-part-ii-section-8
+    - constitution-of-kenya-2010@v2010-chapter-four-article-53
+  note: >
+    s.11: the right to parental care and to live with one's parents unless
+    separation is in the child's best interest; s.8: best interests are the
+    primary consideration; Art 53.
+
+- id: product-fam-minor-with-adults
+  question: "I'm under 18 and the police locked me up with adults. Is that allowed?"
+  answerable: true
+  expect_any_of:
+    - children-act@v2022-12-31-part-ii-section-26
+  note: >
+    s.26(2): children deprived of liberty shall be held separate from
+    adults.
+
+- id: product-fam-no-child-support
+  question: "My husband left and isn't sending any money for the children. Can the court force him?"
+  answerable: true
+  expect_any_of:
+    - children-act@v2022-12-31-part-ix-section-111
+    - children-act@v2022-12-31-part-ix-section-121-part-1
+    - children-act@v2022-12-31-part-ix-section-121-part-2
+    - marriage-act@v2022-12-31-part-xii-section-77
+  note: >
+    s.111: a parent may apply for a maintenance order; s.121: its
+    enforcement; Marriage Act s.77: maintenance where a spouse has refused,
+    neglected or deserted.
+
+- id: product-env-factory-pollution
+  question: "The factory next to us is dumping dirty water into the river. Can ordinary people do anything about it?"
+  answerable: true
+  expect_any_of:
+    - constitution-of-kenya-2010@v2010-chapter-five-article-70
+    - constitution-of-kenya-2010@v2010-chapter-four-article-42
+  note: >
+    Art 70: any person alleging a violation of the right to a clean
+    environment may apply to a court; Art 42: that right. Penal Code s.191
+    'Fouling water' is deliberately NOT listed: read in full it covers a
+    public SPRING OR RESERVOIR, and a river is neither.
+
+- id: product-env-land-for-road
+  question: "The government wants to take our land for a road. Do we have to accept whatever they offer?"
+  answerable: true
+  expect_any_of:
+    - constitution-of-kenya-2010@v2010-chapter-four-article-40
+  note: >
+    Art 40(3)(b)(i): deprivation for a public purpose must provide prompt
+    payment in full of just compensation.
+
+- id: product-con-tribe-discrimination
+  question: "I was denied a job just because of my tribe. Is that against the law?"
+  answerable: true
+  expect_any_of:
+    - employment-act@v2024-04-26-part-ii-section-5
+    - constitution-of-kenya-2010@v2010-chapter-four-article-27
+  note: >
+    Employment Act s.5: discrimination in employment; Art 27: equality and
+    freedom from discrimination, including on ethnic origin. Cross-document
+    by design.
+
+- id: product-edge-take-friends-car
+  question: "I lent my friend money and he refuses to pay back. Can I take his car?"
+  answerable: true
+  expect_any_of:
+    - small-claims-court-act@v2022-12-31-part-iv-section-23
+    - small-claims-court-act@v2022-12-31-part-iv-section-37
+    - penal-code@v2023-12-11-part-ii-chapter-xxvii-section-294
+  note: >
+    Two halves, both answerable. Taking the car: Penal Code s.294, unlawful
+    use of a vehicle, a misdemeanour. The lawful route: Small Claims Court
+    s.23 to file the claim, s.37 to enforce the order.
+
+# =========================================================
+# OUT OF SCOPE - the system must refuse
+# =========================================================
+
+- id: product-emp-public-holidays
+  question: "The company is making us work on public holidays without extra pay. Is that allowed?"
+  answerable: false
+  note: >
+    Out of scope. s.27 (Hours of work), read in full, provides one rest day
+    in seven and says nothing about public holidays or premium pay. The
+    corpus cannot answer this.
+
+- id: product-emp-injured-at-work
+  question: "I got injured at work last month. Who is supposed to cover the medical bills?"
+  answerable: false
+  note: >
+    Out of scope, and the clearest heading-versus-text trap in this set.
+    s.34 is titled 'Medical attention' and retrieves at rank 1 - but its
+    text is about medicine during ILLNESS. Work-injury compensation is
+    governed by the Work Injury Benefits Act, which is not in the corpus. An
+    answer from s.34 alone would be incomplete in a way that misleads.
+
+- id: product-pol-accused-of-robbery
+  question: "Someone is accusing me of robbery but I wasn't even there. What should I do first?"
+  answerable: false
+  kind: advice
+  note: >
+    Advice-shaped. The corpus holds the relevant law - the definition of
+    robbery and the rights of an accused person - but the question asks for
+    a course of action. Out of scope for now, by decision.
+
+- id: product-suc-protect-mothers-house
+  question: "Someone is claiming my late mother's house belongs to them. How do I protect it?"
+  answerable: false
+  kind: advice
+  note: >
+    Advice-shaped, and also land-title territory the corpus does not hold.
+    Out of scope for now, by decision.
+
+- id: product-env-building-on-family-land
+  question: "Someone is building on land that belongs to our family. What steps should we take?"
+  answerable: false
+  note: >
+    Out of scope. A land dispute governed by the Land Act and Land
+    Registration Act, deferred from MVP scope. Retrieval returns
+    Constitution Chapter Five classification articles, which do not answer
+    it.
+
+- id: product-con-compelled-vaccination
+  question: "Can the government force me to get a certain vaccine or medical treatment?"
+  answerable: false
+  note: >
+    Out of scope. No provision in the eight documents addresses compelled
+    medical treatment; retrieval returns unrelated material.
+
+- id: product-con-police-bribe
+  question: "The police stopped me and demanded a bribe. What are my options?"
+  answerable: false
+  note: >
+    Out of scope. Anti-corruption law is not in the corpus.
+
+- id: product-con-record-police
+  question: "Do I have the right to record the police when they are dealing with me?"
+  answerable: false
+  note: >
+    Out of scope. No provision addresses recording officers.
+
+- id: product-edge-witchcraft
+  question: "What is the punishment for witchcraft under Kenyan law?"
+  answerable: false
+  note: >
+    Out of scope. The Witchcraft Act is not in the corpus.
+
+- id: product-edge-evil-eye
+  question: "Can I sue someone for giving me the evil eye?"
+  answerable: false
+  note: >
+    Out of scope. Nothing in the corpus addresses it.
+
+- id: product-edge-insult-president
+  question: "Is it illegal to insult the president on Twitter?"
+  answerable: false
+  note: >
+    Out of scope. Online speech offences sit in the Computer Misuse and
+    Cybercrimes Act, which is not in the corpus.
+
+- id: product-edge-rent-increase
+  question: "My landlord increased rent by 100% this month with no notice. Is there a limit?"
+  answerable: false
+  note: >
+    Out of scope. Landlord and tenant law is not in the corpus.

@@ -1,0 +1,30 @@
+{
+  "document_id": "children-act",
+  "title": "Children Act (Cap. 141)",
+  "document_type": "act",
+  "jurisdiction": "Kenya",
+  "language": "English",
+  "source": {
+    "name": "Kenya Law",
+    "url": "https://new.kenyalaw.org/akn/ke/act/2022/29/eng@2022-12-31"
+  },
+  "version": "2022-12-31",
+  "effective_from": "2022-12-31",
+  "effective_to": null,
+  "in_force": true,
+  "files": {
+    "raw": "data\\raw\\legislation\\children-act.pdf",
+    "extracted": "data\\documents\\children-act@v2022-12-31\\extracted.txt",
+    "cleaned": "data\\documents\\children-act@v2022-12-31\\cleaned.txt"
+  },
+  "checksums": {
+    "raw_sha256": "58f88a0165075945b89fad8d4c93be1d76e86449d24522e7347a6c940d41ab9e",
+    "extracted_sha256": "49254d2f9ee33095c0933fa5ace53e74a797dacf8b4651281b4aa2e389da3af8",
+    "cleaned_sha256": "413cb10b0d4db83ab642cee5d1bd692800aaf6105e710fbd72e59bf95e2e66e8"
+  },
+  "processing": {
+    "status": "ingested",
+    "chunk_count": 258,
+    "as_at": "2026-09-23"
+  }
+}

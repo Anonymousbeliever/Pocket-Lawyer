@@ -74,7 +74,6 @@ class AskResponse(BaseModel):
     sufficient: bool | None = None
     question_type: str | None = None
     verdict: str | None = None
-    explanation: str | None = None
     qualifications: list[str] = Field(default_factory=list)
 
     # `sources` is what the answer actually relied on. `considered` is
@@ -84,10 +83,11 @@ class AskResponse(BaseModel):
     sources: list[Source] = Field(default_factory=list)
     considered: list[Source] = Field(default_factory=list)
 
-    # Citations the model produced that matched no retrieved chunk. Removed
+    # Assertions dropped because the quote they offered was not found in the
+    # source they cited - an invented citation or an invented claim. Removed
     # from the answer before it got here; surfaced so the caller knows it
     # happened rather than discovering it in a log.
-    unverified_citations: list[str] = Field(default_factory=list)
+    ungrounded_claims: int = 0
 
     @classmethod
     def conversational(cls, intent: Intent, answer: str) -> "AskResponse":
@@ -103,15 +103,14 @@ class AskResponse(BaseModel):
             sufficient=structured.sufficient,
             question_type=structured.question_type,
             verdict=structured.verdict,
-            explanation=structured.explanation,
-            qualifications=list(structured.qualifications),
+            qualifications=[q.text for q in structured.qualifications],
             sources=[
                 Source.from_chunk(c) for c in outcome.get("sources", [])
             ],
             considered=[
                 Source.from_chunk(c) for c in outcome.get("considered", [])
             ],
-            unverified_citations=list(structured.unverified_citations),
+            ungrounded_claims=len(structured.ungrounded),
         )
 
 

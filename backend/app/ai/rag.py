@@ -18,7 +18,7 @@ def _no_sources_answer(reason: str) -> LegalAnswer:
         sufficient=False,
         question_type="open",
         verdict="not_applicable",
-        explanation=reason,
+        missing=reason,
     )
 
 
@@ -170,11 +170,16 @@ class LegalRAG:
 
         print("[PASS] Answer generated")
 
-        if answer.unverified_citations:
+        if answer.ungrounded:
             print(
-                f"[WARN] removed {len(answer.unverified_citations)} "
-                f"citation(s) not present in the retrieved sources: "
-                f"{answer.unverified_citations}"
+                f"[WARN] dropped {len(answer.ungrounded)} assertion(s) "
+                f"whose quote was not found in the source they cited"
+            )
+
+        if answer.refused_by_grounding:
+            print(
+                "[WARN] the model answered, but too few of its claims "
+                "survived verification - refused by the grounding check"
             )
 
         return {

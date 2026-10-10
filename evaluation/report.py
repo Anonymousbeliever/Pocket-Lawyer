@@ -14,7 +14,14 @@ from pathlib import Path
 from evaluation.schema import Question, QuestionResult
 
 
-BASELINE_PATH = Path(__file__).resolve().parent / "baseline.json"
+# One baseline per suite PER TIER: `statutory-tier1.json`, `product-tier2.json`.
+#
+# There used to be a single `baseline.json`, and any complete-looking run
+# could be promoted over it. A tier-0 run, or one scoped to a single suite,
+# would then silently replace the tier-1 record with a narrower one. Keying
+# the file on suite and tier makes that impossible by construction: a run can
+# only ever replace the baseline it is actually comparable to.
+BASELINE_DIR = Path(__file__).resolve().parent / "baselines"
 
 # Every run is written here so a result you have already looked at can
 # be promoted to the baseline without paying for the whole run again.
@@ -25,12 +32,62 @@ LAST_RUN_PATH = Path(__file__).resolve().parent / "last_run.json"
 # SCORING
 # ---------------------------------------------------------
 
+SUITE_ORDER = ("statutory", "product")
+
+
 def summarize(
     results: list[QuestionResult],
     tier: int,
     metadata: dict | None = None,
 ) -> dict:
-    """Reduce raw results to metrics plus a per-question record."""
+    """
+    Reduce raw results to metrics plus a per-question record.
+
+    Measured PER SUITE, and the suites are what gets reported. The two
+    measure different things: the statutory suite is worded like the
+    statute and tests retrieval regressions; the product suite is worded
+    like a person and tests whether people are served. Combined into one
+    figure they hid a 62% product number behind a 98% retrieval one - so
+    the top-level `metrics`/`counts` below are kept only so older
+    baselines still load, and are never printed as a headline.
+    """
+
+    metrics, counts = _measure(results, tier)
+
+    suites = {
+        name: dict(zip(("metrics", "counts"), _measure(members, tier)))
+        for name in SUITE_ORDER
+        if (members := [r for r in results if r.suite == name])
+    }
+
+    return {
+        "metadata": metadata or {},
+        "metrics": metrics,
+        "counts": counts,
+        "suites": suites,
+        "questions": {
+            r.id: {
+                "suite": r.suite,
+                "passed": r.passed(tier),
+                "answerable": r.answerable,
+                "retrieval_hit": r.retrieval_hit,
+                "rerank_hit": r.rerank_hit,
+                "rerank_top1": r.rerank_top1,
+                "sufficient": r.sufficient,
+                "refused_by_grounding": r.refused_by_grounding,
+                "cited_expected": r.cited_expected,
+                "answer_quality": r.answer_quality,
+            }
+            for r in results
+        },
+    }
+
+
+def _measure(
+    results: list[QuestionResult],
+    tier: int,
+) -> tuple[dict, dict]:
+    """Metrics and counts for one group of results."""
 
     answerable = [r for r in results if r.answerable]
     unanswerable = [r for r in results if not r.answerable]
@@ -70,23 +127,55 @@ def summarize(
             1 for r in results if r.wrong_authority
         )
 
-    return {
-        "metadata": metadata or {},
-        "metrics": metrics,
-        "counts": counts,
-        "questions": {
-            r.id: {
-                "passed": r.passed(tier),
-                "answerable": r.answerable,
-                "retrieval_hit": r.retrieval_hit,
-                "rerank_hit": r.rerank_hit,
-                "rerank_top1": r.rerank_top1,
-                "sufficient": r.sufficient,
-                "cited_expected": r.cited_expected,
-            }
+        # Assertions the grounding check dropped. Not a pass/fail metric -
+        # it is the model straining against its sources, and it is the
+        # leading indicator for both of the counts above.
+        counts["ungrounded_claims"] = sum(r.ungrounded for r in results)
+
+        counts["answers_with_ungrounded"] = sum(
+            1 for r in results if r.ungrounded
+        )
+
+        # The grounding check's refusals, split by what they did. On an
+        # answerable question it is a false refusal the check CAUSED; on an
+        # out-of-scope one it is a false answer the check STOPPED. The rule
+        # is only worth what the second number buys against the first, so
+        # they are never reported as one.
+        counts["grounding_refused_answerable"] = sum(
+            1 for r in results if r.refused_by_grounding and r.answerable
+        )
+
+        counts["grounding_refused_out_of_scope"] = sum(
+            1 for r in results if r.refused_by_grounding and not r.answerable
+        )
+
+        # The only metric in this harness that reads the answer. Kept
+        # OUT of `metrics` and out of the headline pass count on purpose:
+        # retrieval scores and answer quality measure different things,
+        # and averaging them into one number is how the project spent
+        # weeks improving a figure that did not track the product.
+        judged = [r for r in results if r.answer_quality is not None]
+
+        counts["answer_quality"] = {
+            "passed": sum(1 for r in judged if r.answer_quality),
+            "total": len(judged),
+        }
+
+        defects: dict[str, int] = {}
+
+        for r in judged:
+            if not r.answer_quality and r.judge_defect:
+                defects[r.judge_defect] = defects.get(r.judge_defect, 0) + 1
+
+        counts["answer_defects"] = defects
+
+        counts["not_judged"] = sum(
+            1
             for r in results
-        },
-    }
+            if r.sufficient is True and r.answer_quality is None
+        )
+
+    return metrics, counts
 
 
 def _ratio(results: list[QuestionResult], attribute: str) -> dict:
@@ -116,37 +205,17 @@ def print_run(
     questions: dict[str, Question],
     tier: int,
 ) -> None:
-    counts = summary["counts"]
-
     print()
     print("=" * 64)
     print(f"EVALUATION RESULTS  (tier {tier})")
     print("=" * 64)
-    print()
 
-    for name, value in summary["metrics"].items():
-        total = value["total"]
+    judged = summary.get("metadata", {}).get("judged", True)
 
-        if not total:
-            continue
-
-        passed = value["passed"]
-        pct = 100 * passed / total
-
-        print(f"  {name:<16} {passed:>3}/{total:<3}  {pct:5.1f}%")
-
-    if tier >= 2:
-        print()
-        print(f"  false refusals   {counts.get('false_refusal', 0)}")
-        print(f"  false answers    {counts.get('false_answer', 0)}")
-        print(f"  wrong authority  {counts.get('wrong_authority', 0)}")
-
-    print()
-    print(
-        f"  {counts['passed']}/{counts['questions']} questions passing "
-        f"({counts['answerable']} answerable, "
-        f"{counts['out_of_scope']} out of scope)"
-    )
+    # One block per suite, deliberately with no combined total beneath
+    # them. See `summarize`.
+    for name, suite in (summary.get("suites") or {}).items():
+        _print_suite(name, suite["metrics"], suite["counts"], tier, judged)
 
     failures = [r for r in results if not r.passed(tier)]
 
@@ -182,9 +251,190 @@ def print_run(
                 print(f"       {question.question}")
                 print(f"       expected : {sorted(question.expect_any_of)}")
 
+            # The whole point of this section is that someone reads the
+            # answer - so print it, not just the ids it cited.
+            _print_answer(result)
+            print(f"       cited    : {result.cited_top}")
+            _print_dropped(result)
+
+    # A question can PASS - right law reached the LLM, and it answered -
+    # while the judge says the answer is a non-sequitur. Until this was
+    # printed, the judge's count was all anyone saw: a run reported "1
+    # non_sequitur" among three answers and nothing said which one.
+    rejected = [r for r in results if r.answer_quality is False]
+
+    if rejected:
+        print()
+        print("-" * 64)
+        print("ANSWERS THE JUDGE REJECTED")
+        print("-" * 64)
+
+        for result in rejected:
+            question = questions.get(result.id)
+
+            print()
+            print(f"[READ] {result.id}")
+
+            if question:
+                print(f"       {question.question}")
+
+            print(f"       defect   : {result.judge_defect}")
+            print(f"       judge    : {result.judge_reason}")
+            _print_answer(result)
             print(f"       cited    : {result.cited_top}")
 
+            # Which claim failed, and the section's own words beside it -
+            # enough to check the judge without opening the corpus.
+            for number, check in enumerate(result.judge_claims, start=1):
+                if check.get("finding") == "stated":
+                    continue
+
+                print(f"       claim {number}  : [{check.get('finding')}] "
+                      f"{check.get('claim')}")
+                print(f"                  law says  \"{check.get('section_says')}\"")
+                print(f"                  judge     {check.get('reason')}")
+
+            _print_dropped(result)
+
+    # Served answers that lost claims on the way. Failures already print
+    # their drops; these passed, so nothing else would show them.
+    trimmed = [
+        r
+        for r in results
+        if r.dropped and r.passed(tier) and r.answer_quality is not False
+    ]
+
+    if trimmed:
+        print()
+        print("-" * 64)
+        print("ANSWERS GIVEN WITH CLAIMS DROPPED")
+        print("-" * 64)
+
+        for result in trimmed:
+            question = questions.get(result.id)
+
+            print()
+            print(f"[READ] {result.id}")
+
+            if question:
+                print(f"       {question.question}")
+
+            _print_evidence(result)
+
     print()
+
+
+SUITE_TITLES = {
+    "statutory": "STATUTORY SUITE - worded like the statute (retrieval regression)",
+    "product": "PRODUCT SUITE - worded like a person (is anyone served?)",
+}
+
+
+def _print_suite(
+    name: str,
+    metrics: dict,
+    counts: dict,
+    tier: int,
+    judged: bool,
+) -> None:
+    print()
+    print(f"  {SUITE_TITLES.get(name, name.upper())}")
+    print()
+
+    for metric, value in metrics.items():
+        total = value["total"]
+
+        if not total:
+            continue
+
+        passed = value["passed"]
+
+        print(
+            f"    {metric:<16} {passed:>3}/{total:<3}  "
+            f"{100 * passed / total:5.1f}%"
+        )
+
+    if tier >= 2:
+        false_refusals = counts.get("false_refusal", 0)
+        by_grounding = counts.get("grounding_refused_answerable", 0)
+
+        print()
+        print(
+            f"    false refusals   {false_refusals}  "
+            f"({false_refusals - by_grounding} by the model, "
+            f"{by_grounding} by the grounding check)"
+        )
+        print(f"    false answers    {counts.get('false_answer', 0)}")
+        print(
+            f"    stopped answers  "
+            f"{counts.get('grounding_refused_out_of_scope', 0)}  "
+            f"(out of scope, answered by the model, refused by the "
+            f"grounding check)"
+        )
+        print(f"    wrong authority  {counts.get('wrong_authority', 0)}")
+        print(
+            f"    ungrounded       {counts.get('ungrounded_claims', 0)} "
+            f"claim(s) dropped across "
+            f"{counts.get('answers_with_ungrounded', 0)} answer(s)"
+        )
+
+        _print_answer_quality(counts, judged=judged)
+
+    print()
+    print(
+        f"    {counts['passed']}/{counts['questions']} passing "
+        f"({counts['answerable']} answerable, "
+        f"{counts['out_of_scope']} out of scope)"
+    )
+
+
+def _print_answer_quality(counts: dict, judged: bool = True) -> None:
+    """
+    Reported apart from the retrieval metrics, and deliberately so.
+
+    Every other number here answers "did the right passage reach the
+    LLM". This one answers "was the answer any good". They moved in
+    opposite directions once already - 121/133 on retrieval while a
+    question about leaving property to one's children was answered with
+    a point about adopted children - and a single combined figure would
+    have hidden it.
+    """
+
+    quality = counts.get("answer_quality") or {}
+    total = quality.get("total", 0)
+
+    print()
+    print("  ANSWER QUALITY (judged, tier 2 only)")
+
+    if not total:
+        # Two very different reasons, and saying the wrong one sends
+        # someone hunting a flag that was never set.
+        if not judged:
+            print("    not measured - --no-judge was set")
+        else:
+            print(
+                "    nothing to judge - every answered question was a "
+                "refusal, and refusals are scored by refusal_correct"
+            )
+        return
+
+    passed = quality.get("passed", 0)
+
+    print(
+        f"    responsive + supported + no defect   {passed:>3}/{total:<3}"
+        f"  {100 * passed / total:5.1f}%"
+    )
+
+    defects = counts.get("answer_defects") or {}
+
+    for name, number in sorted(defects.items(), key=lambda item: -item[1]):
+        print(f"      {name:<16} {number}")
+
+    if counts.get("not_judged"):
+        print(
+            f"    {counts['not_judged']} answered question(s) could not be "
+            f"judged (judge error)"
+        )
 
 
 def _print_failure(result: QuestionResult, question: Question | None) -> None:
@@ -195,8 +445,13 @@ def _print_failure(result: QuestionResult, question: Question | None) -> None:
         print(f"       {question.question}")
 
     if not result.answerable:
+        # This line used to be labelled "cited" while printing the top three
+        # RERANKED sources - what the LLM was shown, not what it relied on.
         print("       cause    : expected a refusal, but the system answered")
-        print(f"       cited    : {result.reranked_top[:3]}")
+        _print_answer(result)
+        print(f"       cited    : {result.cited_top or '(none)'}")
+        print(f"       reranked : {result.reranked_top or '(none)'}")
+        _print_dropped(result)
         return
 
     expected = set(question.expect_any_of) if question else set()
@@ -223,8 +478,16 @@ def _print_failure(result: QuestionResult, question: Question | None) -> None:
             f"discarded it (was #{rank} of {len(result.retrieved_top)})"
         )
 
-    if result.sufficient is False:
-        print("       cause    : system refused a question the corpus answers")
+    if result.refused_by_grounding:
+        print(
+            "       cause    : REFUSED BY THE GROUNDING CHECK - the model "
+            "answered, but too few statements survived verification "
+            f"({len(result.statements_kept)} kept, "
+            f"{result.statements_dropped} dropped)"
+        )
+
+    elif result.sufficient is False:
+        print("       cause    : REFUSED BY THE MODEL - it declined itself")
 
     print(f"       expected : {sorted(expected)}")
     print(f"       reranked : {result.reranked_top or '(none)'}")
@@ -234,6 +497,40 @@ def _print_failure(result: QuestionResult, question: Question | None) -> None:
 
     if result.cited_top:
         print(f"       cited    : {result.cited_top}")
+
+    # Printed for EVERY failure with drops, not only grounding refusals: a
+    # model refusal after a dropped claim is worth reading too.
+    _print_evidence(result)
+
+
+def _print_answer(result: QuestionResult) -> None:
+    """The rendered answer, as the user would have read it."""
+
+    lines = result.answer_text.splitlines()
+
+    if not lines:
+        return
+
+    print(f"       answer   : {lines[0]}")
+
+    for line in lines[1:]:
+        print(f"                  {line}")
+
+
+def _print_evidence(result: QuestionResult) -> None:
+    """What the answer kept, and each claim verification dropped and why."""
+
+    for kept in result.statements_kept:
+        print(f"       kept     : {kept}")
+
+    _print_dropped(result)
+
+
+def _print_dropped(result: QuestionResult) -> None:
+    for item in result.dropped:
+        print(f"       dropped  : [{item['failure']}] {item['text']}")
+        print(f"                  cited  {item['chunk_id']}")
+        print(f"                  quote  \"{item['quote']}\"")
 
 
 def _first_rank(retrieved: list[str], expected: set[str]) -> str:
@@ -248,18 +545,120 @@ def _first_rank(retrieved: list[str], expected: set[str]) -> str:
 # BASELINE
 # ---------------------------------------------------------
 
-def load_baseline(path: Path = BASELINE_PATH) -> dict | None:
+def baseline_path(
+    suite: str,
+    tier: int,
+    directory: Path = BASELINE_DIR,
+) -> Path:
+    return directory / f"{suite}-tier{tier}.json"
+
+
+def suite_summary(summary: dict, suite: str) -> dict:
+    """
+    One suite's share of a run, in the same shape as a whole run, so that
+    `compare` reads it unchanged.
+    """
+
+    block = summary["suites"][suite]
+
+    return {
+        "metadata": summary.get("metadata", {}),
+        "metrics": block["metrics"],
+        "counts": block["counts"],
+        "suites": {suite: block},
+        "questions": {
+            qid: record
+            for qid, record in summary.get("questions", {}).items()
+            if record.get("suite", "statutory") == suite
+        },
+    }
+
+
+def promotion_refusal(summary: dict) -> str | None:
+    """
+    Why this run may not become a baseline - or None if it may.
+
+    One rule for both `--save-baseline` and `--accept-last`, so they cannot
+    drift apart. Every condition here is a way a run can LOOK complete while
+    measuring less than the baseline it would replace.
+    """
+
+    metadata = summary.get("metadata") or {}
+    scope = metadata.get("scope")
+
+    # Checked first: without a recorded scope none of the checks below can be
+    # made, and guessing that a run was complete is exactly the old gap.
+    if scope is None or metadata.get("tier") is None:
+        return (
+            "the run does not record its scope - it predates scope "
+            "tracking. Re-run it."
+        )
+
+    if scope.get("ids"):
+        return "it ran only selected questions (--id)."
+
+    if scope.get("document"):
+        return (
+            f"it ran only one document's questions "
+            f"(--document {scope['document']}), and out-of-scope "
+            f"questions are excluded from those."
+        )
+
+    if metadata.get("reranked") is False:
+        return "reranking was disabled - --no-rerank is a measurement, not the pipeline."
+
+    # A reference result must be computed, not recalled.
+    if any(((metadata.get("cache") or {}).get("hits") or {}).values()):
+        return "it used the cache. Re-run with --no-cache, then promote that."
+
+    return None
+
+
+def load_baseline(
+    suite: str,
+    tier: int,
+    directory: Path = BASELINE_DIR,
+) -> dict | None:
+    path = baseline_path(suite, tier, directory)
+
     if not path.exists():
         return None
 
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def save_baseline(summary: dict, path: Path = BASELINE_PATH) -> None:
-    path.write_text(
-        json.dumps(summary, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
+def save_baseline(
+    summary: dict,
+    directory: Path = BASELINE_DIR,
+) -> dict[str, Path]:
+    """
+    Write one baseline per suite the run contains, at the run's own tier.
+    Suites the run did not contain keep whatever baseline they had.
+
+    Callers must check `promotion_refusal` first; this only writes.
+    """
+
+    tier = summary["metadata"]["tier"]
+
+    directory.mkdir(parents=True, exist_ok=True)
+
+    written = {}
+
+    for suite in summary.get("suites") or {}:
+        path = baseline_path(suite, tier, directory)
+
+        path.write_text(
+            json.dumps(
+                suite_summary(summary, suite),
+                indent=2,
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
+        written[suite] = path
+
+    return written
 
 
 def save_last_run(summary: dict, path: Path = LAST_RUN_PATH) -> None:
@@ -286,22 +685,37 @@ def compare(current: dict, baseline: dict) -> dict:
 
     incomparable = _incomparable_reasons(current, baseline)
 
-    deltas = {}
+    # Deltas are computed per suite and never across them. A baseline
+    # recorded before suites existed holds only the statutory questions at
+    # its top level, so it is read as that suite rather than rejected.
+    before_suites = baseline.get("suites") or {
+        "statutory": {"metrics": baseline.get("metrics", {})}
+    }
 
-    for name, value in current["metrics"].items():
-        before = baseline.get("metrics", {}).get(name)
+    deltas: dict[str, dict] = {}
 
-        if not before or not value["total"]:
-            continue
+    for suite, block in (current.get("suites") or {}).items():
+        before_metrics = (before_suites.get(suite) or {}).get("metrics", {})
 
-        deltas[name] = {
-            "before": before["passed"],
-            "after": value["passed"],
-            "total": value["total"],
-            "delta": value["passed"] - before["passed"],
-        }
+        for name, value in block["metrics"].items():
+            before = before_metrics.get(name)
+
+            if not before or not value["total"]:
+                continue
+
+            deltas.setdefault(suite, {})[name] = {
+                "before": before["passed"],
+                "after": value["passed"],
+                "total": value["total"],
+                "delta": value["passed"] - before["passed"],
+            }
 
     old_questions = baseline.get("questions", {})
+
+    # Only questions from suites that actually ran can have been removed.
+    # Without this, `--suite product` would report every statutory
+    # question as removed - the --id comparison bug again, one level up.
+    ran = {r.get("suite", "statutory") for r in current["questions"].values()}
 
     regressed = []
     improved = []
@@ -318,13 +732,19 @@ def compare(current: dict, baseline: dict) -> dict:
         elif not previous["passed"] and record["passed"]:
             improved.append(qid)
 
+    removed = {
+        qid
+        for qid, record in old_questions.items()
+        if record.get("suite", "statutory") in ran
+    } - set(current["questions"])
+
     return {
         "incomparable": incomparable,
         "deltas": deltas,
         "regressed": sorted(regressed),
         "improved": sorted(improved),
         "new": sorted(set(current["questions"]) - set(old_questions)),
-        "removed": sorted(set(old_questions) - set(current["questions"])),
+        "removed": sorted(removed),
     }
 
 
@@ -370,9 +790,9 @@ def _incomparable_reasons(current: dict, baseline: dict) -> list[str]:
     return reasons
 
 
-def print_comparison(comparison: dict) -> None:
+def print_comparison(comparison: dict, label: str = "") -> None:
     print("=" * 64)
-    print("COMPARED TO BASELINE")
+    print(f"COMPARED TO BASELINE{f'  ({label})' if label else ''}")
     print("=" * 64)
 
     if comparison["incomparable"]:
@@ -383,20 +803,22 @@ def print_comparison(comparison: dict) -> None:
         for reason in comparison["incomparable"]:
             print(f"       - {reason}")
 
-    print()
+    for suite, metrics in comparison["deltas"].items():
+        print()
+        print(f"  {suite}")
 
-    for name, delta in comparison["deltas"].items():
-        arrow = ""
+        for name, delta in metrics.items():
+            arrow = ""
 
-        if delta["delta"] > 0:
-            arrow = f"  (+{delta['delta']})"
-        elif delta["delta"] < 0:
-            arrow = f"  ({delta['delta']})"
+            if delta["delta"] > 0:
+                arrow = f"  (+{delta['delta']})"
+            elif delta["delta"] < 0:
+                arrow = f"  ({delta['delta']})"
 
-        print(
-            f"  {name:<16} {delta['before']:>3} -> "
-            f"{delta['after']:>3} / {delta['total']:<3}{arrow}"
-        )
+            print(
+                f"    {name:<16} {delta['before']:>3} -> "
+                f"{delta['after']:>3} / {delta['total']:<3}{arrow}"
+            )
 
     for label, key in (
         ("REGRESSED", "regressed"),

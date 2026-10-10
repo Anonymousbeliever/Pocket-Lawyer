@@ -9,7 +9,15 @@ exist.
 
 import pytest
 
-from evaluation.report import compare, print_run, summarize
+from evaluation.report import (
+    compare,
+    load_baseline,
+    print_run,
+    promotion_refusal,
+    save_baseline,
+    suite_summary,
+    summarize,
+)
 from evaluation.schema import (
     Question,
     QuestionResult,
@@ -307,7 +315,7 @@ def test_regression_is_named_not_just_counted():
     comparison = compare(after, before)
 
     assert comparison["regressed"] == ["b"]
-    assert comparison["deltas"]["rerank_hit"]["delta"] == -1
+    assert comparison["deltas"]["statutory"]["rerank_hit"]["delta"] == -1
 
 
 def test_improvement_is_reported():
@@ -358,7 +366,7 @@ def test_a_no_rerank_run_is_flagged_not_hidden():
     comparison = compare(measured, baseline)
 
     assert any("reranking disabled" in r for r in comparison["incomparable"])
-    assert comparison["deltas"]["rerank_hit"]["delta"] == -1
+    assert comparison["deltas"]["statutory"]["rerank_hit"]["delta"] == -1
 
 
 def test_a_reranked_run_is_not_flagged():
@@ -473,3 +481,402 @@ def test_shipped_questions_reference_real_chunks():
         pytest.skip("no ingested corpus on disk to validate against")
 
     assert validate_against_corpus(load_questions(), known) == []
+
+
+# ---------------------------------------------------------
+# SUITES
+#
+# Two question sets that measure different things, reported separately.
+# The statutory suite is worded like the statute; the product suite like a
+# person. Combined into one figure they hid a 62% product number behind a
+# 98% retrieval one, which is the failure these tests exist to prevent.
+# ---------------------------------------------------------
+
+def test_both_suites_load_and_are_tagged_by_file():
+    questions = load_questions()
+
+    suites = {q.suite for q in questions}
+
+    assert suites == {"statutory", "product"}
+
+    product = [q for q in questions if q.suite == "product"]
+
+    assert product and all(q.id.startswith("product-") for q in product)
+
+
+def test_a_single_suite_can_be_loaded_alone():
+    product = load_questions(suites=("product",))
+
+    assert product and {q.suite for q in product} == {"product"}
+
+
+def test_advice_questions_are_out_of_scope_and_marked():
+    advice = [q for q in load_questions() if q.kind == "advice"]
+
+    assert advice, "the product suite should mark its advice questions"
+    assert not any(q.answerable for q in advice)
+
+
+def test_suites_are_measured_separately():
+    summary = summarize(
+        [
+            result(id="s1", suite="statutory"),
+            result(id="p1", suite="product", rerank_hit=False),
+        ],
+        tier=1,
+    )
+
+    assert summary["suites"]["statutory"]["metrics"]["rerank_hit"] == {
+        "passed": 1, "total": 1,
+    }
+    assert summary["suites"]["product"]["metrics"]["rerank_hit"] == {
+        "passed": 0, "total": 1,
+    }
+
+
+def test_the_report_never_prints_a_combined_headline(capsys):
+    summary = summarize(
+        [
+            result(id="s1", suite="statutory"),
+            result(id="p1", suite="product"),
+        ],
+        tier=1,
+    )
+
+    print_run(summary, [], {}, tier=1)
+
+    out = capsys.readouterr().out
+
+    assert "STATUTORY SUITE" in out
+    assert "PRODUCT SUITE" in out
+    assert "2/2" not in out, "a combined total leaked into the report"
+
+
+def test_running_one_suite_does_not_report_the_other_as_removed():
+    """
+    `--suite product` must not list every statutory question as removed -
+    the --id comparison bug, one level up.
+    """
+
+    baseline = summarize(
+        [result(id="s1", suite="statutory"), result(id="p1", suite="product")],
+        tier=1,
+    )
+    product_only = summarize([result(id="p1", suite="product")], tier=1)
+
+    assert compare(product_only, baseline)["removed"] == []
+
+
+def test_a_baseline_from_before_suites_is_read_as_statutory():
+    """Older baselines hold only statutory questions, at the top level."""
+
+    old = summarize([result(id="s1", rerank_hit=True)], tier=1)
+    del old["suites"]
+
+    current = summarize([result(id="s1", rerank_hit=False)], tier=1)
+
+    delta = compare(current, old)["deltas"]["statutory"]["rerank_hit"]
+
+    assert delta["delta"] == -1
+
+
+# ---------------------------------------------------------
+# WHO REFUSED
+# ---------------------------------------------------------
+
+def test_grounding_refusals_are_split_by_what_they_did():
+    """
+    On an answerable question the check caused a false refusal; on an
+    out-of-scope one it stopped a false answer. The rule is worth the
+    second against the first, so they are counted apart.
+    """
+
+    summary = summarize(
+        [
+            result(id="caused", sufficient=False, refused_by_grounding=True),
+            result(id="model", sufficient=False),
+            result(
+                id="stopped",
+                answerable=False,
+                rerank_hit=None,
+                rerank_top1=None,
+                sufficient=False,
+                refused_by_grounding=True,
+            ),
+        ],
+        tier=2,
+    )
+
+    counts = summary["suites"]["statutory"]["counts"]
+
+    assert counts["false_refusal"] == 2
+    assert counts["grounding_refused_answerable"] == 1
+    assert counts["grounding_refused_out_of_scope"] == 1
+
+
+def test_a_grounding_refusal_prints_its_evidence(capsys):
+    refused = result(
+        id="q",
+        sufficient=False,
+        refused_by_grounding=True,
+        statements_kept=["What survived."],
+        statements_dropped=1,
+        dropped=[
+            {
+                "text": "What was dropped.",
+                "chunk_id": "some-chunk",
+                "quote": "the quote it gave",
+                "failure": "quote_not_found",
+            }
+        ],
+    )
+
+    print_run(summarize([refused], tier=2), [refused], {}, tier=2)
+
+    out = capsys.readouterr().out
+
+    assert "REFUSED BY THE GROUNDING CHECK" in out
+    assert "(1 kept, 1 dropped)" in out
+    assert "[quote_not_found] What was dropped." in out
+    assert "the quote it gave" in out
+
+
+def test_a_passing_answer_the_judge_rejected_is_named(capsys):
+    """
+    A run once reported "1 non_sequitur" among three answers and nothing
+    said which one - the question passed, so it never reached FAILURES.
+    """
+
+    answered = result(
+        id="q",
+        sufficient=True,
+        cited_expected=True,
+        answer_quality=False,
+        judge_defect="non_sequitur",
+        judge_reason="Answers a different question.",
+    )
+
+    assert answered.passed(tier=2)
+
+    print_run(summarize([answered], tier=2), [answered], {}, tier=2)
+
+    out = capsys.readouterr().out
+
+    assert "ANSWERS THE JUDGE REJECTED" in out
+    assert "non_sequitur" in out
+    assert "Answers a different question." in out
+
+
+def test_a_rejected_answer_names_the_failing_claim_and_the_law(capsys):
+    rejected = result(
+        id="q",
+        sufficient=True,
+        cited_expected=True,
+        answer_quality=False,
+        judge_defect="wrong_actor",
+        judge_claims=[
+            {"claim": "Fine.", "section_says": "x", "finding": "stated",
+             "reason": ""},
+            {"claim": "The police must return it.",
+             "section_says": "the court shall direct the thing to be restored",
+             "finding": "wrong_actor",
+             "reason": "The section gives the power to the court."},
+        ],
+    )
+
+    print_run(summarize([rejected], tier=2), [rejected], {}, tier=2)
+
+    out = capsys.readouterr().out
+
+    assert "claim 2  : [wrong_actor] The police must return it." in out
+    assert "the court shall direct the thing to be restored" in out
+    assert "claim 1" not in out, "a stated claim should not be listed"
+
+
+def test_a_served_answer_that_lost_claims_shows_them(capsys):
+    trimmed = result(
+        id="q",
+        sufficient=True,
+        cited_expected=True,
+        answer_quality=True,
+        statements_kept=["What survived."],
+        dropped=[
+            {
+                "text": "What was dropped.",
+                "chunk_id": "some-chunk",
+                "quote": "the quote it gave",
+                "failure": "quote_not_found",
+            }
+        ],
+    )
+
+    print_run(summarize([trimmed], tier=2), [trimmed], {}, tier=2)
+
+    out = capsys.readouterr().out
+
+    assert "ANSWERS GIVEN WITH CLAIMS DROPPED" in out
+    assert "[quote_not_found] What was dropped." in out
+
+
+def test_a_false_answer_prints_what_the_user_read_and_what_it_cited(capsys):
+    """
+    The "cited" line for a false answer used to print the top three
+    RERANKED sources. What the LLM was shown and what it relied on are
+    different things, and the label must say which is which.
+    """
+
+    answered = result(
+        id="q",
+        answerable=False,
+        rerank_hit=None,
+        rerank_top1=None,
+        sufficient=True,
+        answer_text="Yes.\nSection 9 says so.",
+        cited_top=["relied-on"],
+        reranked_top=["shown-first", "shown-second", "relied-on"],
+    )
+
+    print_run(summarize([answered], tier=2), [answered], {}, tier=2)
+
+    out = capsys.readouterr().out
+
+    assert "answer   : Yes." in out
+    assert "Section 9 says so." in out
+    assert "cited    : ['relied-on']" in out
+    assert "reranked : ['shown-first', 'shown-second', 'relied-on']" in out
+
+
+def test_an_answer_from_unexpected_law_prints_the_answer(capsys):
+    unexpected = result(
+        id="q",
+        sufficient=True,
+        cited_expected=False,
+        answer_text="No. Section 49 applies.",
+        cited_top=["section-49"],
+    )
+
+    assert unexpected.wrong_authority and unexpected.passed(tier=2)
+
+    print_run(summarize([unexpected], tier=2), [unexpected], {}, tier=2)
+
+    out = capsys.readouterr().out
+
+    assert "ANSWERED FROM SOURCES WE DID NOT EXPECT" in out
+    assert "answer   : No. Section 49 applies." in out
+
+
+def test_a_model_refusal_is_named_as_the_models(capsys):
+    refused = result(id="q", sufficient=False)
+
+    print_run(summarize([refused], tier=2), [refused], {}, tier=2)
+
+    out = capsys.readouterr().out
+
+    assert "REFUSED BY THE MODEL" in out
+    assert "GROUNDING CHECK -" not in out
+
+
+# ---------------------------------------------------------
+# BASELINES - one per suite per tier, and only complete runs
+# ---------------------------------------------------------
+
+def complete(tier: int = 1, **scope_overrides) -> dict:
+    """Metadata for a run that may legitimately become a baseline."""
+
+    scope = {"suites": ["statutory", "product"], "document": None, "ids": []}
+    scope.update(scope_overrides)
+
+    return {
+        "tier": tier,
+        "scope": scope,
+        "reranked": True,
+        "cache": {"hits": {"retrieval": 0, "rerank": 0}},
+    }
+
+
+def run(tier: int = 1, metadata: dict | None = None) -> dict:
+    return summarize(
+        [result(id="s1", suite="statutory"), result(id="p1", suite="product")],
+        tier=tier,
+        metadata=metadata if metadata is not None else complete(tier),
+    )
+
+
+def test_a_complete_uncached_run_may_be_promoted():
+    assert promotion_refusal(run()) is None
+
+
+@pytest.mark.parametrize(
+    "metadata, reason",
+    [
+        ({"tier": 1}, "scope"),
+        (complete(ids=["arrest-bail"]), "--id"),
+        (complete(document="penal-code"), "--document"),
+        ({**complete(), "reranked": False}, "--no-rerank"),
+        ({**complete(), "cache": {"hits": {"rerank": 3}}}, "cache"),
+    ],
+)
+def test_a_run_that_measured_less_is_refused(metadata, reason):
+    assert reason in promotion_refusal(run(metadata=metadata))
+
+
+def test_each_suite_gets_its_own_baseline(tmp_path):
+    written = save_baseline(run(), directory=tmp_path)
+
+    assert set(written) == {"statutory", "product"}
+
+    statutory = load_baseline("statutory", 1, directory=tmp_path)
+
+    assert set(statutory["questions"]) == {"s1"}
+    assert set(statutory["suites"]) == {"statutory"}
+
+
+def test_a_tier0_run_cannot_replace_the_tier1_baseline(tmp_path):
+    """
+    The gap this layout closes: a cold-cache tier-0 run used to be
+    promotable over the single baseline, silently swapping a reranking
+    record for a retrieval-only one.
+    """
+
+    save_baseline(run(tier=1), directory=tmp_path)
+    before = load_baseline("statutory", 1, directory=tmp_path)
+
+    save_baseline(run(tier=0), directory=tmp_path)
+
+    assert load_baseline("statutory", 1, directory=tmp_path) == before
+    assert load_baseline("statutory", 0, directory=tmp_path) is not None
+
+
+def test_one_suite_run_leaves_the_other_baseline_alone(tmp_path):
+    save_baseline(run(), directory=tmp_path)
+    product_before = load_baseline("product", 1, directory=tmp_path)
+
+    statutory_only = summarize(
+        [result(id="s1", suite="statutory", rerank_hit=False)],
+        tier=1,
+        metadata=complete(suites=["statutory"]),
+    )
+
+    save_baseline(statutory_only, directory=tmp_path)
+
+    assert load_baseline("product", 1, directory=tmp_path) == product_before
+
+
+def test_a_suite_is_compared_only_with_its_own_baseline(tmp_path):
+    save_baseline(run(), directory=tmp_path)
+
+    current = summarize(
+        [result(id="s1", suite="statutory", rerank_hit=False),
+         result(id="p1", suite="product")],
+        tier=1,
+        metadata=complete(),
+    )
+
+    statutory = compare(
+        suite_summary(current, "statutory"),
+        load_baseline("statutory", 1, directory=tmp_path),
+    )
+
+    assert statutory["regressed"] == ["s1"]
+    assert statutory["removed"] == []
+    assert statutory["new"] == []

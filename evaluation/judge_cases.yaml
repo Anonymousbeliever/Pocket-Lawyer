@@ -1,0 +1,169 @@
+# Answers the answer-quality judge must get right.
+#
+#   python -m evaluation.judge
+#
+# Two kinds, and both are needed. A judge tested only on bad answers can
+# pass by failing everything; the faithful answers are what catch that.
+#
+#   real-*     Answers the system actually gave, on 2026-09-27. Each has a
+#              defect a careful reading of the cited section shows. The
+#              claim texts are verbatim from the run output.
+#   control-*  Faithful answers to the same questions, written from the
+#              section text. The judge must pass them.
+#
+# Per claim, `expect` is `flagged` or `sound`. A claim with no `expect` is
+# not scored: where the reading itself is borderline, scoring the judge on
+# it measures a coin toss. Every `flagged` below names the words that make
+# it so, and can be checked against the section in the corpus.
+#
+# Nothing in this file may be copied into the judge's prompt. A judge
+# shown these answers as examples would be measuring its memory.
+
+# ---------------------------------------------------------------------
+# REAL ANSWERS WITH DEFECTS
+# ---------------------------------------------------------------------
+
+- id: real-fired-for-overtime
+  question: "My boss just fired me after I asked for the overtime they still owe me. Can they do that?"
+  # Composed from the kept statements. The run printed them but not the
+  # rendered answer, so the Yes/No opening was not recorded.
+  answer: >-
+    An employer can terminate an employee's contract, but it must be
+    justified under the law. If the termination is deemed unjustified, the
+    employee may be entitled to remedies such as reinstatement or
+    compensation. Employees have the right to claim unpaid wages, including
+    overtime, without fear of retaliation.
+  cites:
+    - employment-act@v2024-04-26-part-vi-section-49
+    - employment-act@v2024-04-26-part-iv-section-17
+  claims:
+    - text: "An employer can terminate an employee's contract, but it must be justified under the law."
+    - text: "If the termination is deemed unjustified, the employee may be entitled to remedies such as reinstatement or compensation."
+      # s.49: "the labour officer may recommend to the employer" - a
+      # recommendation, not an entitlement.
+      expect: flagged
+    - text: "Employees have the right to claim unpaid wages, including overtime, without fear of retaliation."
+      # Neither section mentions overtime or retaliation.
+      expect: flagged
+  expect_quality: false
+
+- id: real-property-seized
+  question: "The police took my phone and laptop when they arrested me. Do they have to give them back?"
+  # Composed from the kept statement; the opening was not recorded.
+  answer: >-
+    If the police seized your phone and laptop during your arrest, they must
+    return them unless they are needed for an ongoing investigation or court
+    case.
+  cites:
+    - criminal-procedure-code@v2023-12-11-part-iv-section-121
+  claims:
+    - text: "If the police seized your phone and laptop during your arrest, they must return them unless they are needed for an ongoing investigation or court case."
+      # s.121(3): "the court shall direct the thing to be restored ...
+      # unless the court sees fit ... to dispose of it otherwise". The
+      # court acts, not the police, and its power to dispose is dropped.
+      expect: flagged
+  expect_quality: false
+
+- id: real-injured-at-work
+  question: "I got injured at work last month. Who is supposed to cover the medical bills?"
+  answer: |
+    Employers are required to provide medical attention for employees during illness. Employers must be notified of an employee's illness as soon as reasonably practicable.
+
+    Important qualifications:
+
+    - If the employee's injury was contracted while absent without lawful cause, the employer is not liable for medical costs.
+
+    - If the injury is self-inflicted, the employer is not responsible for medical expenses.
+
+    - If medical treatment is provided free of charge by the government or an insurance scheme, the employer is not liable.
+  cites:
+    - employment-act@v2024-04-26-part-v-section-34
+  claims:
+    - text: "Employers are required to provide medical attention for employees during illness."
+      # s.34(1): "sufficient and of proper medicine ... during illness and
+      # if possible, medical attendance during serious illness".
+      expect: flagged
+    - text: "Employers must be notified of an employee's illness as soon as reasonably practicable."
+    - text: "If the employee's injury was contracted while absent without lawful cause, the employer is not liable for medical costs."
+    - text: "If the injury is self-inflicted, the employer is not responsible for medical expenses."
+    - text: "If medical treatment is provided free of charge by the government or an insurance scheme, the employer is not liable."
+  expect_quality: false
+
+- id: real-insult-president
+  question: "Is it illegal to insult the president on Twitter?"
+  answer: >-
+    Yes. Publishing insulting material about the president on Twitter can be
+    considered illegal under Kenyan law. The law limits freedom of expression
+    when it comes to material that may cause public alarm or disturb public
+    peace.
+  cites:
+    - penal-code@v2023-12-11-part-ii-chapter-vii-section-66a
+  claims:
+    - text: "Publishing insulting material about the president on Twitter can be considered illegal under Kenyan law."
+      # s.66A(1) requires material "likely to cause fear and alarm to the
+      # general public or disturb public peace", and never mentions the
+      # president.
+      expect: flagged
+    - text: "The law limits freedom of expression when it comes to material that may cause public alarm or disturb public peace."
+  expect_quality: false
+
+# ---------------------------------------------------------------------
+# FAITHFUL ANSWERS THE JUDGE MUST PASS
+# ---------------------------------------------------------------------
+
+- id: control-property-seized
+  question: "The police took my phone and laptop when they arrested me. Do they have to give them back?"
+  answer: >-
+    It depends. If you are charged with an offence, the court you are charged
+    before may order property taken from you when you were arrested to be
+    restored to whoever appears to the court to be entitled to it; if that is
+    you, it may be restored to you or to a person you direct. The court may
+    instead order the property, or part of it, to be applied to paying any
+    fine, costs or compensation you are directed to pay.
+  cites:
+    - criminal-procedure-code@v2023-12-11-part-iv-section-177
+  claims:
+    - text: "If you are charged with an offence, the court you are charged before may order property taken from you when you were arrested to be restored to whoever appears to the court to be entitled to it; if that is you, it may be restored to you or to a person you direct."
+      expect: sound
+    - text: "The court may instead order the property, or part of it, to be applied to paying any fine, costs or compensation you are directed to pay."
+      expect: sound
+  expect_quality: true
+
+- id: control-tribe-discrimination
+  question: "I was denied a job just because of my tribe. Is that against the law?"
+  # Tests the other direction: "tribe" is not in the section, "ethnic or
+  # social origin" is. Applying a section's words to the person's facts
+  # is the job, and a judge that flags it will fail every useful answer.
+  answer: >-
+    Yes. An employer must not discriminate, directly or indirectly, against
+    a prospective employee on grounds of ethnic or social origin, including
+    in recruitment. An employer who contravenes this section commits an
+    offence.
+  cites:
+    - employment-act@v2024-04-26-part-ii-section-5
+  claims:
+    - text: "An employer must not discriminate, directly or indirectly, against a prospective employee on grounds of ethnic or social origin, including in recruitment."
+      expect: sound
+    - text: "An employer who contravenes this section commits an offence."
+      expect: sound
+  expect_quality: true
+
+- id: control-factory-pollution
+  question: "The factory next to us is dumping dirty water into the river. Can ordinary people do anything about it?"
+  answer: >-
+    Yes. A person who alleges that the right to a clean and healthy
+    environment is being violated or threatened may apply to a court for
+    redress. The court may make any order it considers appropriate to
+    prevent, stop or discontinue any act or omission that is harmful to the
+    environment. The person applying does not have to show that anyone has
+    incurred loss or suffered injury.
+  cites:
+    - constitution-of-kenya-2010@v2010-chapter-five-article-70
+  claims:
+    - text: "A person who alleges that the right to a clean and healthy environment is being violated or threatened may apply to a court for redress."
+      expect: sound
+    - text: "The court may make any order it considers appropriate to prevent, stop or discontinue any act or omission that is harmful to the environment."
+      expect: sound
+    - text: "The person applying does not have to show that anyone has incurred loss or suffered injury."
+      expect: sound
+  expect_quality: true

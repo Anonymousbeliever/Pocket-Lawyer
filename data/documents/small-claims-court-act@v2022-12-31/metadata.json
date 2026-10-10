@@ -1,0 +1,30 @@
+{
+  "document_id": "small-claims-court-act",
+  "title": "Small Claims Court Act (Cap. 10A)",
+  "document_type": "act",
+  "jurisdiction": "Kenya",
+  "language": "English",
+  "source": {
+    "name": "Kenya Law",
+    "url": "https://new.kenyalaw.org/akn/ke/act/2016/2/eng@2022-12-31"
+  },
+  "version": "2022-12-31",
+  "effective_from": "2022-12-31",
+  "effective_to": null,
+  "in_force": true,
+  "files": {
+    "raw": "data\\raw\\legislation\\small-claims-court-act.pdf",
+    "extracted": "data\\documents\\small-claims-court-act@v2022-12-31\\extracted.txt",
+    "cleaned": "data\\documents\\small-claims-court-act@v2022-12-31\\cleaned.txt"
+  },
+  "checksums": {
+    "raw_sha256": "2f825b61f30420f4ce508f0a09b9d00429d61d5c9f64f734be4a1cc19a3a4474",
+    "extracted_sha256": "3a52162b9321c7d182f8144388b8f74e8319cd23abc433666a665e229b44af1f",
+    "cleaned_sha256": "3919c7e2f6362f92a004917f26b62ba1ff7906fc84868616144ac3cb8259cd7e"
+  },
+  "processing": {
+    "status": "ingested",
+    "chunk_count": 52,
+    "as_at": "2026-09-23"
+  }
+}

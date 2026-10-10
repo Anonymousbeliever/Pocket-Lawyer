@@ -1,0 +1,30 @@
+{
+  "document_id": "marriage-act",
+  "title": "Marriage Act (Cap. 150)",
+  "document_type": "act",
+  "jurisdiction": "Kenya",
+  "language": "English",
+  "source": {
+    "name": "Kenya Law",
+    "url": "https://new.kenyalaw.org/akn/ke/act/2014/4/eng@2022-12-31"
+  },
+  "version": "2022-12-31",
+  "effective_from": "2022-12-31",
+  "effective_to": null,
+  "in_force": true,
+  "files": {
+    "raw": "data\\raw\\legislation\\marriage-act.pdf",
+    "extracted": "data\\documents\\marriage-act@v2022-12-31\\extracted.txt",
+    "cleaned": "data\\documents\\marriage-act@v2022-12-31\\cleaned.txt"
+  },
+  "checksums": {
+    "raw_sha256": "1f1e044bff310c7b79e49e89a3e8a63e52e4c9400c189fa9cd078645e21a16d8",
+    "extracted_sha256": "d7896375260e1ac525fc94de4e4ed9324c12e69c9a5aaf698e823146f6768812",
+    "cleaned_sha256": "7a6bd4610e8da7c97632e3e8955c8158bc371b2e7f85e729d31618e0cdd83aef"
+  },
+  "processing": {
+    "status": "ingested",
+    "chunk_count": 97,
+    "as_at": "2026-09-23"
+  }
+}
