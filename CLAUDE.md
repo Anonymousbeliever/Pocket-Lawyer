@@ -151,6 +151,8 @@ python -m evaluation.run --no-cache  # recompute; still writes results
 python -m evaluation.run --accept-last   # record the last run as baseline
 python -m evaluation.run --id <qid>  # one question, repeatable, for debugging
 python -m evaluation.judge           # the answer judge vs judge_cases.yaml
+python -m evaluation.run --tier 1 --rewrite --rerank-rewrites   # Phase C:
+                                     # the reranker reads the rewrites too
 python -m evaluation.run --tier 0 --rewrite   # Phase B: retrieve with rewrites
                                      # too; stored in evaluation/rewrites/,
                                      # which is COMMITTED - the rewriter

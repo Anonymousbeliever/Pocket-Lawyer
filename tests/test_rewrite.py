@@ -12,7 +12,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from backend.app.ai.rewrite import INSTRUCTIONS, QueryRewriter, clean
+from backend.app.ai.rewrite import (
+    INSTRUCTIONS,
+    QueryRewriter,
+    clean,
+    rerank_query,
+)
 
 
 QUESTION = "The police beat me at the station. Is that legal?"
@@ -283,6 +288,26 @@ def test_without_a_store_nothing_is_written(tmp_path):
 
     assert r.rewrite(QUESTION) == ["torture"]
     assert list(tmp_path.iterdir()) == []
+
+
+# ---------------------------------------------------------
+# WHAT THE RERANKER READS (PHASE C)
+# ---------------------------------------------------------
+
+def test_the_reranker_reads_the_question_first_then_the_terms():
+    """
+    The question stays first and whole: the reranker's measured rescues
+    depend on it reading the real question.
+    """
+
+    assert rerank_query(QUESTION, ["torture", "cruel treatment"]) == (
+        f"{QUESTION}\nRelated legal terms: torture; cruel treatment"
+    )
+
+
+@pytest.mark.parametrize("rewrites", [None, [], ["", "   "]])
+def test_without_rewrites_the_reranker_reads_the_question_unchanged(rewrites):
+    assert rerank_query(QUESTION, rewrites) == QUESTION
 
 
 # ---------------------------------------------------------

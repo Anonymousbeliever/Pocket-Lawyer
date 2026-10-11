@@ -23,6 +23,7 @@ from datetime import datetime
 from pathlib import Path
 
 from backend.app.ai.answer import render
+from backend.app.ai.rewrite import rerank_query
 from backend.app.core.config import (
     COLLECTION_NAME,
     EMBEDDING_MODEL,
@@ -193,9 +194,14 @@ def evaluate_tier1(
     cache: ResultCache,
     fingerprint: str,
     rewriter=None,
+    rerank_rewrites: bool = False,
 ) -> list[QuestionResult]:
     """
     `reranker=None` skips the cross-encoder and takes retrieval's own top-k.
+
+    `rerank_rewrites` is Phase C: the reranker reads the question followed
+    by its rewrites. Without it, rewrites affect retrieval only - which is
+    what keeps the two phases separately measurable.
 
     That is a measurement, not a mode to ship. Reranking was added when
     retrieval was dense-only and noisy; retrieval is now hybrid and at
@@ -224,11 +230,21 @@ def evaluate_tier1(
 
         return results
 
+    # What the cross-encoder actually reads for each question.
+    queries = [
+        rerank_query(question.question, used)
+        if rerank_rewrites
+        else question.question
+        for question, used in zip(questions, rewrites)
+    ]
+
     # Level 2 is keyed on the CANDIDATES, not the corpus, so a question whose
-    # top-k did not move survives the arrival of a whole new document.
+    # top-k did not move survives the arrival of a whole new document. And on
+    # the text the reranker READ, not the question's id - so a Phase C result
+    # can never be served to a run without Phase C, or the other way round.
     keys = [
-        rerank_key(question.question, ids)
-        for question, ids in zip(questions, retrieved_ids)
+        rerank_key(query, ids)
+        for query, ids in zip(queries, retrieved_ids)
     ]
 
     reranked_ids: list[list[str] | None] = [
@@ -248,7 +264,7 @@ def evaluate_tier1(
         # One cross-encoder call for every question that needs one, rather
         # than one call per question with the batch mostly empty.
         batched = reranker.rerank_many(
-            [(questions[i].question, retrieved[i]) for i in pending],
+            [(queries[i], retrieved[i]) for i in pending],
             top_k=RERANK_TOP_K,
         )
 
@@ -490,6 +506,17 @@ def main() -> None:
     )
 
     parser.add_argument(
+        "--rerank-rewrites",
+        action="store_true",
+        help=(
+            "tier 1 with --rewrite: the reranker reads the question followed "
+            "by its rewrites as legal terms (Phase C). Without it, rewrites "
+            "affect retrieval only, so the two phases stay separately "
+            "measurable"
+        ),
+    )
+
+    parser.add_argument(
         "--suite",
         choices=["statutory", "product", "all"],
         default="all",
@@ -670,6 +697,23 @@ def main() -> None:
               "is wired into the answering pipeline")
         sys.exit(1)
 
+    if args.rerank_rewrites:
+        # Checked before any model loads: each of these would otherwise
+        # produce a run labelled Phase C that measured nothing of it.
+        if rewriter is None:
+            print("[FAIL] --rerank-rewrites needs --rewrite: without "
+                  "rewrites there is nothing to give the reranker")
+            sys.exit(1)
+
+        if args.tier != 1 or args.no_rerank:
+            print("[FAIL] --rerank-rewrites applies to tier 1 with the "
+                  "reranker on - it changes what the reranker reads")
+            sys.exit(1)
+
+        print("Reranking  : the question followed by its rewritten terms "
+              "(Phase C)")
+        print()
+
     if args.tier < 2:
         # Deliberately not LegalRAG: it constructs LegalLLM, which
         # requires an API key. Tiers 0 and 1 must run without one.
@@ -703,7 +747,13 @@ def main() -> None:
             print("Running...")
 
             results = evaluate_tier1(
-                questions, retriever, reranker, cache, fingerprint, rewriter
+                questions,
+                retriever,
+                reranker,
+                cache,
+                fingerprint,
+                rewriter,
+                rerank_rewrites=args.rerank_rewrites,
             )
 
     else:
@@ -756,6 +806,9 @@ def main() -> None:
             "rewrite_model": rewriter.model_name if rewriter else None,
             "rewrite_count": REWRITE_COUNT if rewriter else None,
             "rewrite_top_k": REWRITE_TOP_K if rewriter else None,
+            # Phase C. Always False without rewriting, which promotion
+            # already refuses while QUERY_REWRITE is off.
+            "rerank_rewrites": args.rerank_rewrites,
             "cache": cache.summary(),
         },
     )

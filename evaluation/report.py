@@ -825,6 +825,18 @@ def _incomparable_reasons(current: dict, baseline: dict) -> list[str]:
             "deltas below measure what rewriting changes"
         )
 
+    # Phase C: whether the reranker read the rewrites as well.
+    before_c = bool(baseline.get("metadata", {}).get("rerank_rewrites"))
+    after_c = bool(current.get("metadata", {}).get("rerank_rewrites"))
+
+    if before_c != after_c:
+        reasons.append(
+            f"the reranker {'read' if after_c else 'did not read'} the "
+            f"rewritten terms in this run and "
+            f"{'did' if before_c else 'did not'} in the baseline - the "
+            "deltas below measure what that changes"
+        )
+
     return reasons
 
 

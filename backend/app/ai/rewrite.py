@@ -187,6 +187,35 @@ def clean(phrases: list, count: int = REWRITE_COUNT) -> list[str]:
     return kept
 
 
+def rerank_query(question: str, rewrites: list[str] | None) -> str:
+    """
+    What the reranker reads in Phase C: the person's own words, then the
+    rewrites as legal terms.
+
+    Why: rewriting alone fixed retrieval and gained nothing after
+    reranking (product tier 1: 15 -> 15/22). The cross-encoder scored the
+    passages against the lay question, and discarded the right law even
+    where retrieval now ranked it first - CPC s.177 for "The police took
+    my phone and laptop".
+
+    The question stays first and whole, deliberately. The reranker's
+    measured rescues - Article 49 promoted from retrieval rank 26 for a
+    bail question - depend on it reading the real question; replacing the
+    question with its rewrites would put exactly those at risk.
+
+    One combined query, not one score per rewrite: the cross-encoder is
+    the dominant request latency, and scoring every passage once per
+    rewrite would multiply it by four.
+    """
+
+    terms = [term.strip() for term in rewrites or [] if term.strip()]
+
+    if not terms:
+        return question
+
+    return f"{question}\nRelated legal terms: {'; '.join(terms)}"
+
+
 class QueryRewriter:
     """
     One question in, at most `count` search phrases out.

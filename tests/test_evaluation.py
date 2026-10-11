@@ -885,6 +885,100 @@ def test_a_rewrite_run_is_compared_as_a_measurement_not_a_regression():
     assert compare(run(), baseline)["incomparable"] == []
 
 
+def test_phase_c_is_compared_as_a_measurement():
+    retrieval_only = run(metadata={**complete(), "rewrite": True})
+    phase_c = run(
+        metadata={**complete(), "rewrite": True, "rerank_rewrites": True}
+    )
+
+    reasons = compare(phase_c, retrieval_only)["incomparable"]
+
+    assert any("reranker read" in reason for reason in reasons)
+
+
+# ---------------------------------------------------------
+# PHASE C IN THE HARNESS
+#
+# Fakes stand in for every model, so this runs with no Qdrant, no
+# cross-encoder and no API key - it checks what the reranker is HANDED.
+# ---------------------------------------------------------
+
+class FakeReranker:
+    def __init__(self):
+        self.read: list[str] = []
+
+    def rerank_many(self, batches, top_k):
+        self.read += [query for query, _ in batches]
+        return [documents[:top_k] for _, documents in batches]
+
+
+def tier1(tmp_path, reranker, rerank_rewrites):
+    from types import SimpleNamespace
+
+    from evaluation.cache import ResultCache
+    from evaluation.run import evaluate_tier1
+
+    question = Question(
+        id="q",
+        question="The police took my phone. Will I get it back?",
+        answerable=True,
+        expect_any_of=["s177"],
+    )
+
+    retriever = SimpleNamespace(
+        retrieve=lambda query, top_k, extra_queries=None: [
+            {"chunk_id": "s177", "document_id": "cpc"}
+        ]
+    )
+
+    rewriter = SimpleNamespace(rewrite=lambda text: ["return of seized property"])
+
+    return evaluate_tier1(
+        [question],
+        retriever,
+        reranker,
+        ResultCache(directory=tmp_path),
+        "corpus",
+        rewriter,
+        rerank_rewrites=rerank_rewrites,
+    )
+
+
+def test_phase_c_hands_the_reranker_the_question_and_its_rewrites(tmp_path):
+    reranker = FakeReranker()
+
+    tier1(tmp_path, reranker, rerank_rewrites=True)
+
+    assert reranker.read == [
+        "The police took my phone. Will I get it back?\n"
+        "Related legal terms: return of seized property"
+    ]
+
+
+def test_without_phase_c_the_reranker_reads_only_the_question(tmp_path):
+    """Rewrites still change retrieval - but not what the reranker reads."""
+
+    reranker = FakeReranker()
+
+    tier1(tmp_path, reranker, rerank_rewrites=False)
+
+    assert reranker.read == ["The police took my phone. Will I get it back?"]
+
+
+def test_a_phase_c_result_is_never_served_to_a_run_without_it(tmp_path):
+    """
+    Same question, same candidates - only what the reranker read differs.
+    Sharing a cache entry would make one phase report the other's result.
+    """
+
+    reranker = FakeReranker()
+
+    tier1(tmp_path, reranker, rerank_rewrites=False)
+    tier1(tmp_path, reranker, rerank_rewrites=True)
+
+    assert len(reranker.read) == 2, "the second run must rerank, not reuse"
+
+
 def test_a_failure_shows_the_rewrites_retrieval_used(capsys):
     missed = result(
         id="q",
