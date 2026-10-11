@@ -1,0 +1,9 @@
+{
+  "question": "Is it illegal to insult the president on Twitter?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "freedom of expression and permissible limitations",
+    "offensive communication through an electronic communications system",
+    "insulting or defamatory publication concerning the President"
+  ]
+}

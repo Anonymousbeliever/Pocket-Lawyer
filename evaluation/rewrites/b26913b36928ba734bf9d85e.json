@@ -1,0 +1,9 @@
+{
+  "question": "How much must my employer contribute to NSSF for me?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "employer contribution rate based on pensionable earnings",
+    "mandatory employer contributions to the Fund",
+    "remittance of contributions by employer"
+  ]
+}

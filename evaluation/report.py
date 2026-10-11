@@ -489,7 +489,20 @@ def _print_failure(result: QuestionResult, question: Question | None) -> None:
     elif result.sufficient is False:
         print("       cause    : REFUSED BY THE MODEL - it declined itself")
 
+    # The refusal as the user read it, including the model's own account of
+    # what the sources lack. Without it, a refusal with the right law among
+    # the sources could be counted but not judged: the first Luna run refused
+    # will-on-phone with s.11, s.8 and s.9 ranked first to third, and the
+    # report could not say whether that was caution or a correct reading of
+    # an Act that never mentions phones.
+    if result.sufficient is False:
+        _print_answer(result)
+
     print(f"       expected : {sorted(expected)}")
+
+    if result.rewrites:
+        print(f"       rewrites : {result.rewrites}")
+
     print(f"       reranked : {result.reranked_top or '(none)'}")
 
     if result.retrieved_top:
@@ -606,6 +619,20 @@ def promotion_refusal(summary: dict) -> str | None:
 
     if metadata.get("reranked") is False:
         return "reranking was disabled - --no-rerank is a measurement, not the pipeline."
+
+    # A run rewrote while rewriting is not the pipeline, or did not while it
+    # is. Either way the run measured something other than what a baseline
+    # records - and the "before" baselines Phase B is measured against are
+    # exactly what an accidental --accept-last after a --rewrite run would
+    # have overwritten.
+    rewrote = bool(metadata.get("rewrite"))
+
+    if rewrote != bool(metadata.get("pipeline_rewrite")):
+        return (
+            f"query rewriting was {'on' if rewrote else 'off'} in this run "
+            f"but QUERY_REWRITE is {'off' if rewrote else 'on'} - a "
+            "measurement of rewriting, not the pipeline."
+        )
 
     # A reference result must be computed, not recalled.
     if any(((metadata.get("cache") or {}).get("hits") or {}).values()):
@@ -785,6 +812,17 @@ def _incomparable_reasons(current: dict, baseline: dict) -> list[str]:
         reasons.append(
             "reranking disabled in this run - the deltas below measure what "
             "the cross-encoder contributes, they are not regressions"
+        )
+
+    # The same idea for rewriting: the delta IS the measurement.
+    before_rewrite = bool(baseline.get("metadata", {}).get("rewrite"))
+    after_rewrite = bool(current.get("metadata", {}).get("rewrite"))
+
+    if before_rewrite != after_rewrite:
+        reasons.append(
+            f"query rewriting {'on' if after_rewrite else 'off'} in this "
+            f"run, {'on' if before_rewrite else 'off'} in the baseline - the "
+            "deltas below measure what rewriting changes"
         )
 
     return reasons

@@ -1,0 +1,9 @@
+{
+  "question": "How does a person become a Kenyan citizen by birth?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "citizenship by birth",
+    "parent who is a citizen on the date of birth",
+    "child found in Kenya under eight years of age whose nationality and parents are unknown"
+  ]
+}

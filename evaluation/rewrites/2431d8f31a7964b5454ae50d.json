@@ -1,0 +1,9 @@
+{
+  "question": "How many days of annual leave am I entitled to?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "annual leave with full pay",
+    "not less than twenty-one working days after twelve consecutive months of service",
+    "proportionate annual leave on termination"
+  ]
+}

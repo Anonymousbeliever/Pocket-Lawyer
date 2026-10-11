@@ -188,6 +188,36 @@ SPARSE_TOP_K = _get_int("SPARSE_TOP_K", 5)
 
 RERANK_TOP_K = _get_int("RERANK_TOP_K", 5)
 
+# Query rewriting - "Phase B" in docs/project-plan.md.
+#
+# People do not use the statute's words. "The police beat me while
+# questioning me" shares no vocabulary with Article 29, which is written in
+# terms of torture and cruel, inhuman or degrading treatment. A rewriter
+# (backend/app/ai/rewrite.py) turns the question into a few short phrases in
+# legal register, and each becomes one more DENSE branch in the same fused
+# Qdrant query. The original question always stays in the fusion.
+#
+# OFF until measured. Turning it on makes rewriting the pipeline: the default
+# for every evaluation run, and the thing baselines are recorded with.
+# Until then `python -m evaluation.run --rewrite` measures it, and
+# promotion refuses such a run so it cannot replace the "before" baselines.
+QUERY_REWRITE = _get_bool("QUERY_REWRITE", False)
+
+REWRITE_COUNT = _get_int("REWRITE_COUNT", 3)
+
+# Per rewrite branch, against RETRIEVAL_TOP_K for the original question.
+#
+# This limits how MANY candidates a rewrite adds, NOT how much each one
+# counts. Qdrant's fusion scores 1/(position + 1) in every list - observed in
+# the stored scores: first place 0.5, second 0.333, third 0.25 - so a
+# rewrite's top hit ties the question's own top hit exactly. A good rewrite
+# ranks its target highly, so a short list suffices; a long one lets a poor
+# rewrite place more candidates level with what the real question found.
+# Starting value 5. Tier 0 at 5, with the FIRST rewriter prompt, measured no
+# statutory loss (116 -> 117/118) and product 19 -> 22/22. The prompt was
+# then tightened, so that measurement must be repeated before it is relied on.
+REWRITE_TOP_K = _get_int("REWRITE_TOP_K", 5)
+
 # Tail trimming for reranked sources.
 #
 # A result is kept when it scores at least this fraction of the best

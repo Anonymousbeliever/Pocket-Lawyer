@@ -84,9 +84,16 @@
     - criminal-procedure-code@v2023-12-11-part-iv-section-118
     - criminal-procedure-code@v2023-12-11-part-iv-section-119
     - constitution-of-kenya-2010@v2010-chapter-four-article-31
+    - criminal-procedure-code@v2023-12-11-part-iii-section-22
   note: >
     Art 31(a): the right not to have one's home searched. CPC s.118: a
     search warrant is issued on proof on oath; s.119: its execution.
+    s.22 added 2026-10-11, after it was reranked FIRST and counted as a
+    miss: s.22(2) is the warrantless case itself - where "a warrant may
+    issue but cannot be obtained without affording the person to be
+    arrested an opportunity to escape", a police officer may "enter the
+    place and search therein". The expectation, not the reranker, was
+    wrong; it had been written from the warrant sections alone.
 
 - id: product-pol-property-seized
   question: "The police took my phone and laptop when they arrested me. Do they have to give them back?"
@@ -274,20 +281,39 @@
 
 - id: product-pol-accused-of-robbery
   question: "Someone is accusing me of robbery but I wasn't even there. What should I do first?"
-  answerable: false
+  answerable: true
   kind: advice
+  expect_any_of:
+    - constitution-of-kenya-2010@v2010-chapter-four-article-50
+    - constitution-of-kenya-2010@v2010-chapter-four-article-49
   note: >
-    Advice-shaped. The corpus holds the relevant law - the definition of
-    robbery and the rights of an accused person - but the question asks for
-    a course of action. Out of scope for now, by decision.
+    Advice-shaped, answered as INFORMATION since 2026-10-11: the law gives
+    no course of action, but it does give the rights that matter. Art 50(2):
+    presumed innocent (a), to choose an advocate (g), to remain silent (i),
+    and "to adduce and challenge evidence" (k) - which is how "I wasn't even
+    there" is raised. Art 49 if arrested: remain silent, communicate with an
+    advocate, court within 24 hours. A faithful answer must say these apply
+    once the person is ARRESTED (Art 49) or charged as an ACCUSED (Art 50) -
+    being accused by someone is neither. CPC s.307 (Defence) is relevant too
+    but not listed: its alibi provision, s.307(2), is repealed.
 
 - id: product-suc-protect-mothers-house
   question: "Someone is claiming my late mother's house belongs to them. How do I protect it?"
-  answerable: false
+  answerable: true
   kind: advice
+  expect_any_of:
+    - law-of-succession-act@v2022-12-31-part-vii-section-46
+    - law-of-succession-act@v2022-12-31-part-vii-section-45
   note: >
-    Advice-shaped, and also land-title territory the corpus does not hold.
-    Out of scope for now, by decision.
+    Advice-shaped, answered as INFORMATION since 2026-10-11. s.46(2)(a) and
+    (4): at the request of a person with a legitimate interest in the
+    estate, a chief or administrative officer must "take all necessary steps
+    for the protection of" the deceased's free property. s.45: no one may
+    take possession of or intermeddle with it without authority - an
+    offence. Both protect the house AS PART OF THE ESTATE. Whether it is the
+    estate's at all, if the claimant says they own it, is land title, which
+    the corpus does not hold - a faithful answer says so rather than
+    resolving ownership.
 
 - id: product-env-building-on-family-land
   question: "Someone is building on land that belongs to our family. What steps should we take?"

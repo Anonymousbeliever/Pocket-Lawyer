@@ -1,0 +1,9 @@
+{
+  "question": "Does getting married cancel a will I wrote before?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "revocation of will by marriage",
+    "will made in contemplation of marriage",
+    "effect of marriage on a will"
+  ]
+}

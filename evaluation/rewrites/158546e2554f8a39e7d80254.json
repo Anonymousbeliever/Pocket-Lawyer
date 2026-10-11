@@ -1,0 +1,9 @@
+{
+  "question": "What is the fine for driving without a valid licence?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "driving a motor vehicle without a valid driving licence",
+    "penalty for driving without a valid driving licence",
+    "offence of driving without a driving licence"
+  ]
+}

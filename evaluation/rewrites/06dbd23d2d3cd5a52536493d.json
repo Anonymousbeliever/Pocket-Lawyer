@@ -1,0 +1,9 @@
+{
+  "question": "What does it mean to steal something in law?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "fraudulent taking of anything capable of being stolen",
+    "intent permanently to deprive the owner",
+    "claim of right to property"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "question": "The government wants to take our land for a road. Do we have to accept whatever they offer?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "compulsory acquisition of land for a public purpose",
+    "prompt payment in full of just compensation",
+    "disputes concerning the amount of compensation for compulsory acquisition"
+  ]
+}

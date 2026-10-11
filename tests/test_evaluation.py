@@ -510,11 +510,18 @@ def test_a_single_suite_can_be_loaded_alone():
     assert product and {q.suite for q in product} == {"product"}
 
 
-def test_advice_questions_are_out_of_scope_and_marked():
+def test_advice_questions_stay_marked_and_are_answered_as_information():
+    """
+    Decided 2026-10-11: advice-shaped questions are answered with what the
+    law provides, never with what to do. They keep the `advice` tag so they
+    can still be reported apart - the class most likely to tempt an answer
+    beyond the law.
+    """
+
     advice = [q for q in load_questions() if q.kind == "advice"]
 
     assert advice, "the product suite should mark its advice questions"
-    assert not any(q.answerable for q in advice)
+    assert all(q.answerable and q.expect_any_of for q in advice)
 
 
 def test_suites_are_measured_separately():
@@ -765,6 +772,30 @@ def test_an_answer_from_unexpected_law_prints_the_answer(capsys):
     assert "answer   : No. Section 49 applies." in out
 
 
+def test_a_refused_answerable_question_shows_the_models_reason(capsys):
+    """
+    A refusal with the right law among the sources is either caution or a
+    correct reading, and only the model's own stated reason tells which.
+    """
+
+    refused = result(
+        id="q",
+        sufficient=False,
+        answer_text=(
+            "I could not find enough information in the retrieved legal "
+            "sources to answer that confidently.\n\n"
+            "The sources do not say whether a will may be made on a phone."
+        ),
+    )
+
+    print_run(summarize([refused], tier=2), [refused], {}, tier=2)
+
+    out = capsys.readouterr().out
+
+    assert "REFUSED BY THE MODEL" in out
+    assert "do not say whether a will may be made on a phone" in out
+
+
 def test_a_model_refusal_is_named_as_the_models(capsys):
     refused = result(id="q", sufficient=False)
 
@@ -818,6 +849,56 @@ def test_a_complete_uncached_run_may_be_promoted():
 )
 def test_a_run_that_measured_less_is_refused(metadata, reason):
     assert reason in promotion_refusal(run(metadata=metadata))
+
+
+def test_a_rewrite_run_cannot_replace_the_baselines_it_is_measured_against():
+    """
+    The "before" baselines for Phase B were recorded without rewriting. An
+    --accept-last after a --rewrite run would otherwise overwrite them with
+    the very thing they exist to measure.
+    """
+
+    measuring = {**complete(), "rewrite": True, "pipeline_rewrite": False}
+
+    assert "rewriting" in promotion_refusal(run(metadata=measuring))
+
+
+def test_once_rewriting_is_the_pipeline_a_run_without_it_is_refused():
+    skipping = {**complete(), "rewrite": False, "pipeline_rewrite": True}
+
+    assert "rewriting" in promotion_refusal(run(metadata=skipping))
+
+
+def test_once_rewriting_is_the_pipeline_its_runs_may_be_promoted():
+    adopted = {**complete(), "rewrite": True, "pipeline_rewrite": True}
+
+    assert promotion_refusal(run(metadata=adopted)) is None
+
+
+def test_a_rewrite_run_is_compared_as_a_measurement_not_a_regression():
+    baseline = run()
+    measuring = run(metadata={**complete(), "rewrite": True})
+
+    reasons = compare(measuring, baseline)["incomparable"]
+
+    assert any("rewriting" in reason for reason in reasons)
+    assert compare(run(), baseline)["incomparable"] == []
+
+
+def test_a_failure_shows_the_rewrites_retrieval_used(capsys):
+    missed = result(
+        id="q",
+        retrieval_hit=False,
+        rerank_hit=None,
+        rerank_top1=None,
+        rewrites=["torture", "cruel or degrading treatment"],
+    )
+
+    print_run(summarize([missed], tier=0), [missed], {}, tier=0)
+
+    assert "rewrites : ['torture', 'cruel or degrading treatment']" in (
+        capsys.readouterr().out
+    )
 
 
 def test_each_suite_gets_its_own_baseline(tmp_path):

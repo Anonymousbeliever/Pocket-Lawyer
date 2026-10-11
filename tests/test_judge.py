@@ -133,22 +133,59 @@ def test_an_unjudged_answer_is_none():
     assert quality({}) is None
 
 
-def fake_judge(response: dict, model_name: str = "test") -> AnswerJudge:
+def fake_judge(
+    response: dict,
+    model_name: str = "test",
+    fail=None,
+) -> AnswerJudge:
     """
     An AnswerJudge whose API call returns `response`, with no key needed.
     Every request it would have sent is kept on `judge.sent`.
+
+    `fail(request)` may return an exception for the call to raise instead -
+    how the tests reproduce an API refusal.
     """
+
+    from evaluation.judge import is_reasoning_model
 
     judge = object.__new__(AnswerJudge)
     judge.model_name = model_name
+    judge.send_temperature = not is_reasoning_model(model_name)
     judge.sent = []
 
     def create(**request):
-        judge.sent.append(request)
+        judge.sent.append(dict(request))
+
+        error = fail(request) if fail else None
+
+        if error is not None:
+            raise error
+
         return SimpleNamespace(output_text=json.dumps(response))
 
     judge.client = SimpleNamespace(responses=SimpleNamespace(create=create))
     return judge
+
+
+def bad_request(param: str | None) -> Exception:
+    """
+    A real BadRequestError, built without an HTTP response. The SDK copies
+    the API's `param` field onto it, which is what the retry matches on.
+    """
+
+    from openai import BadRequestError
+
+    error = BadRequestError.__new__(BadRequestError)
+    Exception.__init__(error, f"Unsupported parameter: '{param}'")
+    error.param = param
+    error.status_code = 400
+    return error
+
+
+def refuses_temperature(request: dict) -> Exception | None:
+    """Fails exactly as GPT-6 did, and only while temperature is sent."""
+
+    return bad_request("temperature") if "temperature" in request else None
 
 
 SOURCE = {"citation": "s.1", "unit_title": "Title", "content": "Text."}
@@ -197,6 +234,65 @@ def test_other_models_are_judged_at_temperature_zero(model):
     judge.judge(question="Q?", answer="A.", claims=["one"], sources=[SOURCE])
 
     assert judge.sent[0]["temperature"] == 0
+
+
+def test_a_model_that_refuses_temperature_is_retried_without_it():
+    """
+    GPT-6 Luna and 6.1 Sol failed every call with "Unsupported parameter:
+    'temperature'". The judge now learns that from the API instead of from a
+    list of model names.
+    """
+
+    judge = fake_judge(
+        verdict(claims=[check()]),
+        model_name="gpt-6-luna",
+        fail=refuses_temperature,
+    )
+
+    result = judge.judge(
+        question="Q?", answer="A.", claims=["one"], sources=[SOURCE]
+    )
+
+    assert result["error"] is None
+    assert quality(result) is True
+    assert [("temperature" in r) for r in judge.sent] == [True, False]
+
+
+def test_the_refusal_is_paid_for_once_per_run():
+    judge = fake_judge(
+        verdict(claims=[check()]),
+        model_name="gpt-6-luna",
+        fail=refuses_temperature,
+    )
+
+    for _ in range(3):
+        judge.judge(question="Q?", answer="A.", claims=["one"], sources=[SOURCE])
+
+    # One refused call, then every request goes without temperature.
+    assert len(judge.sent) == 4
+    assert not judge.send_temperature
+
+
+@pytest.mark.parametrize(
+    "error",
+    [bad_request("text.format"), bad_request(None), RuntimeError("timeout")],
+)
+def test_any_other_error_is_reported_never_retried(error):
+    """A retry must not hide a real failure behind a second attempt."""
+
+    judge = fake_judge(
+        verdict(claims=[check()]), model_name="gpt-6-luna",
+        fail=lambda request: error,
+    )
+
+    result = judge.judge(
+        question="Q?", answer="A.", claims=["one"], sources=[SOURCE]
+    )
+
+    assert result["error"]
+    assert quality(result) is None
+    assert len(judge.sent) == 1
+    assert judge.send_temperature, "a different error must not turn it off"
 
 
 def test_a_model_merely_containing_o_is_not_a_reasoning_model():

@@ -1,0 +1,9 @@
+{
+  "question": "Is torture allowed in Kenya?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "freedom from torture and cruel, inhuman or degrading treatment",
+    "prohibition of torture",
+    "redress for violation of fundamental rights"
+  ]
+}

@@ -68,13 +68,16 @@ serving path stays free of a second model call.
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
 import yaml
 from openai import OpenAI
 
+# Which models refuse `temperature`, and how to recognise the refusal, are
+# defined once, in the answering code that also depends on them. A verdict
+# without temperature 0 can vary between runs - see llm.py.
+from backend.app.ai.llm import is_reasoning_model, rejects_temperature
 from backend.app.core.config import (
     DOCUMENTS_DIR,
     OPENAI_API_KEY,
@@ -84,15 +87,6 @@ from backend.app.core.config import (
 
 CASES_PATH = Path(__file__).resolve().parent / "judge_cases.yaml"
 
-# OpenAI's reasoning models - o1, o3-mini, o4-mini and the rest of the "o"
-# series - reject `temperature` outright: the request fails rather than
-# ignoring it. They run at their fixed default instead, so unlike a
-# temperature-0 verdict, theirs can vary between runs.
-_REASONING_MODEL = re.compile(r"^o\d")
-
-
-def is_reasoning_model(model_name: str) -> bool:
-    return bool(_REASONING_MODEL.match(model_name.strip().lower()))
 
 # Ways a single claim can say more than the sections it rests on. "stated"
 # is the only passing finding.
@@ -261,6 +255,10 @@ class AnswerJudge:
         self.model_name = model_name
         self.client = OpenAI(api_key=OPENAI_API_KEY)
 
+        # Turned off for good the first time the API refuses it, so a run
+        # pays for at most one refused request per model.
+        self.send_temperature = not is_reasoning_model(model_name)
+
     def judge(
         self,
         question: str,
@@ -322,11 +320,21 @@ class AnswerJudge:
             },
         }
 
-        if not is_reasoning_model(self.model_name):
+        if self.send_temperature:
             request["temperature"] = 0
 
         try:
-            response = self.client.responses.create(**request)
+            try:
+                response = self.client.responses.create(**request)
+
+            except Exception as error:                    # noqa: BLE001
+                if "temperature" not in request or not rejects_temperature(error):
+                    raise
+
+                self.send_temperature = False
+                del request["temperature"]
+
+                response = self.client.responses.create(**request)
 
             verdict = json.loads(response.output_text.strip())
 
@@ -591,14 +599,6 @@ def main() -> None:
     print(f"JUDGE VALIDATION  ({len(cases)} cases, model {args.model})")
     print("=" * 64)
 
-    if is_reasoning_model(args.model):
-        print()
-        print(
-            "Reasoning model: temperature not sent (it is rejected), so "
-            "verdicts can vary between runs. Run it twice before trusting "
-            "a single result."
-        )
-
     for case in cases:
         verdict = judge.judge(
             question=case["question"],
@@ -625,6 +625,16 @@ def main() -> None:
             print(f"       {'ok ' if ok else 'XX '} {description}")
 
         _print_judge_evidence(case, verdict)
+
+    # Said at the end, because for most models it is only known once the
+    # API has answered the first call.
+    if not judge.send_temperature:
+        print()
+        print(
+            f"{args.model} does not accept temperature, so it ran at its "
+            "own default and these verdicts can vary between runs. Run it "
+            "again before trusting this result."
+        )
 
     print()
     print("=" * 64)

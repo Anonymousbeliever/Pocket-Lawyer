@@ -1,0 +1,9 @@
+{
+  "question": "What kinds of disputes can the small claims court not handle?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "jurisdiction of the Small Claims Court",
+    "claims relating to title to or possession of land",
+    "disputes relating to employment and labour relations"
+  ]
+}

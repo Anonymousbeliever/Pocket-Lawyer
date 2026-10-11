@@ -78,6 +78,29 @@ def test_different_questions_do_not_share_a_key():
     assert retrieval_key("a", "corpus") != retrieval_key("b", "corpus")
 
 
+def test_a_rewrite_run_is_never_served_a_run_without_rewrites():
+    """
+    Otherwise `--rewrite` would compare a run against itself, and report
+    "no change" for a change it never made.
+    """
+
+    plain = retrieval_key(QUESTION, "corpus")
+
+    assert retrieval_key(QUESTION, "corpus", ["torture"]) != plain
+    assert retrieval_key(QUESTION, "corpus", ["torture"]) != retrieval_key(
+        QUESTION, "corpus", ["cruel treatment"]
+    )
+
+
+def test_no_rewrites_keeps_the_key_it_always_had():
+    """None and [] are both 'no rewriting', and must not split the cache."""
+
+    plain = retrieval_key(QUESTION, "corpus")
+
+    assert retrieval_key(QUESTION, "corpus", None) == plain
+    assert retrieval_key(QUESTION, "corpus", []) == plain
+
+
 # ---------------------------------------------------------
 # THE SOURCE HASH — WHAT MAKES THIS SAFE
 # ---------------------------------------------------------

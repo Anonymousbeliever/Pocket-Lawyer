@@ -1,0 +1,9 @@
+{
+  "question": "Can the police search my house without a warrant if they just show up?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "right to privacy of the home",
+    "search of premises under a warrant",
+    "search or entry of premises without a warrant"
+  ]
+}

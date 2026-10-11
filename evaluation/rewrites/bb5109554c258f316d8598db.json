@@ -1,0 +1,9 @@
+{
+  "question": "When can the police arrest someone without a warrant?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "arrest without warrant",
+    "reasonable grounds to suspect commission of an offence",
+    "circumstances in which a police officer may arrest without warrant"
+  ]
+}

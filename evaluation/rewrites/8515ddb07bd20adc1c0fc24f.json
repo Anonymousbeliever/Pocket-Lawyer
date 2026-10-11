@@ -1,0 +1,9 @@
+{
+  "question": "Does my employer have to hear my side before dismissing me?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "notification of reasons and hearing before termination",
+    "employee’s right to make representations before dismissal",
+    "procedural fairness in termination of employment"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "question": "Is it legal to employ a child in Kenya?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "protection of children from economic exploitation",
+    "minimum age for admission to employment",
+    "prohibition of hazardous work by children"
+  ]
+}

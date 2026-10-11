@@ -1,0 +1,9 @@
+{
+  "question": "I've been working at the same company for three years. How many days of paid leave am I supposed to get every year?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "annual leave with full pay",
+    "entitlement to annual leave",
+    "annual leave after twelve consecutive months of service"
+  ]
+}

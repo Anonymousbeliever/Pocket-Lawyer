@@ -1,0 +1,9 @@
+{
+  "question": "How long can the police hold me before taking me to court?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "person arrested to be brought before a court",
+    "period of detention before first court appearance",
+    "release on bail or bond pending trial"
+  ]
+}

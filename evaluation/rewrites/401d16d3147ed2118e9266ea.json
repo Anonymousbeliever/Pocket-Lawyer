@@ -1,0 +1,9 @@
+{
+  "question": "Who is allowed to search a woman who has been arrested?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "search of a female by another female",
+    "search of an arrested person",
+    "respect for dignity and decency during a search"
+  ]
+}

@@ -11,6 +11,7 @@ import json
 import pytest
 
 from backend.app.ai.answer import (
+    ADVOCATE_NOTE,
     ANSWER_SCHEMA,
     GROUNDED_ITEM,
     INSUFFICIENT_ANSWER,
@@ -176,6 +177,35 @@ def test_insufficient_answer_renders_the_refusal():
 
     assert text.startswith(INSUFFICIENT_ANSWER)
     assert "do not address divorce" in text
+
+
+def test_every_answer_ends_with_the_advocate_note():
+    """
+    Information, not advice. No section says "consult an advocate", so the
+    model cannot write it under grounding - code must.
+    """
+
+    for verdict, question_type in [("no", "polar"), ("not_applicable", "open")]:
+        text = render(answer(verdict=verdict, question_type=question_type))
+
+        assert text.endswith(ADVOCATE_NOTE)
+        assert text.count(ADVOCATE_NOTE) == 1
+
+
+def test_a_refusal_does_not_repeat_the_advocate_pointer():
+    """The refusal already sends the user to an advocate."""
+
+    text = render(answer(sufficient=False, statements=[]))
+
+    assert ADVOCATE_NOTE not in text
+    assert "advocate" in text
+
+
+def test_the_judge_reads_the_answer_without_the_note():
+    text = render(answer(), advocate_note=False)
+
+    assert ADVOCATE_NOTE not in text
+    assert text.startswith("No.")
 
 
 def test_refusal_never_opens_with_a_verdict():

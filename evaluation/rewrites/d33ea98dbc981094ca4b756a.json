@@ -1,0 +1,9 @@
+{
+  "question": "Will the evidence be explained to me in a language I understand?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "assistance of an interpreter",
+    "language understood by the accused person",
+    "interpretation of evidence at trial"
+  ]
+}

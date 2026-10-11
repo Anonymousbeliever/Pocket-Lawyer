@@ -1,0 +1,9 @@
+{
+  "question": "How much notice must my employer give before terminating my job?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "period of notice to terminate a contract of service",
+    "notice of termination of employment",
+    "payment in lieu of notice"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "question": "Do I have the right to record the police when they are dealing with me?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "freedom of expression and media",
+    "access to information held by the State",
+    "obstructing a police officer in execution of duty"
+  ]
+}

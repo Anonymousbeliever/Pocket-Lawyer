@@ -1,0 +1,9 @@
+{
+  "question": "The police took my phone and laptop when they arrested me. Do they have to give them back?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "seizure and retention of property by police",
+    "return of property seized during investigation",
+    "application for release of seized property"
+  ]
+}

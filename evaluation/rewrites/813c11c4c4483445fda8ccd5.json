@@ -1,0 +1,9 @@
+{
+  "question": "I was arrested two days ago and they still haven't taken me to court. How long can they keep me?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "production of an arrested person before a court",
+    "period of detention before first court appearance",
+    "release from unlawful detention"
+  ]
+}

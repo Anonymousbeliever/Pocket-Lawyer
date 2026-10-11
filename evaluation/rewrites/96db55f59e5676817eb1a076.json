@@ -1,0 +1,9 @@
+{
+  "question": "Can I run for election without joining a political party?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "independent candidate for election",
+    "qualification for nomination as an independent candidate",
+    "political party membership of candidates"
+  ]
+}

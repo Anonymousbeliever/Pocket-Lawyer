@@ -1,0 +1,9 @@
+{
+  "question": "If someone robs me, can the police arrest them without a warrant?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "arrest without warrant by a police officer",
+    "reasonable suspicion of having committed a cognizable offence",
+    "robbery"
+  ]
+}

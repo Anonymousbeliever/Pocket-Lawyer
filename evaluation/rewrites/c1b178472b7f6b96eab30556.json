@@ -1,0 +1,9 @@
+{
+  "question": "Who inherits if a parent dies without a will and the spouse is already dead?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "distribution of an intestate estate where no spouse survives",
+    "rights of children in intestate succession",
+    "order of priority among relatives in intestate succession"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "question": "Can the government force me to get a certain vaccine or medical treatment?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "informed consent to medical treatment",
+    "right to refuse medical treatment",
+    "compulsory vaccination for public health"
+  ]
+}

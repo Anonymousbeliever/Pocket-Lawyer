@@ -1,0 +1,9 @@
+{
+  "question": "What rights do I have as a customer buying goods?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "goods and services of reasonable quality",
+    "protection of consumers’ health, safety and economic interests",
+    "information necessary to gain full benefit from goods"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "question": "What happens if someone ignores a maintenance order for a child?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "enforcement of maintenance order",
+    "default in payment of child maintenance",
+    "recovery of maintenance arrears"
+  ]
+}

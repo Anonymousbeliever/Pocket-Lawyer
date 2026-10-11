@@ -1,0 +1,9 @@
+{
+  "question": "When is the deadline for filing my annual tax returns?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "time for filing annual return of income",
+    "due date for submission of return of income",
+    "extension of time for filing return"
+  ]
+}

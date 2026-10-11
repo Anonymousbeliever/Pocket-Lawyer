@@ -1,0 +1,9 @@
+{
+  "question": "Who is allowed to adopt a child in Kenya?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "persons eligible to apply for an adoption order",
+    "joint application for adoption by spouses",
+    "persons disqualified from adopting a child"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "question": "When is a marriage not valid at all?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "grounds on which a marriage is void",
+    "circumstances in which a marriage is void",
+    "declaration of nullity of marriage"
+  ]
+}

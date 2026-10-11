@@ -1,0 +1,9 @@
+{
+  "question": "What can I do if a government office treats me unfairly?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "right to fair administrative action",
+    "written reasons for administrative action",
+    "review of administrative action"
+  ]
+}

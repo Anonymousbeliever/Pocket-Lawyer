@@ -1,0 +1,9 @@
+{
+  "question": "I lent my friend money and he refuses to pay back. Can I take his car?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "recovery of a debt",
+    "execution against movable property",
+    "attachment and sale of property in execution"
+  ]
+}

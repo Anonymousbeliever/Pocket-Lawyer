@@ -1,0 +1,9 @@
+{
+  "question": "Do I have to answer police questions after being arrested?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "right to remain silent after arrest",
+    "protection against compelled confession or admission",
+    "information on consequences of remaining silent"
+  ]
+}

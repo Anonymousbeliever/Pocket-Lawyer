@@ -49,6 +49,22 @@ INSUFFICIENT_ANSWER = (
     "advocate."
 )
 
+# Closes every answered response. Pocket Lawyer gives legal INFORMATION -
+# what the law provides - and never legal advice about what this person
+# should do. Decided 2026-10-11, when advice-shaped questions ("What should
+# I do first?", "How do I protect it?") stopped being refused.
+#
+# Written by code, not the model, because the model cannot write it: every
+# statement and qualification must carry a quote verified against a
+# section, and no section says "consult an advocate". Until this existed, the
+# only pointer to an advocate anywhere in the system was in the refusal - an
+# answer listing legal steps never mentioned one, so a reader could take the
+# provisions that happened to be retrieved as the whole plan.
+ADVOCATE_NOTE = (
+    "This is general information about what the law says, not advice on "
+    "your situation. A qualified advocate can advise you on what to do."
+)
+
 
 # A subject-matter gate was tried here and removed. See "Measured: one
 # aggregate subject verdict cannot gate sufficiency" in
@@ -564,12 +580,16 @@ def _without_refusal(explanation: str) -> str:
     return ". ".join(part for part in kept if part.strip()).strip()
 
 
-def render(answer: LegalAnswer) -> str:
+def render(answer: LegalAnswer, advocate_note: bool = True) -> str:
     """
     Compose the user-facing text.
 
     The opening word of a polar answer is written here, not by the
     model, so the stated verdict and the explanation cannot disagree.
+
+    `advocate_note=False` leaves out ADVOCATE_NOTE, for the answer judge:
+    it checks what the MODEL wrote against the law, and the note is fixed
+    text that no section contains.
     """
 
     if not answer.sufficient:
@@ -598,6 +618,9 @@ def render(answer: LegalAnswer) -> str:
     if answer.qualifications:
         parts.append("Important qualifications:")
         parts.extend(f"- {item.text}" for item in answer.qualifications)
+
+    if advocate_note:
+        parts.append(ADVOCATE_NOTE)
 
     return "\n\n".join(part for part in parts if part)
 

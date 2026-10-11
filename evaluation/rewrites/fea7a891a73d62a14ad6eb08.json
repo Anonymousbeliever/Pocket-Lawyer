@@ -1,0 +1,9 @@
+{
+  "question": "My landlord increased rent by 100% this month with no notice. Is there a limit?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "notice of increase of rent",
+    "alteration of terms of tenancy",
+    "restriction on increase of rent"
+  ]
+}

@@ -106,22 +106,36 @@ def _digest(value) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:24]
 
 
-def retrieval_key(question: str, fingerprint: str) -> str:
-    """Level 1. The corpus belongs here, and only here."""
+def retrieval_key(
+    question: str,
+    fingerprint: str,
+    extra_queries: list[str] | None = None,
+) -> str:
+    """
+    Level 1. The corpus belongs here, and only here.
 
-    return _digest(
-        [
-            "retrieval-v1",
-            question,
-            fingerprint,
-            config.EMBEDDING_MODEL,
-            config.COLLECTION_NAME,
-            config.RETRIEVAL_TOP_K,
-            config.HYBRID_RETRIEVAL,
-            config.SPARSE_TOP_K,
-            _source_hash(RETRIEVAL_SOURCES),
-        ]
-    )
+    Rewrites are inputs to retrieval exactly as the question is. Leaving
+    them out would let a `--rewrite` run be served the result of a run
+    without them - the comparison this harness exists to make would then
+    compare a run against itself.
+    """
+
+    parts = [
+        "retrieval-v1",
+        question,
+        fingerprint,
+        config.EMBEDDING_MODEL,
+        config.COLLECTION_NAME,
+        config.RETRIEVAL_TOP_K,
+        config.HYBRID_RETRIEVAL,
+        config.SPARSE_TOP_K,
+        _source_hash(RETRIEVAL_SOURCES),
+    ]
+
+    if extra_queries:
+        parts += ["rewrites", list(extra_queries), config.REWRITE_TOP_K]
+
+    return _digest(parts)
 
 
 def rerank_key(question: str, chunk_ids: list[str]) -> str:

@@ -1,0 +1,9 @@
+{
+  "question": "Who is allowed to register as a voter?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "qualification for registration as a voter",
+    "persons entitled to be registered as voters",
+    "disqualification from registration as a voter"
+  ]
+}

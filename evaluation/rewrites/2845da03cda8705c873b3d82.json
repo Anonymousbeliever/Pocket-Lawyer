@@ -1,0 +1,9 @@
+{
+  "question": "Can I be taken to court twice for the same offence?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "previous conviction or acquittal for the same offence",
+    "protection against being tried more than once for the same offence",
+    "retrial following an appeal or review"
+  ]
+}

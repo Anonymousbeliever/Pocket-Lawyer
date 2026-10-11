@@ -1,0 +1,9 @@
+{
+  "question": "Can I cancel a will I already made?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "revocation of a will",
+    "revocation by subsequent will or codicil",
+    "revocation by burning, tearing or destruction"
+  ]
+}

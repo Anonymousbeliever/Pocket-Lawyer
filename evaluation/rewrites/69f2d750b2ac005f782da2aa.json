@@ -1,0 +1,9 @@
+{
+  "question": "How many hours a week can my employer make me work?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "hours of work",
+    "normal working hours per week",
+    "overtime work and remuneration"
+  ]
+}

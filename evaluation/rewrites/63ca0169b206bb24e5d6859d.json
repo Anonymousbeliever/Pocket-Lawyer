@@ -1,0 +1,9 @@
+{
+  "question": "Can someone search my house without my permission?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "right to privacy of the home",
+    "search of premises under warrant",
+    "search and seizure without warrant"
+  ]
+}

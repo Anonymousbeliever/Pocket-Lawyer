@@ -1,0 +1,9 @@
+{
+  "question": "Do people in prison still have rights?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "rights of persons detained, held in custody or imprisoned",
+    "humane treatment of persons deprived of liberty",
+    "limitation of rights of persons detained or imprisoned"
+  ]
+}

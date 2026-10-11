@@ -1,0 +1,9 @@
+{
+  "question": "Do I need an advocate to go to the small claims court?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "representation by an advocate in small claims proceedings",
+    "right to appear in person before a court",
+    "legal representation in court proceedings"
+  ]
+}

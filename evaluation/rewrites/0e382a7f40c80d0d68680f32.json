@@ -1,0 +1,9 @@
+{
+  "question": "What is the minimum wage in Kenya?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "minimum rates of wages",
+    "minimum remuneration payable to employees",
+    "wage rates prescribed by order"
+  ]
+}

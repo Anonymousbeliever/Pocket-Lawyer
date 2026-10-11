@@ -340,8 +340,8 @@ def _unit(vector: np.ndarray) -> np.ndarray:
 # These should sound like a person, not a terms-of-service page. The heavy
 # disclaimer already lives where it earns its place: INSUFFICIENT_ANSWER tells
 # the user to consult a qualified advocate at the moment the system genuinely
-# cannot help them. Repeating it on "hello" adds nothing and makes the
-# assistant feel defensive.
+# cannot help them, and ADVOCATE_NOTE closes every legal answer. Repeating it
+# on "hello" adds nothing and makes the assistant feel defensive.
 # ---------------------------------------------------------
 
 REPLIES = {

@@ -1,0 +1,9 @@
+{
+  "question": "What kinds of courts are there in Kenya?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "superior courts and subordinate courts",
+    "courts of equal status",
+    "court of appeal and original jurisdiction"
+  ]
+}

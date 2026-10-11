@@ -1,0 +1,9 @@
+{
+  "question": "The police beat me while they were questioning me at the station. Is that legal?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "freedom from torture and cruel, inhuman or degrading treatment",
+    "prohibition of torture by public officers",
+    "exclusion of evidence obtained through torture"
+  ]
+}

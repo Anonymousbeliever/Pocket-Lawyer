@@ -22,12 +22,16 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from backend.app.ai.answer import render
 from backend.app.core.config import (
     COLLECTION_NAME,
     EMBEDDING_MODEL,
+    QUERY_REWRITE,
     RERANK_TOP_K,
     RERANKER_MODEL,
     RETRIEVAL_TOP_K,
+    REWRITE_COUNT,
+    REWRITE_TOP_K,
 )
 from evaluation.cache import (
     ResultCache,
@@ -62,18 +66,30 @@ from evaluation.schema import (
 )
 
 
+# The rewrites every rewrite run used, one reviewable JSON per question.
+# Committed: unlike evaluation/.cache, deleting it CHANGES results, because
+# the rewriter's model gives different phrases on different calls.
+REWRITES_DIR = Path(__file__).resolve().parent / "rewrites"
+
+
 def _retrieve_all(
     questions: list[Question],
     retriever,
     cache: ResultCache,
     fingerprint: str,
-) -> list[list[dict]]:
+    rewriter=None,
+) -> tuple[list[list[dict]], list[list[str]]]:
     """
     Retrieve for every question, reusing level 1 where the corpus has not
     moved. Cheap either way - an embedding and a Qdrant query.
+
+    With a rewriter, each question is first restated in legal register and
+    retrieval searches with the rewrites as well. Returns the retrieved
+    chunks and, per question, the rewrites used.
     """
 
     retrieved: list[list[dict]] = []
+    rewrites: list[list[str]] = []
 
     for index, question in enumerate(questions, start=1):
         print(
@@ -81,7 +97,9 @@ def _retrieve_all(
             flush=True,
         )
 
-        key = retrieval_key(question.question, fingerprint)
+        extra = rewriter.rewrite(question.question) if rewriter else []
+
+        key = retrieval_key(question.question, fingerprint, extra)
 
         chunks = cache.get("retrieval", key)
 
@@ -89,13 +107,15 @@ def _retrieve_all(
             chunks = retriever.retrieve(
                 query=question.question,
                 top_k=RETRIEVAL_TOP_K,
+                extra_queries=extra or None,
             )
 
             cache.put("retrieval", key, chunks)
 
         retrieved.append(chunks)
+        rewrites.append(extra)
 
-    return retrieved
+    return retrieved, rewrites
 
 
 def _score_question(
@@ -136,6 +156,7 @@ def evaluate_tier0(
     retriever,
     cache: ResultCache,
     fingerprint: str,
+    rewriter=None,
 ) -> list[QuestionResult]:
     """
     Retrieval only. No cross-encoder is constructed, so ~1.1 GB never loads
@@ -146,9 +167,11 @@ def evaluate_tier0(
     which needed no reranking to detect.
     """
 
-    retrieved = _retrieve_all(questions, retriever, cache, fingerprint)
+    retrieved, rewrites = _retrieve_all(
+        questions, retriever, cache, fingerprint, rewriter
+    )
 
-    return [
+    results = [
         _score_question(
             question,
             [c.get("chunk_id") for c in chunks],
@@ -157,6 +180,11 @@ def evaluate_tier0(
         for question, chunks in zip(questions, retrieved)
     ]
 
+    for result, used in zip(results, rewrites):
+        result.rewrites = used
+
+    return results
+
 
 def evaluate_tier1(
     questions: list[Question],
@@ -164,6 +192,7 @@ def evaluate_tier1(
     reranker,
     cache: ResultCache,
     fingerprint: str,
+    rewriter=None,
 ) -> list[QuestionResult]:
     """
     `reranker=None` skips the cross-encoder and takes retrieval's own top-k.
@@ -176,17 +205,24 @@ def evaluate_tier1(
     request latency.
     """
 
-    retrieved = _retrieve_all(questions, retriever, cache, fingerprint)
+    retrieved, rewrites = _retrieve_all(
+        questions, retriever, cache, fingerprint, rewriter
+    )
 
     retrieved_ids = [
         [c.get("chunk_id") for c in chunks] for chunks in retrieved
     ]
 
     if reranker is None:
-        return [
+        results = [
             _score_question(question, ids, ids[:RERANK_TOP_K])
             for question, ids in zip(questions, retrieved_ids)
         ]
+
+        for result, used in zip(results, rewrites):
+            result.rewrites = used
+
+        return results
 
     # Level 2 is keyed on the CANDIDATES, not the corpus, so a question whose
     # top-k did not move survives the arrival of a whole new document.
@@ -222,12 +258,17 @@ def evaluate_tier1(
             reranked_ids[i] = ids
             cache.put("rerank", keys[i], ids)
 
-    return [
+    results = [
         _score_question(question, ids, ranked)
         for question, ids, ranked in zip(
             questions, retrieved_ids, reranked_ids
         )
     ]
+
+    for result, used in zip(results, rewrites):
+        result.rewrites = used
+
+    return results
 
 
 def evaluate_tier2(
@@ -308,7 +349,11 @@ def evaluate_tier2(
 
             verdict = judge.judge(
                 question=question.question,
-                answer=outcome["answer"],
+                # Without the fixed advocate note: the judge checks what the
+                # model wrote against the law, and asking it to find that
+                # note in a section would invite a false rejection on every
+                # answer.
+                answer=render(structured, advocate_note=False),
                 claims=claims,
                 sources=outcome["sources"],
             )
@@ -430,6 +475,17 @@ def main() -> None:
             "tier 1 without the cross-encoder - take retrieval's own top-k. "
             "A measurement of whether reranking still earns its place now "
             "that retrieval is hybrid, not a mode to ship"
+        ),
+    )
+
+    parser.add_argument(
+        "--rewrite",
+        action="store_true",
+        help=(
+            "tiers 0 and 1: restate each question in legal register and "
+            "retrieve with the rewrites too (Phase B). A measurement until "
+            "QUERY_REWRITE is turned on - such a run is compared against "
+            "the baselines but cannot replace them"
         ),
     )
 
@@ -593,6 +649,27 @@ def main() -> None:
 
     fingerprint = corpus_fingerprint()
 
+    rewriter = None
+
+    if args.tier < 2 and (args.rewrite or QUERY_REWRITE):
+        from backend.app.ai.rewrite import QueryRewriter
+
+        # Every rewrite used is kept in a committed folder and reused: the
+        # rewriter's model varies between calls, so this record is what
+        # makes a rewrite run repeatable - and free once it exists.
+        rewriter = QueryRewriter(cache_dir=REWRITES_DIR)
+
+        print(f"Rewriting  : {rewriter.model_name}, up to "
+              f"{rewriter.count} phrases per question")
+        print()
+
+    elif args.rewrite:
+        # Tier 2 calls LegalRAG.answer(), which does not rewrite yet. Saying
+        # so beats a run labelled "rewrite" that measured nothing of it.
+        print("[FAIL] --rewrite applies to tiers 0 and 1 until rewriting "
+              "is wired into the answering pipeline")
+        sys.exit(1)
+
     if args.tier < 2:
         # Deliberately not LegalRAG: it constructs LegalLLM, which
         # requires an API key. Tiers 0 and 1 must run without one.
@@ -605,7 +682,7 @@ def main() -> None:
             print("Running (retrieval only)...")
 
             results = evaluate_tier0(
-                questions, retriever, cache, fingerprint
+                questions, retriever, cache, fingerprint, rewriter
             )
 
         elif args.no_rerank:
@@ -613,7 +690,7 @@ def main() -> None:
             print("Running (NO reranking - retrieval top-k only)...")
 
             results = evaluate_tier1(
-                questions, retriever, None, cache, fingerprint
+                questions, retriever, None, cache, fingerprint, rewriter
             )
 
         else:
@@ -626,7 +703,7 @@ def main() -> None:
             print("Running...")
 
             results = evaluate_tier1(
-                questions, retriever, reranker, cache, fingerprint
+                questions, retriever, reranker, cache, fingerprint, rewriter
             )
 
     else:
@@ -672,9 +749,37 @@ def main() -> None:
             "rerank_top_k": RERANK_TOP_K,
             "reranked": not args.no_rerank,
             "judged": args.tier >= 2 and not args.no_judge,
+            # Whether this run rewrote, and whether rewriting is the
+            # pipeline. Promotion refuses a run where the two differ.
+            "rewrite": rewriter is not None,
+            "pipeline_rewrite": QUERY_REWRITE,
+            "rewrite_model": rewriter.model_name if rewriter else None,
+            "rewrite_count": REWRITE_COUNT if rewriter else None,
+            "rewrite_top_k": REWRITE_TOP_K if rewriter else None,
             "cache": cache.summary(),
         },
     )
+
+    if rewriter is not None:
+        rewritten = sum(1 for r in results if r.rewrites)
+
+        print()
+        print(
+            f"Rewrites: {rewritten}/{len(results)} questions rewritten "
+            f"({rewriter.hits} reused, {rewriter.calls} new, "
+            f"{rewriter.failures} failed)"
+        )
+
+        if rewriter.failures:
+            print(f"          last error: {rewriter.last_error}")
+
+        if not rewritten:
+            # Without this, a run with no key or a dead API would report
+            # numbers identical to the baseline under a "rewrite" label.
+            print(
+                "[WARN] no question was rewritten, so this run measured "
+                "nothing about rewriting. Check OPENAI_API_KEY."
+            )
 
     print()
     print(

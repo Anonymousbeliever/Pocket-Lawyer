@@ -1,0 +1,9 @@
+{
+  "question": "Can the government take away my property?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "protection from deprivation of property",
+    "compulsory acquisition of property for a public purpose",
+    "prompt payment in full of just compensation and access to court"
+  ]
+}

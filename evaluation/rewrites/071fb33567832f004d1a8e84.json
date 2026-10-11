@@ -1,0 +1,8 @@
+{
+  "question": "My father's will left me nothing. Can I do anything?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "reasonable provision for dependants omitted from a will",
+    "application for provision from deceased's estate by dependant"
+  ]
+}

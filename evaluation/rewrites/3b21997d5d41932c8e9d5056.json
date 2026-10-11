@@ -1,0 +1,9 @@
+{
+  "question": "Must my employer give me a certificate when I leave my job?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "certificate of service upon termination of employment",
+    "employer’s duty to issue certificate of service",
+    "form and contents of certificate of service"
+  ]
+}

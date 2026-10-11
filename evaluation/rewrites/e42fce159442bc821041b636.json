@@ -1,0 +1,9 @@
+{
+  "question": "What legally happens if I cannot pay back my debts?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "inability to pay debts",
+    "bankruptcy proceedings and administration of debtor’s estate",
+    "composition or arrangement with creditors"
+  ]
+}

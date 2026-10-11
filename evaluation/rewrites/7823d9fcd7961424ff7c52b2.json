@@ -1,0 +1,9 @@
+{
+  "question": "How much does it cost to file a claim in the small claims court?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "fees payable on filing a claim",
+    "court fees in small claims proceedings",
+    "prescribed filing fees"
+  ]
+}

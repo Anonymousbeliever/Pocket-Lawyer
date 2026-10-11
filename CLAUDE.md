@@ -62,9 +62,13 @@ backend/app/ai/
   intent.py                IntentClassifier — nearest-centroid routing
   retriever.py             LegalRetriever  — BGE-M3 → Qdrant, top 30,
                            dense + lexical fused with RRF
+  rewrite.py               QueryRewriter   — Phase B: the question restated as
+                           legal-register search phrases; never names a
+                           provision; NOT yet wired into rag.py
   reranker.py              LegalReranker   — cross-encoder, top 30 → top 5,
                            capped so one document cannot take every slot
-  llm.py                   LegalLLM        — gpt-4o-mini + grounding prompt
+  llm.py                   LegalLLM        — OPENAI_MODEL (gpt-6-luna) + grounding
+                           prompt; drops `temperature` if the model refuses it
   rag.py                   LegalRAG.answer() — chains retrieval/rerank/LLM
   generator.py, prompt.py  EMPTY placeholders, unused
 backend/app/core/config.py Single source of truth for config - BOTH sides import it
@@ -147,6 +151,10 @@ python -m evaluation.run --no-cache  # recompute; still writes results
 python -m evaluation.run --accept-last   # record the last run as baseline
 python -m evaluation.run --id <qid>  # one question, repeatable, for debugging
 python -m evaluation.judge           # the answer judge vs judge_cases.yaml
+python -m evaluation.run --tier 0 --rewrite   # Phase B: retrieve with rewrites
+                                     # too; stored in evaluation/rewrites/,
+                                     # which is COMMITTED - the rewriter
+                                     # varies, so deleting it changes results
 
 python -m backend.app.ai.rag         # full pipeline, interactive CLI
 python -m backend.app.ai.retriever   # retrieval only
@@ -178,15 +186,39 @@ Environment: Windows, PowerShell, `.venv`, Python 3.14. Qdrant collection is
 |------|--------|
 | Embeddings | `BAAI/bge-m3` — 1024-dim, cosine, normalized, 8192 token limit |
 | Reranker | `BAAI/bge-reranker-v2-m3` cross-encoder |
-| Generation | `gpt-4o-mini` via the OpenAI **Responses** API (`client.responses.create`) |
+| Generation | `gpt-6-luna` (`OPENAI_MODEL` in `.env`) via the OpenAI **Responses** API (`client.responses.create`) |
+| Answer judge (evaluation only) | follows `OPENAI_MODEL`, so `gpt-6-luna` for now; `--model` overrides it per run |
 | Vector store | Qdrant (Docker, local) |
 | Backend | FastAPI |
 | Mobile (later) | Flutter |
 
 **Do not silently change models.** The embedding model must be byte-identical at
 ingest time and query time — if they drift apart, retrieval quality collapses
-**with no error message**. `gpt-4o-mini` is what the project's API credentials
-are provisioned for.
+**with no error message**.
+
+**Generation moved from `gpt-4o-mini` to `gpt-6-luna` - decided 2026-10-11,**
+with the move from a borrowed API key to the project's own OpenAI account.
+**Why, measured:** as the answer judge on `evaluation/judge_cases.yaml`,
+gpt-4o-mini caught **1 of 5** real overstatements across three runs and gpt-4o
+caught 2 of 5, while Luna caught **5 of 5 in both of its runs (19/19)** - as did
+6.1 Sol and Astra - without flagging any faithful answer. gpt-4o-mini could not
+see "entitled" where the law says "the labour officer may recommend" even with
+the section in front of it, and it was the model writing those claims. Luna is
+also the cheapest of the three; Sol was ruled out on cost for now.
+**What was NOT measured before switching:** Luna *writing* answers - whether
+its quotes survive verification, and whether it refuses the right questions.
+The first product tier-2 run on Luna is that measurement, and it becomes the
+product baseline.
+**Two consequences to keep in mind:**
+- **GPT-6 refuses `temperature`.** `llm.py` learns that from the API and
+  retries once without it (`rejects_temperature`, matched on the error's
+  `param` field, never on a list of model names). Temperature 0 was what
+  narrowed misquoting between calls, so Luna's answers vary more, and tier-2
+  results on it need repeating before they are trusted.
+- **Luna currently judges its own answers**, because the judge follows
+  `OPENAI_MODEL`. A judge rejection still counts; an approval counts for less.
+  The intended fix is a separate `JUDGE_MODEL` set to 6.1 Sol once the budget
+  allows - the judge runs only in evaluation, so its cost stays small.
 
 ## Working rules
 

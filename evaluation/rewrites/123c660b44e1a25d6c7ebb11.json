@@ -1,0 +1,9 @@
+{
+  "question": "Can an ordinary person arrest someone who has committed a crime?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "arrest by private person",
+    "person found committing a cognizable offence",
+    "delivery of arrested person to police officer without unnecessary delay"
+  ]
+}

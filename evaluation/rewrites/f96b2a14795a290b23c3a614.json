@@ -1,0 +1,9 @@
+{
+  "question": "How old must a child be before they can be charged with a crime?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "minimum age of criminal responsibility",
+    "criminal responsibility of a child",
+    "capacity to know that an act ought not to be done"
+  ]
+}

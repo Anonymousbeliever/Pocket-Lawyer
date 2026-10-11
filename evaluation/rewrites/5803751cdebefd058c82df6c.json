@@ -1,0 +1,9 @@
+{
+  "question": "Is breaking into someone's house at night a different crime from during the day?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "burglary by night",
+    "housebreaking by day",
+    "breaking into a dwelling-house"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "question": "The company is making us work on public holidays without extra pay. Is that allowed?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "remuneration for work performed on a public holiday",
+    "public holidays and holiday pay",
+    "payment for overtime work"
+  ]
+}

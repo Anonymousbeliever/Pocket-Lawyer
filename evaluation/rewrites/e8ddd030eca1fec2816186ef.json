@@ -1,0 +1,9 @@
+{
+  "question": "Can a victim tell the court how the crime affected them?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "victim's views and concerns during criminal proceedings",
+    "victim impact statement before sentencing",
+    "evidence on the impact of the offence on the victim"
+  ]
+}

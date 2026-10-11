@@ -19,6 +19,7 @@ from backend.app.core.config import (
     HYBRID_RETRIEVAL,
     QDRANT_URL,
     RETRIEVAL_TOP_K,
+    REWRITE_TOP_K,
     SPARSE_TOP_K,
     SPARSE_VECTOR_NAME,
 )
@@ -101,6 +102,7 @@ class LegalRetriever:
         query: str,
         top_k: int = RETRIEVAL_TOP_K,
         in_force_only: bool = True,
+        extra_queries: list[str] | None = None,
     ) -> list[dict]:
         """
         Retrieve the most semantically relevant legal chunks.
@@ -108,12 +110,24 @@ class LegalRetriever:
         By default only law that is currently in force is searched.
         Answering with repealed law is the worst failure mode this
         system has, so the filter is opt-out rather than opt-in.
+
+        `extra_queries` are rewrites of `query` in legal register - see
+        rewrite.py. Each adds one dense branch to the fusion; `query` itself
+        always stays in it. Without them, the Qdrant request is exactly
+        what it was before rewriting existed, which is what keeps every
+        baseline recorded without rewriting valid.
         """
 
         if top_k < 1:
             raise ValueError("top_k must be at least 1.")
 
         query_vector = self.embed_query(query)
+
+        extra_vectors = [
+            self.embed_query(extra)
+            for extra in extra_queries or []
+            if extra.strip()
+        ]
 
         query_filter = None
 
@@ -132,6 +146,7 @@ class LegalRetriever:
             query_vector=query_vector,
             query_filter=query_filter,
             top_k=top_k,
+            extra_vectors=extra_vectors,
         )
 
         retrieved_chunks = []
@@ -153,9 +168,12 @@ class LegalRetriever:
         query_filter: Filter | None,
         top_k: int,
         sparse_top_k: int = SPARSE_TOP_K,
+        extra_vectors: list[list[float]] | None = None,
+        rewrite_top_k: int = REWRITE_TOP_K,
     ):
         """
-        Dense alone, or dense and lexical fused.
+        Dense alone, or dense and lexical fused - plus one dense branch per
+        rewrite, when there are any.
 
         Fusion is **Reciprocal Rank Fusion**, which combines the two
         result lists by RANK rather than by score. That matters here
@@ -163,18 +181,24 @@ class LegalRetriever:
         similarity scores not being comparable - the rerank floor, and
         the subject-match gate - and dense cosine and sparse dot product
         are on entirely different scales. RRF never has to reconcile
-        them.
+        them. It is also why rewrite branches need no fusion code of their
+        own: they are more ranked lists in the same Qdrant call.
         """
 
-        if self.lexical is None:
-            return self.client.query_points(
-                collection_name=self.collection_name,
-                query=query_vector,
+        # Rewrites are DENSE only. Adding lexical branches at the same time
+        # would make a regression impossible to attribute.
+        rewrites = [
+            Prefetch(
+                query=vector,
                 using=DENSE_VECTOR_NAME,
-                query_filter=query_filter,
-                limit=top_k,
-                with_payload=True,
-            ).points
+                filter=query_filter,
+                limit=min(rewrite_top_k, top_k),
+            )
+            for vector in extra_vectors or []
+        ]
+
+        if self.lexical is None:
+            return self._dense(query_vector, query_filter, top_k, rewrites)
 
         sparse = self.lexical.encode_one(query)
 
@@ -182,14 +206,7 @@ class LegalRetriever:
             # Nothing lexical to match on - a query of pure stopwords, or
             # one the tokenizer reduced to specials. Dense alone is still
             # a correct answer, so degrade rather than fail.
-            return self.client.query_points(
-                collection_name=self.collection_name,
-                query=query_vector,
-                using=DENSE_VECTOR_NAME,
-                query_filter=query_filter,
-                limit=top_k,
-                with_payload=True,
-            ).points
+            return self._dense(query_vector, query_filter, top_k, rewrites)
 
         # The budgets are deliberately unequal. Dense is the primary
         # signal; lexical is a corrective for exact anchors, and given an
@@ -212,6 +229,45 @@ class LegalRetriever:
                     filter=query_filter,
                     limit=min(sparse_top_k, top_k),
                 ),
+                *rewrites,
+            ],
+            query=FusionQuery(fusion=Fusion.RRF),
+            limit=top_k,
+            with_payload=True,
+        ).points
+
+    def _dense(
+        self,
+        query_vector: list[float],
+        query_filter: Filter | None,
+        top_k: int,
+        rewrites: list[Prefetch],
+    ):
+        """
+        The question's dense search - fused with the rewrite branches when
+        there are any, and exactly the plain query it always was when not.
+        """
+
+        if not rewrites:
+            return self.client.query_points(
+                collection_name=self.collection_name,
+                query=query_vector,
+                using=DENSE_VECTOR_NAME,
+                query_filter=query_filter,
+                limit=top_k,
+                with_payload=True,
+            ).points
+
+        return self.client.query_points(
+            collection_name=self.collection_name,
+            prefetch=[
+                Prefetch(
+                    query=query_vector,
+                    using=DENSE_VECTOR_NAME,
+                    filter=query_filter,
+                    limit=top_k,
+                ),
+                *rewrites,
             ],
             query=FusionQuery(fusion=Fusion.RRF),
             limit=top_k,

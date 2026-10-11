@@ -1,0 +1,9 @@
+{
+  "question": "Is fighting in public a criminal offence?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "taking part in a fight in a public place",
+    "conduct likely to cause a breach of the peace",
+    "common assault"
+  ]
+}

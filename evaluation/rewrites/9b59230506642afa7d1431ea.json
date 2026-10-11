@@ -1,0 +1,9 @@
+{
+  "question": "What is the difference between murder and manslaughter?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "causing death with malice aforethought",
+    "manslaughter by unlawful act or omission",
+    "causing death without malice aforethought"
+  ]
+}

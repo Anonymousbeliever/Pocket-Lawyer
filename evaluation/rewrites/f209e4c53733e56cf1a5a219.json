@@ -1,0 +1,9 @@
+{
+  "question": "Do I have freedom of speech in Kenya?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "freedom of expression",
+    "freedom to seek, receive or impart information",
+    "limitation of rights and fundamental freedoms"
+  ]
+}

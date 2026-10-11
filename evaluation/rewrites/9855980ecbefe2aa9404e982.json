@@ -1,0 +1,9 @@
+{
+  "question": "If someone dies without a will, what do the wife and children get?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "distribution of intestate estate to surviving spouse and children",
+    "personal and household effects of surviving spouse",
+    "life interest in residue of net intestate estate"
+  ]
+}

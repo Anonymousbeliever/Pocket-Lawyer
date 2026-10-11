@@ -1,0 +1,9 @@
+{
+  "question": "What kinds of marriage are recognised in Kenya?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "forms of marriage recognised by law",
+    "Christian, civil and customary marriages",
+    "Hindu and Islamic marriages"
+  ]
+}

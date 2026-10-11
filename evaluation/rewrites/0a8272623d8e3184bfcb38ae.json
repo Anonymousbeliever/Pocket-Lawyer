@@ -1,0 +1,9 @@
+{
+  "question": "What are my rights if I am arrested?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "rights of an arrested person",
+    "information on reason for arrest and right to remain silent",
+    "release on bond or bail pending charge or trial"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "question": "Am I allowed to take part in a peaceful protest?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "freedom of assembly, demonstration, picketing and petition",
+    "peaceful and unarmed assembly",
+    "notification of a public meeting or procession"
+  ]
+}

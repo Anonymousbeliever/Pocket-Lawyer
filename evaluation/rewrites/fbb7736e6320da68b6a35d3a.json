@@ -1,0 +1,9 @@
+{
+  "question": "Does the Constitution say anything about a right to housing?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "right to accessible and adequate housing",
+    "right to reasonable standards of sanitation",
+    "progressive realisation of the right to housing"
+  ]
+}

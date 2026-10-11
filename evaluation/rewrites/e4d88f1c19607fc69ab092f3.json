@@ -1,0 +1,9 @@
+{
+  "question": "Can I be charged for attempting a crime I did not complete?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "attempt to commit an offence",
+    "prosecution for an attempted offence",
+    "acts done in furtherance of criminal intention"
+  ]
+}

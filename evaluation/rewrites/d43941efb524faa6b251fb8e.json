@@ -1,0 +1,9 @@
+{
+  "question": "Are there any rights that can never be taken away?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "rights and fundamental freedoms that shall not be limited",
+    "non-derogable rights and freedoms",
+    "derogation from rights during a state of emergency"
+  ]
+}

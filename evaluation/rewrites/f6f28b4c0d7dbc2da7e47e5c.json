@@ -1,0 +1,9 @@
+{
+  "question": "When does a gathering become an unlawful assembly or a riot?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "unlawful assembly of three or more persons",
+    "common purpose to commit an offence or cause reasonable apprehension of breach of peace",
+    "riotous assembly executing its common purpose in a manner calculated to cause breach of peace"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "question": "What information must a charge sheet contain?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "statement of offence and particulars of offence",
+    "particulars as to time, place and person",
+    "description of property or thing involved in the offence"
+  ]
+}

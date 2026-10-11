@@ -1,0 +1,9 @@
+{
+  "question": "Can a court release me on bail before my trial starts?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "release on bail pending trial",
+    "right to bail pending charge or trial",
+    "terms and conditions of release on bail"
+  ]
+}

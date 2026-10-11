@@ -1,0 +1,9 @@
+{
+  "question": "Can the police ask a court to keep holding me while they investigate?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "remand in custody pending completion of investigations",
+    "extension of detention in police custody",
+    "right to bail or bond pending trial"
+  ]
+}

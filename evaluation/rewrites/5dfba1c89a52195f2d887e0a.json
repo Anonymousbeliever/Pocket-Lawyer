@@ -1,0 +1,9 @@
+{
+  "question": "What are the different categories of land in Kenya?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "public land",
+    "community land",
+    "private land"
+  ]
+}

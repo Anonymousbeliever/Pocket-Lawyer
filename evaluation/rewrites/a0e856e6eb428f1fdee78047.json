@@ -1,0 +1,9 @@
+{
+  "question": "Does the Constitution give me a right to health care?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "right to the highest attainable standard of health",
+    "right to health care services",
+    "emergency medical treatment"
+  ]
+}

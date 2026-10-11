@@ -1,0 +1,9 @@
+{
+  "question": "Can my employer deduct money from my salary?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "deductions from wages",
+    "authorised deductions from remuneration",
+    "protection of wages against unlawful deductions"
+  ]
+}

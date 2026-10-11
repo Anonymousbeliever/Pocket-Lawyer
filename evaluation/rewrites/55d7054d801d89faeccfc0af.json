@@ -1,0 +1,9 @@
+{
+  "question": "How much money can I claim in the small claims court?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "pecuniary jurisdiction of the Small Claims Court",
+    "monetary limit of claims",
+    "claims within the jurisdiction of the Court"
+  ]
+}

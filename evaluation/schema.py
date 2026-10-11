@@ -73,6 +73,11 @@ class QuestionResult:
     reranked_top: list[str] = field(default_factory=list)
     cited_top: list[str] = field(default_factory=list)
 
+    # The search phrases retrieval used besides the question itself, when
+    # the run rewrote. Printed with a failure so a miss can be traced to a
+    # poor rewrite rather than guessed at.
+    rewrites: list[str] = field(default_factory=list)
+
     # Tier 2
     sufficient: bool | None = None
 

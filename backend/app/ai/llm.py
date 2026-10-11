@@ -1,4 +1,6 @@
-from openai import OpenAI
+import re
+
+from openai import BadRequestError, OpenAI
 
 from backend.app.ai.answer import (
     ANSWER_SCHEMA,
@@ -7,6 +9,41 @@ from backend.app.ai.answer import (
     verify_citations,
 )
 from backend.app.core.config import OPENAI_API_KEY, OPENAI_MODEL
+
+
+# ---------------------------------------------------------
+# MODELS THAT REFUSE `temperature`
+# ---------------------------------------------------------
+
+# Some models reject `temperature` outright - the request fails rather than
+# ignoring it - and run at their own fixed default instead.
+#
+# The "o" series is known in advance and is never sent it. Everything else
+# is LEARNED from the API: the first call sends `temperature=0`, and if the
+# API refuses that parameter the call is retried once without it. A list of
+# names was the first design, and GPT-6 broke it within weeks - every call
+# failed with "Unsupported parameter: 'temperature'", which on this path
+# means every question a user asks. The next model family would have broken
+# a list the same way.
+#
+# Shared with the evaluation judge, which hit the same refusal first.
+_REASONING_MODEL = re.compile(r"^o\d")
+
+
+def is_reasoning_model(model_name: str) -> bool:
+    return bool(_REASONING_MODEL.match(model_name.strip().lower()))
+
+
+def rejects_temperature(error: Exception) -> bool:
+    """
+    True only for the API refusing the `temperature` parameter itself.
+
+    Matched on the structured `param` field of a 400, not on the wording of
+    the message, which can change. Every other error is a real failure and
+    must surface, never be retried.
+    """
+
+    return isinstance(error, BadRequestError) and error.param == "temperature"
 
 
 # ---------------------------------------------------------
@@ -266,6 +303,11 @@ class LegalLLM:
             api_key=OPENAI_API_KEY
         )
 
+        # Turned off for good the first time the API refuses it. One
+        # LegalLLM serves every request, so the refusal is paid once per
+        # process, not once per question.
+        self.send_temperature = not is_reasoning_model(model_name)
+
         print("[PASS] OpenAI client initialized")
 
     # -----------------------------------------------------
@@ -386,23 +428,11 @@ Do not introduce legal claims that cannot be supported by the
 retrieved sources.
 """
 
-        response = self.client.responses.create(
-            model=self.model_name,
-            instructions=SYSTEM_PROMPT,
-            # Sampling was left at the API default until grounding made
-            # the task partly one of VERBATIM REPRODUCTION, which is the
-            # worst possible task to sample on. Measured on one question,
-            # four runs: the model dropped 1, 1, 3 and 1 of its own
-            # claims, flipping the same question between a real answer
-            # and a refusal - not because the law changed, but because it
-            # reproduced the statute less carefully on some calls.
-            #
-            # This narrows that spread. It does not eliminate it: the API
-            # gives no determinism guarantee even at zero, so tier 2 stays
-            # non-deterministic and must never be cached.
-            temperature=0,
-            input=user_prompt,
-            text={
+        request = {
+            "model": self.model_name,
+            "instructions": SYSTEM_PROMPT,
+            "input": user_prompt,
+            "text": {
                 "format": {
                     "type": "json_schema",
                     "name": "legal_answer",
@@ -410,7 +440,25 @@ retrieved sources.
                     "strict": True,
                 }
             },
-        )
+        }
+
+        # Sampling was left at the API default until grounding made the
+        # task partly one of VERBATIM REPRODUCTION, which is the worst
+        # possible task to sample on. Measured on one question, four runs:
+        # the model dropped 1, 1, 3 and 1 of its own claims, flipping the
+        # same question between a real answer and a refusal - not because
+        # the law changed, but because it reproduced the statute less
+        # carefully on some calls.
+        #
+        # This narrows that spread. It does not eliminate it: the API gives
+        # no determinism guarantee even at zero, so tier 2 stays
+        # non-deterministic and must never be cached. A model that refuses
+        # the parameter - GPT-6 does - loses even this, which is why its
+        # tier 2 results need repeating before they are trusted.
+        if self.send_temperature:
+            request["temperature"] = 0
+
+        response = self._create(request)
 
         raw = response.output_text.strip()
 
@@ -425,6 +473,32 @@ retrieved sources.
         # was not among the retrieved chunks is removed rather than
         # shown to a user as a real authority.
         return verify_citations(answer, sources)
+
+    def _create(self, request: dict):
+        """
+        Call the API, dropping `temperature` for good if this model refuses
+        it. Only that one refusal is retried; every other error propagates
+        exactly as it did before.
+        """
+
+        try:
+            return self.client.responses.create(**request)
+
+        except Exception as error:                        # noqa: BLE001
+            if "temperature" not in request or not rejects_temperature(error):
+                raise
+
+            self.send_temperature = False
+
+            print(
+                f"[WARN] {self.model_name} does not accept temperature - "
+                f"answering at its own default, so the same question can "
+                f"be answered differently between calls"
+            )
+
+            request = {k: v for k, v in request.items() if k != "temperature"}
+
+            return self.client.responses.create(**request)
 
 
 # ---------------------------------------------------------

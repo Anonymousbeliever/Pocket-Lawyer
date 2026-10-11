@@ -1,0 +1,9 @@
+{
+  "question": "What are county governments responsible for?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "functions and powers of county governments",
+    "distribution of functions between national and county governments",
+    "county government legislative and executive authority"
+  ]
+}

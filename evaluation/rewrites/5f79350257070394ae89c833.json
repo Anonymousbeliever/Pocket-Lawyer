@@ -1,0 +1,9 @@
+{
+  "question": "I got injured at work last month. Who is supposed to cover the medical bills?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "employer's obligation to provide medical aid",
+    "medical expenses for occupational injury",
+    "compensation for work-related injury"
+  ]
+}

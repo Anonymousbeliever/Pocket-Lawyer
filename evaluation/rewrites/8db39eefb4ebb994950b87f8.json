@@ -1,0 +1,9 @@
+{
+  "question": "How much maternity leave does the law give?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "maternity leave with full pay",
+    "period of maternity leave",
+    "right to maternity leave"
+  ]
+}

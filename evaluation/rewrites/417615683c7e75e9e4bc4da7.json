@@ -1,0 +1,9 @@
+{
+  "question": "How long can the police keep me before taking me to court?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "time within which an arrested person must be brought before a court",
+    "detention of an arrested person before trial",
+    "right to bail or bond pending trial"
+  ]
+}

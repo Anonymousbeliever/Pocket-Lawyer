@@ -1,0 +1,9 @@
+{
+  "question": "What licences do I need to open a restaurant?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "trade licence for business premises",
+    "food hygiene licence for food premises",
+    "licence for sale of alcoholic drinks"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "question": "Does everyone have a right to go to court?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "access to justice",
+    "right to institute court proceedings",
+    "right to a fair hearing"
+  ]
+}

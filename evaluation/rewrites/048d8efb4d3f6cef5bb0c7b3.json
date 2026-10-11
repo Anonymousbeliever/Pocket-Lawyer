@@ -1,0 +1,9 @@
+{
+  "question": "Do I have the right to join a trade union?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "freedom of association",
+    "right to form, join or participate in activities of a trade union",
+    "protection against discrimination on grounds of trade union membership"
+  ]
+}

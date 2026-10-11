@@ -1,0 +1,9 @@
+{
+  "question": "How much inheritance tax must I pay on property I inherit?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "property passing on death",
+    "transmission of property upon death",
+    "duty on transfer of property"
+  ]
+}

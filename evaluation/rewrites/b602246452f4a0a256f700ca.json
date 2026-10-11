@@ -1,0 +1,9 @@
+{
+  "question": "What happens if the prosecution has no evidence against me?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "presumption of innocence",
+    "burden of proof in criminal proceedings",
+    "acquittal where prosecution adduces no evidence"
+  ]
+}

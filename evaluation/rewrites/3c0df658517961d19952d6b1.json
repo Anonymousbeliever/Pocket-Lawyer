@@ -1,0 +1,9 @@
+{
+  "question": "Can I get a lawyer paid for by the government if I cannot afford one?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "legal aid for an indigent person",
+    "legal representation at State expense",
+    "provision of legal aid to persons unable to afford legal services"
+  ]
+}

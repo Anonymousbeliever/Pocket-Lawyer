@@ -1,0 +1,467 @@
+{
+  "metadata": {
+    "created": "2026-10-11T12:26:41",
+    "tier": 1,
+    "scope": {
+      "suites": [
+        "product"
+      ],
+      "document": null,
+      "ids": []
+    },
+    "collection": "pocket_lawyer_legal",
+    "embedding_model": "BAAI/bge-m3",
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "retrieval_top_k": 30,
+    "rerank_top_k": 5,
+    "reranked": true,
+    "judged": false,
+    "rewrite": false,
+    "pipeline_rewrite": false,
+    "rewrite_model": null,
+    "rewrite_count": null,
+    "rewrite_top_k": null,
+    "cache": {
+      "read": false,
+      "write": true,
+      "hits": {
+        "retrieval": 0,
+        "rerank": 0
+      },
+      "misses": {
+        "retrieval": 32,
+        "rerank": 32
+      }
+    }
+  },
+  "metrics": {
+    "retrieval_hit": {
+      "passed": 19,
+      "total": 22
+    },
+    "rerank_hit": {
+      "passed": 15,
+      "total": 22
+    },
+    "rerank_top1": {
+      "passed": 7,
+      "total": 22
+    }
+  },
+  "counts": {
+    "questions": 32,
+    "answerable": 22,
+    "out_of_scope": 10,
+    "passed": 25
+  },
+  "suites": {
+    "product": {
+      "metrics": {
+        "retrieval_hit": {
+          "passed": 19,
+          "total": 22
+        },
+        "rerank_hit": {
+          "passed": 15,
+          "total": 22
+        },
+        "rerank_top1": {
+          "passed": 7,
+          "total": 22
+        }
+      },
+      "counts": {
+        "questions": 32,
+        "answerable": 22,
+        "out_of_scope": 10,
+        "passed": 25
+      }
+    }
+  },
+  "questions": {
+    "product-emp-paid-leave": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-emp-fired-for-overtime": {
+      "suite": "product",
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-emp-probation": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-pol-beaten-in-custody": {
+      "suite": "product",
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": false,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-pol-held-two-days": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-pol-search-without-warrant": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-pol-property-seized": {
+      "suite": "product",
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-suc-leave-to-children": {
+      "suite": "product",
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-suc-father-no-will": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-suc-uncle-collecting-rent": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-suc-will-on-phone": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-fam-adopt-sisters-child": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-fam-ex-blocks-contact": {
+      "suite": "product",
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": false,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-fam-rights-on-separation": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-fam-minor-with-adults": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-fam-no-child-support": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-env-factory-pollution": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-env-land-for-road": {
+      "suite": "product",
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-con-tribe-discrimination": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-edge-take-friends-car": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-emp-public-holidays": {
+      "suite": "product",
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-emp-injured-at-work": {
+      "suite": "product",
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-pol-accused-of-robbery": {
+      "suite": "product",
+      "passed": false,
+      "answerable": true,
+      "retrieval_hit": false,
+      "rerank_hit": false,
+      "rerank_top1": false,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-suc-protect-mothers-house": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-env-building-on-family-land": {
+      "suite": "product",
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-con-compelled-vaccination": {
+      "suite": "product",
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-con-police-bribe": {
+      "suite": "product",
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-con-record-police": {
+      "suite": "product",
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-edge-witchcraft": {
+      "suite": "product",
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-edge-evil-eye": {
+      "suite": "product",
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-edge-insult-president": {
+      "suite": "product",
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "product-edge-rent-increase": {
+      "suite": "product",
+      "passed": true,
+      "answerable": false,
+      "retrieval_hit": null,
+      "rerank_hit": null,
+      "rerank_top1": null,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    }
+  }
+}

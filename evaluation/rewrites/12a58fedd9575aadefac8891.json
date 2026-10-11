@@ -1,0 +1,9 @@
+{
+  "question": "Is it legal to treat someone unfairly because of their gender?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "freedom from discrimination on grounds of sex",
+    "equality and equal protection of the law",
+    "equal treatment of women and men"
+  ]
+}

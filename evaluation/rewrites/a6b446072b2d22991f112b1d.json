@@ -1,0 +1,9 @@
+{
+  "question": "Is it a crime to encourage someone else to commit an offence?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "abetting the commission of an offence",
+    "counselling or procuring the commission of an offence",
+    "incitement to commit an offence"
+  ]
+}

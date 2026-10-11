@@ -1,0 +1,9 @@
+{
+  "question": "Can police arrest me without telling me why?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "right to be informed promptly of the reason for arrest",
+    "information on the reason for arrest",
+    "rights of an arrested person"
+  ]
+}

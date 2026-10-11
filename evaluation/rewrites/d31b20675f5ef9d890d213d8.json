@@ -1,0 +1,9 @@
+{
+  "question": "My boss just fired me after I asked for the overtime they still owe me. Can they do that?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "unfair termination of employment",
+    "payment of overtime wages",
+    "termination for making a complaint against an employer"
+  ]
+}

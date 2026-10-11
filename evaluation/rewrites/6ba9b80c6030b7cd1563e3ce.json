@@ -1,0 +1,9 @@
+{
+  "question": "What counts as robbery under Kenyan law?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "stealing accompanied by use or threat of violence",
+    "robbery with violence",
+    "elements of robbery"
+  ]
+}

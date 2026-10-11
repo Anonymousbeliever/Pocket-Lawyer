@@ -1,0 +1,9 @@
+{
+  "question": "Can someone lose their Kenyan citizenship?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "deprivation of citizenship",
+    "renunciation of citizenship",
+    "revocation of citizenship acquired by registration"
+  ]
+}

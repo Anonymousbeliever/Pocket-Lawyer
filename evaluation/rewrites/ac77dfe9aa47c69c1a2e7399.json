@@ -1,0 +1,9 @@
+{
+  "question": "Am I entitled to paid sick leave?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "entitlement to sick leave with full pay",
+    "sick leave with half pay",
+    "medical certificate and notice of sickness to employer"
+  ]
+}

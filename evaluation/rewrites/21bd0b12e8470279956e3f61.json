@@ -1,0 +1,9 @@
+{
+  "question": "What happens to property when someone dies with no spouse or children?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "distribution of net intestate estate where there is no surviving spouse or child",
+    "order of priority of kindred in intestate succession",
+    "administration of the estate of an intestate"
+  ]
+}

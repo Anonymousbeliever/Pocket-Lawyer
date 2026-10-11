@@ -1,0 +1,9 @@
+{
+  "question": "Can my employer fire me on the spot without notice?",
+  "model": "gpt-6-luna",
+  "phrases": [
+    "termination of employment without notice",
+    "summary dismissal for gross misconduct",
+    "hearing before termination of employment"
+  ]
+}
