@@ -1,0 +1,10 @@
+{
+  "question": "Do I have to answer police questions after being arrested?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "right to remain silent",
+    "right against self-incrimination",
+    "questioning of arrested persons"
+  ]
+}

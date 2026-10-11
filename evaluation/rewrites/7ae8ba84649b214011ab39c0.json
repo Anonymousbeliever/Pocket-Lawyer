@@ -1,0 +1,10 @@
+{
+  "question": "Someone is accusing me of robbery but I wasn't even there. What should I do first?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "defence of alibi",
+    "rights of an accused person",
+    "criminal investigation procedure"
+  ]
+}

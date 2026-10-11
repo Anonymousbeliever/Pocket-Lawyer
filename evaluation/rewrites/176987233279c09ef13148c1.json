@@ -1,0 +1,10 @@
+{
+  "question": "Can police arrest me without telling me why?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "notification of reasons for arrest",
+    "rights of an arrested person",
+    "lawful arrest and detention"
+  ]
+}

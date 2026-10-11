@@ -1,0 +1,9 @@
+{
+  "question": "What are the official languages of Kenya?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "official languages of Kenya",
+    "national language"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "question": "How many days notice must a landlord give before evicting a tenant?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "notice of termination of tenancy",
+    "recovery of possession of premises",
+    "eviction of a tenant"
+  ]
+}

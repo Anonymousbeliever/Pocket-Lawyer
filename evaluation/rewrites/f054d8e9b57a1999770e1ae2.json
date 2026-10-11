@@ -1,0 +1,10 @@
+{
+  "question": "How much does it cost to file a claim in the small claims court?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "court fees payable on filing a claim",
+    "fees in small claims proceedings",
+    "waiver of court fees"
+  ]
+}

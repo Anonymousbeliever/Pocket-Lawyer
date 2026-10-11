@@ -1,0 +1,10 @@
+{
+  "question": "The police beat me while they were questioning me at the station. Is that legal?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "freedom from torture and cruel, inhuman or degrading treatment",
+    "use of force by police officers during interrogation",
+    "redress for violation of fundamental rights"
+  ]
+}

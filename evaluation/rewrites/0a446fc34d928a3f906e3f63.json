@@ -1,0 +1,10 @@
+{
+  "question": "Am I allowed to take part in a peaceful protest?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "freedom of peaceful assembly and demonstration",
+    "right to assemble, demonstrate, picket and present petitions",
+    "regulation of public meetings and processions"
+  ]
+}

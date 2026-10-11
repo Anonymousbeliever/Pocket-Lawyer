@@ -1,0 +1,10 @@
+{
+  "question": "When does a gathering become an unlawful assembly or a riot?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "unlawful assembly",
+    "riot",
+    "use of force or violence by an assembly"
+  ]
+}

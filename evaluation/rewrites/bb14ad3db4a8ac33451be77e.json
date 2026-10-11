@@ -1,0 +1,10 @@
+{
+  "question": "What does the law say about people living with disabilities?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "rights of persons with disabilities",
+    "non-discrimination on grounds of disability",
+    "accessibility and reasonable accommodation for persons with disabilities"
+  ]
+}

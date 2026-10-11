@@ -1,0 +1,10 @@
+{
+  "question": "What is the maximum interest rate a bank can charge on a loan?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "interest rates charged by banks on loans",
+    "limitation on interest charged on loans",
+    "variation of interest rates on loans"
+  ]
+}

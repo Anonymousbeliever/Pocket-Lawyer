@@ -1,0 +1,10 @@
+{
+  "question": "Can I ask the government to give me information it holds?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "right of access to information",
+    "access to information held by public entities",
+    "application for access to information"
+  ]
+}

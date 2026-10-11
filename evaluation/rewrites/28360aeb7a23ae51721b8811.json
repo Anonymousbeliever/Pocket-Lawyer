@@ -1,0 +1,10 @@
+{
+  "question": "What is the difference between murder and manslaughter?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "murder",
+    "manslaughter",
+    "malice aforethought"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "question": "How much inheritance tax must I pay on property I inherit?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "taxation of property acquired by inheritance",
+    "transfer of property upon death",
+    "estate duty"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "question": "Do I have freedom of speech in Kenya?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "freedom of expression",
+    "protection of freedom of expression",
+    "limitations on freedom of expression"
+  ]
+}

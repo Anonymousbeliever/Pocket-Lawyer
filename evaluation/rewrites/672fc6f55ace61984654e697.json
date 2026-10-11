@@ -1,0 +1,10 @@
+{
+  "question": "Can a victim tell the court how the crime affected them?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "victim impact statement",
+    "victim’s right to be heard",
+    "participation of victim in criminal proceedings"
+  ]
+}

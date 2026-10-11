@@ -1,0 +1,10 @@
+{
+  "question": "Can the government take away my property?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "protection of right to property",
+    "deprivation of property",
+    "compulsory acquisition of property"
+  ]
+}

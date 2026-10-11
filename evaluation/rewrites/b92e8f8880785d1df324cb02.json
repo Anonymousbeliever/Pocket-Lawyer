@@ -1,0 +1,10 @@
+{
+  "question": "Can an employer refuse to hire me because I am a woman?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "discrimination in employment on grounds of sex",
+    "equal opportunity in employment",
+    "discrimination in recruitment"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "question": "Do people in prison still have rights?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "rights of persons detained, held in custody or imprisoned",
+    "humane treatment of persons deprived of liberty",
+    "enforcement of fundamental rights and freedoms"
+  ]
+}

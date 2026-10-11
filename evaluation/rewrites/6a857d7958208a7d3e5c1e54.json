@@ -1,0 +1,10 @@
+{
+  "question": "What are my rights if I am arrested?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "rights of arrested persons",
+    "right to communicate with an advocate",
+    "production of arrested person before court"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "question": "Is fighting in public a criminal offence?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "affray in a public place",
+    "disorderly conduct in a public place",
+    "breach of the peace"
+  ]
+}

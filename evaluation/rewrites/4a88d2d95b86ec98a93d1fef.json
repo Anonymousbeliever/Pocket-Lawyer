@@ -1,0 +1,10 @@
+{
+  "question": "If someone dies without a will, what do the wife and children get?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "intestate succession",
+    "rights of surviving spouse and children in an estate",
+    "distribution of an intestate estate"
+  ]
+}

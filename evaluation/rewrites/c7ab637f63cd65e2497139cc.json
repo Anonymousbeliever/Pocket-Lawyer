@@ -1,0 +1,10 @@
+{
+  "question": "The police took my phone and laptop when they arrested me. Do they have to give them back?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "seizure of property by police",
+    "return of property seized during arrest",
+    "application for return of seized property"
+  ]
+}

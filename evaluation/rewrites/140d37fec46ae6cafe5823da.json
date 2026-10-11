@@ -1,0 +1,10 @@
+{
+  "question": "Does my employer have to hear my side before dismissing me?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "hearing before termination of employment",
+    "procedural fairness in termination of employment",
+    "employee right to be heard in disciplinary proceedings"
+  ]
+}

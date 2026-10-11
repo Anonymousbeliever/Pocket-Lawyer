@@ -1,0 +1,10 @@
+{
+  "question": "What kinds of disputes can the small claims court not handle?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "jurisdiction of the Small Claims Court",
+    "matters outside the jurisdiction of the Small Claims Court",
+    "objection to jurisdiction"
+  ]
+}

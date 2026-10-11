@@ -1,0 +1,10 @@
+{
+  "question": "I've been working at the same company for three years. How many days of paid leave am I supposed to get every year?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "annual leave with full pay",
+    "accrual of annual leave",
+    "payment in lieu of annual leave"
+  ]
+}

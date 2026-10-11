@@ -1,0 +1,10 @@
+{
+  "question": "Can a court order a convicted person to compensate their victim?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "compensation to a victim of crime",
+    "restitution by an offender",
+    "compensation order in criminal proceedings"
+  ]
+}

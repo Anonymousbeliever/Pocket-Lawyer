@@ -1,0 +1,10 @@
+{
+  "question": "How long can the police hold me before taking me to court?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "right of arrested person to be brought before a court",
+    "production of arrested person before court",
+    "release from unlawful detention"
+  ]
+}

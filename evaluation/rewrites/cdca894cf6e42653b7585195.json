@@ -1,0 +1,9 @@
+{
+  "question": "Does the Constitution say anything about a right to housing?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "right to accessible and adequate housing",
+    "enforcement of the right to housing"
+  ]
+}

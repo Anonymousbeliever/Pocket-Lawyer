@@ -1,0 +1,10 @@
+{
+  "question": "I'm under 18 and the police locked me up with adults. Is that allowed?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "rights of a child in detention",
+    "separation of children from adults in custody",
+    "review of a child's detention"
+  ]
+}

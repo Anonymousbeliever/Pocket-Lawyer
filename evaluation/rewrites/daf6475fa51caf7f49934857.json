@@ -1,0 +1,10 @@
+{
+  "question": "What kinds of courts are there in Kenya?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "superior courts",
+    "subordinate courts",
+    "jurisdiction of courts"
+  ]
+}

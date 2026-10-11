@@ -1,0 +1,10 @@
+{
+  "question": "What happens if someone ignores a maintenance order for a child?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "compliance with a child maintenance order",
+    "enforcement of a maintenance order",
+    "contempt of court for failure to comply"
+  ]
+}

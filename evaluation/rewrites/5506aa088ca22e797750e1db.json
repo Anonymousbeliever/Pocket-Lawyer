@@ -1,0 +1,10 @@
+{
+  "question": "Do I have the right to record the police when they are dealing with me?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "freedom to seek, receive or impart information",
+    "right to privacy",
+    "obstruction of a police officer"
+  ]
+}

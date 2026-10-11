@@ -1,0 +1,10 @@
+{
+  "question": "Does everyone have a right to go to court?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "access to justice",
+    "right to institute court proceedings",
+    "right to a fair hearing"
+  ]
+}

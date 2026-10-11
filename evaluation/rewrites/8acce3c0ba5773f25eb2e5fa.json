@@ -1,0 +1,10 @@
+{
+  "question": "Who is allowed to search a woman who has been arrested?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "search of an arrested person",
+    "search of a woman by a person of the same sex",
+    "privacy and dignity during a search"
+  ]
+}

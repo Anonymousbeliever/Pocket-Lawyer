@@ -1,0 +1,9 @@
+{
+  "question": "How many days of annual leave am I entitled to?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "entitlement to annual leave",
+    "annual leave with full pay"
+  ]
+}

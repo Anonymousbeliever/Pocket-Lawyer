@@ -1,0 +1,10 @@
+{
+  "question": "Can the government force me to get a certain vaccine or medical treatment?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "bodily integrity and security of the person",
+    "consent to medical treatment",
+    "compulsory vaccination and public health measures"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "question": "Can my employer deduct money from my salary?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "deductions from wages",
+    "authorised deductions from wages",
+    "recovery of wages unlawfully deducted"
+  ]
+}

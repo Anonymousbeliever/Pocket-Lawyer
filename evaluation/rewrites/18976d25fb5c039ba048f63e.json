@@ -1,0 +1,10 @@
+{
+  "question": "The police stopped me and demanded a bribe. What are my options?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "soliciting or receiving a bribe by a public officer",
+    "complaint against police misconduct",
+    "reporting corrupt conduct"
+  ]
+}

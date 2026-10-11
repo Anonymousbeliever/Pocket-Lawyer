@@ -1,0 +1,10 @@
+{
+  "question": "What counts as robbery under Kenyan law?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "robbery",
+    "robbery with violence",
+    "stealing by use of force"
+  ]
+}

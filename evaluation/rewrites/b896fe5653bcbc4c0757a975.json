@@ -1,0 +1,10 @@
+{
+  "question": "Can an ordinary person arrest someone who has committed a crime?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "arrest by private person",
+    "power of a private person to arrest",
+    "procedure following arrest by private person"
+  ]
+}

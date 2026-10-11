@@ -1,0 +1,9 @@
+{
+  "question": "How much maternity leave does the law give?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "entitlement to maternity leave",
+    "duration of maternity leave"
+  ]
+}

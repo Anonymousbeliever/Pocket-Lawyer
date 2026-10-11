@@ -1,0 +1,9 @@
+{
+  "question": "Can I be taken to court twice for the same offence?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "trial for the same offence",
+    "previous acquittal or conviction"
+  ]
+}

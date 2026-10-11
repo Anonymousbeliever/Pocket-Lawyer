@@ -1,0 +1,10 @@
+{
+  "question": "Can the police search my house without a warrant if they just show up?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "privacy of the home",
+    "search and seizure by police",
+    "search warrant and entry into premises"
+  ]
+}

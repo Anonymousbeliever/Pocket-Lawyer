@@ -1,0 +1,10 @@
+{
+  "question": "I was arrested two days ago and they still haven't taken me to court. How long can they keep me?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "prompt production of an arrested person before court",
+    "right of an arrested person to be brought before court",
+    "detention in custody pending court appearance"
+  ]
+}

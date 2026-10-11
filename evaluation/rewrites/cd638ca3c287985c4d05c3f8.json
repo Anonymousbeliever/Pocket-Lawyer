@@ -1,0 +1,10 @@
+{
+  "question": "How many hours a week can my employer make me work?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "hours of work",
+    "maximum working hours",
+    "regulation of working hours"
+  ]
+}

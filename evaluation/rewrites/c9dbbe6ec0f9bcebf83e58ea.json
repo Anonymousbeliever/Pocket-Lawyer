@@ -1,0 +1,10 @@
+{
+  "question": "What licences do I need to open a restaurant?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "licensing of food premises",
+    "business permits for food establishments",
+    "food handler certification"
+  ]
+}

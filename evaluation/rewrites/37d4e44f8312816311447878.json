@@ -1,0 +1,10 @@
+{
+  "question": "Can the police search me when they arrest me?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "search of person upon arrest",
+    "police power to search an arrested person",
+    "safeguards against unreasonable search"
+  ]
+}

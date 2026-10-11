@@ -1,0 +1,10 @@
+{
+  "question": "How old must a child be before they can be charged with a crime?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "age of criminal responsibility",
+    "criminal capacity of a child",
+    "criminal proceedings against a child"
+  ]
+}

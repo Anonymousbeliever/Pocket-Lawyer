@@ -1,0 +1,10 @@
+{
+  "question": "How much must my employer contribute to NSSF for me?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "employer contributions to the Fund",
+    "rate of employer contributions",
+    "payment of contributions by employer"
+  ]
+}

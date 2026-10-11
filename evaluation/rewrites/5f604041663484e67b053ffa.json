@@ -1,0 +1,10 @@
+{
+  "question": "Who decides which parent a child lives with after separation?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "court determination of custody of a child",
+    "residence of a child upon parental separation",
+    "best interests of the child"
+  ]
+}

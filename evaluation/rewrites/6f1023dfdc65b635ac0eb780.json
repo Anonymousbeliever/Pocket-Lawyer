@@ -1,0 +1,10 @@
+{
+  "question": "Can the police ask a court to keep holding me while they investigate?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "remand in custody pending investigation",
+    "detention pending investigation",
+    "application for extension of detention"
+  ]
+}

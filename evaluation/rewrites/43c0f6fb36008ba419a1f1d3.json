@@ -1,0 +1,10 @@
+{
+  "question": "What happens if the prosecution has no evidence against me?",
+  "model": "gpt-6-luna",
+  "prompt": "f9c78639bcfa",
+  "phrases": [
+    "submission of no case to answer",
+    "burden of proof in criminal proceedings",
+    "acquittal in criminal proceedings"
+  ]
+}
