@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "created": "2026-10-11T09:19:45",
+    "created": "2026-10-12T04:10:14",
     "tier": 0,
     "scope": {
       "suites": [
@@ -17,6 +17,12 @@
     "rerank_top_k": 5,
     "reranked": true,
     "judged": false,
+    "rewrite": true,
+    "pipeline_rewrite": true,
+    "rewrite_model": "gpt-6-luna",
+    "rewrite_count": 3,
+    "rewrite_top_k": 5,
+    "rerank_rewrites": false,
     "cache": {
       "read": false,
       "write": true,
@@ -32,7 +38,7 @@
   },
   "metrics": {
     "retrieval_hit": {
-      "passed": 19,
+      "passed": 22,
       "total": 22
     },
     "rerank_hit": {
@@ -48,13 +54,13 @@
     "questions": 32,
     "answerable": 22,
     "out_of_scope": 10,
-    "passed": 29
+    "passed": 32
   },
   "suites": {
     "product": {
       "metrics": {
         "retrieval_hit": {
-          "passed": 19,
+          "passed": 22,
           "total": 22
         },
         "rerank_hit": {
@@ -70,7 +76,7 @@
         "questions": 32,
         "answerable": 22,
         "out_of_scope": 10,
-        "passed": 29
+        "passed": 32
       }
     }
   },
@@ -113,9 +119,9 @@
     },
     "product-pol-beaten-in-custody": {
       "suite": "product",
-      "passed": false,
+      "passed": true,
       "answerable": true,
-      "retrieval_hit": false,
+      "retrieval_hit": true,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
@@ -221,9 +227,9 @@
     },
     "product-fam-ex-blocks-contact": {
       "suite": "product",
-      "passed": false,
+      "passed": true,
       "answerable": true,
-      "retrieval_hit": false,
+      "retrieval_hit": true,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
@@ -341,9 +347,9 @@
     },
     "product-pol-accused-of-robbery": {
       "suite": "product",
-      "passed": false,
+      "passed": true,
       "answerable": true,
-      "retrieval_hit": false,
+      "retrieval_hit": true,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,

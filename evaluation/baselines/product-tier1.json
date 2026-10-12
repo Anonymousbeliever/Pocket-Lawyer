@@ -1,9 +1,10 @@
 {
   "metadata": {
-    "created": "2026-10-11T12:26:41",
+    "created": "2026-10-12T06:51:15",
     "tier": 1,
     "scope": {
       "suites": [
+        "statutory",
         "product"
       ],
       "document": null,
@@ -16,11 +17,12 @@
     "rerank_top_k": 5,
     "reranked": true,
     "judged": false,
-    "rewrite": false,
-    "pipeline_rewrite": false,
-    "rewrite_model": null,
-    "rewrite_count": null,
-    "rewrite_top_k": null,
+    "rewrite": true,
+    "pipeline_rewrite": true,
+    "rewrite_model": "gpt-6-luna",
+    "rewrite_count": 3,
+    "rewrite_top_k": 5,
+    "rerank_rewrites": true,
     "cache": {
       "read": false,
       "write": true,
@@ -29,22 +31,22 @@
         "rerank": 0
       },
       "misses": {
-        "retrieval": 32,
-        "rerank": 32
+        "retrieval": 165,
+        "rerank": 165
       }
     }
   },
   "metrics": {
     "retrieval_hit": {
-      "passed": 19,
+      "passed": 22,
       "total": 22
     },
     "rerank_hit": {
-      "passed": 15,
+      "passed": 20,
       "total": 22
     },
     "rerank_top1": {
-      "passed": 7,
+      "passed": 8,
       "total": 22
     }
   },
@@ -52,21 +54,21 @@
     "questions": 32,
     "answerable": 22,
     "out_of_scope": 10,
-    "passed": 25
+    "passed": 30
   },
   "suites": {
     "product": {
       "metrics": {
         "retrieval_hit": {
-          "passed": 19,
+          "passed": 22,
           "total": 22
         },
         "rerank_hit": {
-          "passed": 15,
+          "passed": 20,
           "total": 22
         },
         "rerank_top1": {
-          "passed": 7,
+          "passed": 8,
           "total": 22
         }
       },
@@ -74,7 +76,7 @@
         "questions": 32,
         "answerable": 22,
         "out_of_scope": 10,
-        "passed": 25
+        "passed": 30
       }
     }
   },
@@ -93,10 +95,10 @@
     },
     "product-emp-fired-for-overtime": {
       "suite": "product",
-      "passed": false,
+      "passed": true,
       "answerable": true,
       "retrieval_hit": true,
-      "rerank_hit": false,
+      "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
       "refused_by_grounding": false,
@@ -109,7 +111,7 @@
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": true,
+      "rerank_top1": false,
       "sufficient": null,
       "refused_by_grounding": false,
       "cited_expected": null,
@@ -117,10 +119,10 @@
     },
     "product-pol-beaten-in-custody": {
       "suite": "product",
-      "passed": false,
+      "passed": true,
       "answerable": true,
-      "retrieval_hit": false,
-      "rerank_hit": false,
+      "retrieval_hit": true,
+      "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
       "refused_by_grounding": false,
@@ -145,7 +147,7 @@
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": true,
+      "rerank_top1": false,
       "sufficient": null,
       "refused_by_grounding": false,
       "cited_expected": null,
@@ -153,11 +155,11 @@
     },
     "product-pol-property-seized": {
       "suite": "product",
-      "passed": false,
+      "passed": true,
       "answerable": true,
       "retrieval_hit": true,
-      "rerank_hit": false,
-      "rerank_top1": false,
+      "rerank_hit": true,
+      "rerank_top1": true,
       "sufficient": null,
       "refused_by_grounding": false,
       "cited_expected": null,
@@ -227,7 +229,7 @@
       "suite": "product",
       "passed": false,
       "answerable": true,
-      "retrieval_hit": false,
+      "retrieval_hit": true,
       "rerank_hit": false,
       "rerank_top1": false,
       "sufficient": null,
@@ -277,7 +279,7 @@
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
       "refused_by_grounding": false,
       "cited_expected": null,
@@ -285,10 +287,10 @@
     },
     "product-env-land-for-road": {
       "suite": "product",
-      "passed": false,
+      "passed": true,
       "answerable": true,
       "retrieval_hit": true,
-      "rerank_hit": false,
+      "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
       "refused_by_grounding": false,
@@ -301,7 +303,7 @@
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
       "refused_by_grounding": false,
       "cited_expected": null,
@@ -345,10 +347,10 @@
     },
     "product-pol-accused-of-robbery": {
       "suite": "product",
-      "passed": false,
+      "passed": true,
       "answerable": true,
-      "retrieval_hit": false,
-      "rerank_hit": false,
+      "retrieval_hit": true,
+      "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
       "refused_by_grounding": false,

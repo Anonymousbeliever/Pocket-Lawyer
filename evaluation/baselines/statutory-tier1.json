@@ -1,13 +1,28 @@
 {
   "metadata": {
-    "created": "2026-09-23T17:26:49",
+    "created": "2026-10-12T06:51:15",
     "tier": 1,
+    "scope": {
+      "suites": [
+        "statutory",
+        "product"
+      ],
+      "document": null,
+      "ids": []
+    },
     "collection": "pocket_lawyer_legal",
     "embedding_model": "BAAI/bge-m3",
     "reranker_model": "BAAI/bge-reranker-v2-m3",
     "retrieval_top_k": 30,
     "rerank_top_k": 5,
     "reranked": true,
+    "judged": false,
+    "rewrite": true,
+    "pipeline_rewrite": true,
+    "rewrite_model": "gpt-6-luna",
+    "rewrite_count": 3,
+    "rewrite_top_k": 5,
+    "rerank_rewrites": true,
     "cache": {
       "read": false,
       "write": true,
@@ -16,22 +31,22 @@
         "rerank": 0
       },
       "misses": {
-        "retrieval": 133,
-        "rerank": 133
+        "retrieval": 165,
+        "rerank": 165
       }
     }
   },
   "metrics": {
     "retrieval_hit": {
-      "passed": 116,
+      "passed": 118,
       "total": 118
     },
     "rerank_hit": {
-      "passed": 106,
+      "passed": 115,
       "total": 118
     },
     "rerank_top1": {
-      "passed": 74,
+      "passed": 93,
       "total": 118
     }
   },
@@ -39,1205 +54,1628 @@
     "questions": 133,
     "answerable": 118,
     "out_of_scope": 15,
-    "passed": 121
+    "passed": 130
+  },
+  "suites": {
+    "statutory": {
+      "metrics": {
+        "retrieval_hit": {
+          "passed": 118,
+          "total": 118
+        },
+        "rerank_hit": {
+          "passed": 115,
+          "total": 118
+        },
+        "rerank_top1": {
+          "passed": 93,
+          "total": 118
+        }
+      },
+      "counts": {
+        "questions": 133,
+        "answerable": 118,
+        "out_of_scope": 15,
+        "passed": 130
+      }
+    }
   },
   "questions": {
     "arrest-reason": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "arrest-rights": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "arrest-court-time": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "arrest-silence": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "arrest-bail": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "fair-trial": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "state-funded-lawyer": {
-      "passed": false,
+      "suite": "statutory",
+      "passed": true,
       "answerable": true,
-      "retrieval_hit": false,
-      "rerank_hit": false,
-      "rerank_top1": false,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "detained-person-rights": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "torture": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "discrimination": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "privacy-search": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "freedom-expression": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "access-information": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "peaceful-demonstration": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "property-taken": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "trade-union": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": true,
+      "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "clean-environment": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "right-to-healthcare": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "right-to-housing": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "consumer-rights": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "access-to-justice": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "children-rights": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "disability-rights": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "rights-limitation": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "absolute-rights": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "unfair-government-decision": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "citizenship-by-birth": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "dual-citizenship": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "citizenship-revocation": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "foreigner-land": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "land-types": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "community-land": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "voter-registration": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "independent-candidate": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "election-dispute": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": true,
+      "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "court-system": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "county-government-role": {
-      "passed": false,
+      "suite": "statutory",
+      "passed": true,
       "answerable": true,
       "retrieval_hit": true,
-      "rerank_hit": false,
-      "rerank_top1": false,
+      "rerank_hit": true,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "governor-removal": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "unconstitutional-law": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "official-languages": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "public-officer-conduct": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "divorce-process": {
-      "passed": false,
+      "suite": "statutory",
+      "passed": true,
       "answerable": true,
-      "retrieval_hit": false,
-      "rerank_hit": false,
+      "retrieval_hit": true,
+      "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-notice": {
+      "suite": "statutory",
       "passed": false,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": false,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "tenant-eviction-notice": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "company-registration": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "driving-licence-fine": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "writing-a-will": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "small-claims-filing": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "work-permit": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "restaurant-licence": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "copyright-registration": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "tax-return-deadline": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "land-title-transfer": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "police-complaint-procedure": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "loan-interest-cap": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "debt-inability": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-arrest-without-warrant": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-citizen-arrest": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-detention-before-court": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-remand-application": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-bail-before-trial": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-search-on-arrest": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-searching-women": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-charge-contents": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-plea-agreement": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-tried-twice": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-no-case-to-answer": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-language-of-evidence": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-appeal-conviction": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-victim-statement": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "cpc-compensation-order": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "penal-robbery": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "penal-murder-definition": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "penal-murder-sentence": {
-      "passed": false,
+      "suite": "statutory",
+      "passed": true,
       "answerable": true,
       "retrieval_hit": true,
-      "rerank_hit": false,
+      "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "penal-stealing": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "penal-assault": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "penal-burglary": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "penal-attempt": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "penal-incitement": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "penal-affray": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "penal-riot": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "penal-robbery-arrest": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-summary-dismissal": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-unfair-termination": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-dismissal-hearing": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-redundancy": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-annual-leave": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-maternity-leave": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-sick-leave": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-working-hours": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-wage-deductions": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-sexual-harassment": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-certificate-of-service": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-discrimination-at-work": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-minimum-wage": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "employment-nssf-contribution": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-oral-will": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-witness-inherits": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-revoke-will": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": true,
+      "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-marriage-revokes-will": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-left-out-of-will": {
-      "passed": false,
+      "suite": "statutory",
+      "passed": true,
       "answerable": true,
       "retrieval_hit": true,
-      "rerank_hit": false,
-      "rerank_top1": false,
+      "rerank_hit": true,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-no-will-spouse-and-children": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-no-will-children-only": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-no-will-no-family": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-polygamous-estate": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-intermeddling": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-taking-property-before-grant": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-grant-application": {
+      "suite": "statutory",
       "passed": false,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": false,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-confirmation-of-grant": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-killer-inherits": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": true,
+      "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-muslim-estate": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "succession-inheritance-tax": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "children-maintenance-order": {
-      "passed": false,
+      "suite": "statutory",
+      "passed": true,
       "answerable": true,
       "retrieval_hit": true,
-      "rerank_hit": false,
+      "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "children-maintenance-enforcement": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "children-custody": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "children-parental-responsibility": {
-      "passed": false,
+      "suite": "statutory",
+      "passed": true,
       "answerable": true,
       "retrieval_hit": true,
-      "rerank_hit": false,
+      "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "children-criminal-age": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "children-cruelty": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "children-adoption-eligibility": {
+      "suite": "statutory",
       "passed": false,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": false,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "children-child-labour": {
-      "passed": false,
+      "suite": "statutory",
+      "passed": true,
       "answerable": true,
       "retrieval_hit": true,
-      "rerank_hit": false,
+      "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "children-guardian-appointment": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "marriage-minimum-age": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "marriage-types": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "marriage-second-wife": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "marriage-void": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "marriage-spouse-maintenance": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "marriage-broken-engagement": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "smallclaims-limit": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "smallclaims-what-cases": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "smallclaims-lawyer": {
-      "passed": false,
-      "answerable": true,
-      "retrieval_hit": true,
-      "rerank_hit": false,
-      "rerank_top1": false,
-      "sufficient": null,
-      "cited_expected": null
-    },
-    "smallclaims-appeal": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
       "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
-    "smallclaims-enforcement": {
+    "smallclaims-appeal": {
+      "suite": "statutory",
       "passed": true,
       "answerable": true,
       "retrieval_hit": true,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
+    },
+    "smallclaims-enforcement": {
+      "suite": "statutory",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": true,
+      "rerank_hit": true,
+      "rerank_top1": true,
+      "sufficient": null,
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     },
     "smallclaims-court-fees": {
+      "suite": "statutory",
       "passed": true,
       "answerable": false,
       "retrieval_hit": null,
       "rerank_hit": null,
       "rerank_top1": null,
       "sufficient": null,
-      "cited_expected": null
+      "refused_by_grounding": false,
+      "cited_expected": null,
+      "answer_quality": null
     }
   }
 }
