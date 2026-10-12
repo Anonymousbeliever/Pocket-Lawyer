@@ -634,6 +634,21 @@ def promotion_refusal(summary: dict) -> str | None:
             "measurement of rewriting, not the pipeline."
         )
 
+    # QUERY_REWRITE means both phases: the pipeline's reranker reads the
+    # rewrites. A run that rewrote for retrieval only, at a tier with a
+    # reranker, measured something the pipeline does not do. Tier 0 has no
+    # reranker, so for it rewriting retrieval IS the whole pipeline.
+    if (
+        rewrote
+        and metadata.get("tier", 0) >= 1
+        and not metadata.get("rerank_rewrites")
+    ):
+        return (
+            "the reranker did not read the rewrites, but with QUERY_REWRITE "
+            "on the pipeline's does - a measurement of retrieval-only "
+            "rewriting, not the pipeline."
+        )
+
     # A reference result must be computed, not recalled.
     if any(((metadata.get("cache") or {}).get("hits") or {}).values()):
         return "it used the cache. Re-run with --no-cache, then promote that."

@@ -2,7 +2,10 @@
 Two-level result cache for the evaluation harness.
 
 Retrieval and reranking are deterministic. Same question, same candidates,
-same models, same code, same parameters - same result, every time. Most runs
+same models, same code, same parameters - same result, every time. (Retrieval
+ORDER was not, until 2026-10-12: Qdrant returned exactly-tied fusion scores in
+no fixed order, which changed rerank keys between identical runs. The
+retriever now breaks ties by chunk id.) Most runs
 recompute an identical answer, and reranking is where the hours go: thirty
 cross-encoder forward passes per question, on CPU, over passages up to four
 thousand characters.

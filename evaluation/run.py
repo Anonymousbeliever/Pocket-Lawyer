@@ -334,6 +334,8 @@ def evaluate_tier2(
                 for item in structured.ungrounded
             ],
             answer_text=outcome["answer"],
+            # .get(): a pipeline built before rewriting returns no such key.
+            rewrites=outcome.get("rewrites") or [],
         )
 
         if question.answerable:
@@ -678,24 +680,19 @@ def main() -> None:
 
     rewriter = None
 
-    if args.tier < 2 and (args.rewrite or QUERY_REWRITE):
+    if args.rewrite or QUERY_REWRITE:
         from backend.app.ai.rewrite import QueryRewriter
 
         # Every rewrite used is kept in a committed folder and reused: the
         # rewriter's model varies between calls, so this record is what
-        # makes a rewrite run repeatable - and free once it exists.
+        # makes a rewrite run repeatable - and free once it exists. Tier 2
+        # hands this same rewriter to the pipeline, so it answers from
+        # exactly the rewrites tiers 0 and 1 measured.
         rewriter = QueryRewriter(cache_dir=REWRITES_DIR)
 
         print(f"Rewriting  : {rewriter.model_name}, up to "
               f"{rewriter.count} phrases per question")
         print()
-
-    elif args.rewrite:
-        # Tier 2 calls LegalRAG.answer(), which does not rewrite yet. Saying
-        # so beats a run labelled "rewrite" that measured nothing of it.
-        print("[FAIL] --rewrite applies to tiers 0 and 1 until rewriting "
-              "is wired into the answering pipeline")
-        sys.exit(1)
 
     if args.rerank_rewrites:
         # Checked before any model loads: each of these would otherwise
@@ -707,9 +704,25 @@ def main() -> None:
 
         if args.tier != 1 or args.no_rerank:
             print("[FAIL] --rerank-rewrites applies to tier 1 with the "
-                  "reranker on - it changes what the reranker reads")
+                  "reranker on. Tier 2 needs no flag: with rewriting on, "
+                  "the pipeline always gives the reranker the rewrites")
             sys.exit(1)
 
+    # QUERY_REWRITE means BOTH phases - that is the pipeline being adopted.
+    # So with it on, tier 1 reranks with the rewrites by default, and tier 2
+    # always does, because LegalRAG.answer() does. --rerank-rewrites exists
+    # to turn Phase C on while QUERY_REWRITE is off; measuring retrieval-only
+    # rewriting is QUERY_REWRITE off plus --rewrite.
+    rerank_rewrites = rewriter is not None and (
+        args.tier == 2
+        or (
+            args.tier == 1
+            and not args.no_rerank
+            and (args.rerank_rewrites or QUERY_REWRITE)
+        )
+    )
+
+    if rerank_rewrites:
         print("Reranking  : the question followed by its rewritten terms "
               "(Phase C)")
         print()
@@ -753,13 +766,16 @@ def main() -> None:
                 cache,
                 fingerprint,
                 rewriter,
-                rerank_rewrites=args.rerank_rewrites,
+                rerank_rewrites=rerank_rewrites,
             )
 
     else:
         from backend.app.ai.rag import LegalRAG
 
-        rag = LegalRAG()
+        # None unless rewriting is on - and then the evaluation's own,
+        # backed by the committed store, not the store-less one serving
+        # would build.
+        rag = LegalRAG(rewriter=rewriter)
 
         judge = None
 
@@ -806,9 +822,9 @@ def main() -> None:
             "rewrite_model": rewriter.model_name if rewriter else None,
             "rewrite_count": REWRITE_COUNT if rewriter else None,
             "rewrite_top_k": REWRITE_TOP_K if rewriter else None,
-            # Phase C. Always False without rewriting, which promotion
-            # already refuses while QUERY_REWRITE is off.
-            "rerank_rewrites": args.rerank_rewrites,
+            # Phase C. Always False without rewriting. Promotion compares
+            # this and "rewrite" with "pipeline_rewrite".
+            "rerank_rewrites": rerank_rewrites,
             "cache": cache.summary(),
         },
     )

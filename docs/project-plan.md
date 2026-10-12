@@ -1298,6 +1298,75 @@ case that shows a question can be retrieved and still fail.
 
 ---
 
+### Measured: rewrite the question — and let the reranker read the rewrite
+
+Adopted 2026-10-12 (`QUERY_REWRITE` on). Recorded because the first half alone
+looked like a success at tier 0 and was worth nothing at tier 1.
+
+**The problem.** People do not use the statute's words. *"Is torture allowed
+in Kenya?"* retrieves Article 29 at rank 1; *"The police beat me while
+questioning me. Is that legal?"* did not retrieve it in the top 100. The
+statutory question set hid this — 35% of its questions restate the heading of
+the section they expect, and `passage.py` embeds those headings. A product
+question set, 32 questions in people's own words, was built to measure it.
+
+**Phase B — rewrite the question for retrieval.** `rewrite.py` asks the
+answering model for up to three search phrases in legal register. It
+translates; it may not answer, name a provision, or state a number — the last
+two enforced in code, because reading all 165 first-prompt rewrites found about
+a dozen carrying recalled law (*"not less than twenty-one working days after
+twelve consecutive months"* for an annual-leave question). Tightening the
+prompt cost nothing: tier 0 went statutory **116 → 118/118**, product
+**19 → 22/22**. Each rewrite is one extra dense branch in the same fused Qdrant
+query, and the question always stays in the fusion.
+
+**But at tier 1 Phase B alone gained nothing: product 15 → 15/22**, one
+question fixed and one broken. The right law now reached the candidates — CPC
+s.177 at retrieval **#1** for *"The police took my phone and laptop"* — and the
+cross-encoder, scoring passages against the lay question, threw it away. The
+break was a displacement: the rewrites brought Article 69 into the pool, the
+reranker preferred it, and Article 70 — the article that actually gives a
+person a remedy — lost the Constitution's place.
+
+**Phase C — the reranker reads the question followed by the rewrites**
+(`rerank_query`). Measured against the same baselines:
+
+| | before | Phase B + C |
+|---|---|---|
+| statutory, reach the LLM | 106/118 | **115/118** |
+| statutory, first place | 74/118 | **93/118** |
+| statutory, passing | 121/133 | **130/133** |
+| product, reach the LLM | 15/22 | **20/22** |
+| product, tier 2 passing | 19/32 | **23 and 22/32**, two runs |
+
+No regressions anywhere. The 13 questions the reranker rescues all still pass,
+and their first-place count rose 4 → 8. Tier 2 kept **0 false answers** in both
+runs and wrong-authority answers fell 1 → 0.
+
+**This corrects the resemblance finding above.** It held that the limit was
+legal domain knowledge rather than the model. Phase C fixed five of those
+failures — `penal-murder-sentence`, `succession-left-out-of-will`,
+`divorce-process`, and the two retrieved at #1 and discarded,
+`smallclaims-lawyer` and `children-parental-responsibility`. For many of them
+the limit was the vocabulary the reranker was handed. The defect itself is
+real: **`employment-notice` survives Phase C** with s.36 and s.35 at retrieval
+#1 and #2 and s.78 still first.
+
+**What it costs.** One extra model call per question for the rewrite, and a
+longer reranker input. Not yet measured in serving. Serving stores no
+rewrites; the evaluation's are committed in `evaluation/rewrites/`, because
+the rewriter varies between calls and deleting the store changes results.
+
+**What it does not fix.** Tier 2 is now limited by the answering model, not by
+retrieval: in 7 of the 10 failures the right law reached it and it refused,
+because the sources did not answer the WHOLE question.
+
+**Found along the way.** Qdrant's fusion scores 1/(position + 1) in each list,
+so candidates tie exactly and came back in no fixed order between identical
+runs. The retriever now breaks ties by chunk id.
+
+---
+
 ### Evaluation will not scale as written
 
 Recorded 2026-09-03 after a full read of `evaluation/`. The harness is sound in
@@ -1688,3 +1757,15 @@ Priority order when trade-offs arise:
 - **2026-09-01** — **Evaluation harness.** 56 questions (41 answerable, 15 out of scope) in `evaluation/questions.yaml`, scored in two tiers: tier 1 runs retrieval and reranking with no API key and no cost, tier 2 adds the LLM for refusal correctness. Retrieval and reranking are scored separately so a failure names the stage that broke, and `false_refusal` and `false_answer` are counted apart rather than averaged. `baseline.json` records the accepted state and a run reports per-question status changes against it, exiting non-zero on regression. First baseline: 34/41. Question set drafted against article titles and **not yet reviewed for legal correctness**.
 - **2026-08-31** — **Structured answers.** The LLM now returns a schema-constrained object (`backend/app/ai/answer.py`) instead of prose: `sufficient`, `question_type`, `verdict`, `explanation`, `qualifications`, `cited_chunk_ids`. Fixes question polarity by construction — the opening word of a polar answer is written by code from the `verdict` enum, so it cannot contradict the explanation. *"Can police arrest me without telling me why?"* now answers **"No."** Citations are checked against the retrieved chunks deterministically, so fabricated ones are stripped and reported with no extra model call. The refusal became a field rather than a magic string and now explains what was missing. Cited sources are separated from considered sources, so a refusal no longer lists irrelevant chunks as if they supported it. Phase 3 Citation generation ticked; verification remains open on the entailment half. 50 tests.
 - **2026-08-31** — Attempted an absolute rerank score threshold as a sufficiency gate. It caused a false refusal on *"Can police arrest me without telling me why?"*, a question the corpus answers. Measurement showed the approach is unworkable, not merely miscalibrated — see *Measured: rerank scores are not a confidence signal*. Removed the floor; reranking now trims only relative to each query's own best match and can never refuse on its own. Sufficiency stays with the LLM's grounding prompt. Recorded the planned structured answer schema to fix question polarity by prevention rather than by a second verification call.
+- **2026-10-12** — **Query rewriting adopted: the right law now reaches the
+  answering model for 20 of 22 questions asked in people's own words, up from
+  15.** Since 2026-09-26: answers moved to `gpt-6-luna` on the project's own
+  account (the judge test: it caught 5 of 5 overstatements where gpt-4o-mini
+  caught 1); the judge checks claim by claim; advice-shaped questions are
+  answered as information with a fixed advocate note; baselines are per suite
+  and per tier and only complete, uncached runs can be promoted. Then Phases B
+  and C — see *Measured: rewrite the question — and let the reranker read the
+  rewrite*: statutory 121 → 130/133 at tier 1, product tier 2 19 → 22–23/32,
+  no regressions, 0 false answers. Baselines to be re-recorded with rewriting
+  on. The next limit is the answering model refusing questions the sources only
+  partly answer.

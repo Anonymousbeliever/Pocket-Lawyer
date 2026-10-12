@@ -197,11 +197,21 @@ RERANK_TOP_K = _get_int("RERANK_TOP_K", 5)
 # legal register, and each becomes one more DENSE branch in the same fused
 # Qdrant query. The original question always stays in the fusion.
 #
-# OFF until measured. Turning it on makes rewriting the pipeline: the default
-# for every evaluation run, and the thing baselines are recorded with.
-# Until then `python -m evaluation.run --rewrite` measures it, and
-# promotion refuses such a run so it cannot replace the "before" baselines.
-QUERY_REWRITE = _get_bool("QUERY_REWRITE", False)
+# ON since 2026-10-12, and it means BOTH phases: retrieval searches with the
+# rewrites (Phase B) and the reranker reads them after the question
+# (Phase C). Measured before adoption, against the same baselines:
+#
+#   statutory tier 1   reach the LLM 106 -> 115/118, first 74 -> 93, no losses
+#   product   tier 1   reach the LLM  15 ->  20/22,                 no losses
+#   product   tier 2   passing 19 -> 22 and 23/32 over two runs, 0 false answers
+#
+# Rewriting alone (Phase B without C) gained nothing after reranking and
+# broke one question - the two are one change, not two.
+#
+# Set QUERY_REWRITE=false to measure without it; `--rewrite` then measures
+# retrieval-only rewriting. Promotion refuses any run that does not match
+# this setting.
+QUERY_REWRITE = _get_bool("QUERY_REWRITE", True)
 
 REWRITE_COUNT = _get_int("REWRITE_COUNT", 3)
 
@@ -213,9 +223,8 @@ REWRITE_COUNT = _get_int("REWRITE_COUNT", 3)
 # rewrite's top hit ties the question's own top hit exactly. A good rewrite
 # ranks its target highly, so a short list suffices; a long one lets a poor
 # rewrite place more candidates level with what the real question found.
-# Starting value 5. Tier 0 at 5, with the FIRST rewriter prompt, measured no
-# statutory loss (116 -> 117/118) and product 19 -> 22/22. The prompt was
-# then tightened, so that measurement must be repeated before it is relied on.
+# Starting value 5, not swept. Tier 0 at 5 with the tightened prompt:
+# statutory 116 -> 118/118 and product 19 -> 22/22, no losses.
 REWRITE_TOP_K = _get_int("REWRITE_TOP_K", 5)
 
 # Tail trimming for reranked sources.

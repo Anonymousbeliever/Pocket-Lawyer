@@ -159,6 +159,21 @@ class LegalRetriever:
 
             retrieved_chunks.append(chunk)
 
+        # A fixed order for exact ties. Qdrant's fusion scores 1/(position +
+        # 1) in each list - first place 0.5, second 0.333 - so a candidate
+        # first in one list ties EXACTLY with a different candidate first in
+        # another, and Qdrant returns tied candidates in no fixed order.
+        # Measured: two runs on the same day, same code, swapped positions 3
+        # and 4 for two questions. The reranker's cache is keyed on this
+        # order, so every swap also forced a needless rerank.
+        #
+        # Score first, so nothing but ties moves; chunk id second, so ties
+        # always land the same way. Ties straddling the top_k cut are still
+        # decided inside Qdrant - this fixes the order, not the membership.
+        retrieved_chunks.sort(
+            key=lambda chunk: (-chunk["score"], chunk.get("chunk_id") or "")
+        )
+
         return retrieved_chunks
 
     def _search(

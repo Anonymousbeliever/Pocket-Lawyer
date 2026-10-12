@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "created": "2026-10-11T11:27:58",
+    "created": "2026-10-12T00:02:03",
     "tier": 2,
     "scope": {
       "suites": [
@@ -16,6 +16,12 @@
     "rerank_top_k": 5,
     "reranked": true,
     "judged": true,
+    "rewrite": true,
+    "pipeline_rewrite": true,
+    "rewrite_model": "gpt-6-luna",
+    "rewrite_count": 3,
+    "rewrite_top_k": 5,
+    "rerank_rewrites": true,
     "cache": {
       "read": true,
       "write": true,
@@ -35,15 +41,15 @@
       "total": 0
     },
     "rerank_hit": {
-      "passed": 14,
+      "passed": 20,
       "total": 22
     },
     "rerank_top1": {
-      "passed": 6,
+      "passed": 8,
       "total": 22
     },
     "refusal_correct": {
-      "passed": 20,
+      "passed": 22,
       "total": 32
     }
   },
@@ -51,21 +57,22 @@
     "questions": 32,
     "answerable": 22,
     "out_of_scope": 10,
-    "passed": 19,
-    "false_refusal": 12,
+    "passed": 22,
+    "false_refusal": 10,
     "false_answer": 0,
-    "wrong_authority": 1,
+    "wrong_authority": 0,
     "ungrounded_claims": 1,
     "answers_with_ungrounded": 1,
     "grounding_refused_answerable": 1,
     "grounding_refused_out_of_scope": 0,
     "answer_quality": {
       "passed": 5,
-      "total": 10
+      "total": 12
     },
     "answer_defects": {
+      "adds_to_source": 2,
       "drops_condition": 4,
-      "adds_to_source": 1
+      "overstates_certainty": 1
     },
     "not_judged": 0
   },
@@ -77,15 +84,15 @@
           "total": 0
         },
         "rerank_hit": {
-          "passed": 14,
+          "passed": 20,
           "total": 22
         },
         "rerank_top1": {
-          "passed": 6,
+          "passed": 8,
           "total": 22
         },
         "refusal_correct": {
-          "passed": 20,
+          "passed": 22,
           "total": 32
         }
       },
@@ -93,21 +100,22 @@
         "questions": 32,
         "answerable": 22,
         "out_of_scope": 10,
-        "passed": 19,
-        "false_refusal": 12,
+        "passed": 22,
+        "false_refusal": 10,
         "false_answer": 0,
-        "wrong_authority": 1,
+        "wrong_authority": 0,
         "ungrounded_claims": 1,
         "answers_with_ungrounded": 1,
         "grounding_refused_answerable": 1,
         "grounding_refused_out_of_scope": 0,
         "answer_quality": {
           "passed": 5,
-          "total": 10
+          "total": 12
         },
         "answer_defects": {
+          "adds_to_source": 2,
           "drops_condition": 4,
-          "adds_to_source": 1
+          "overstates_certainty": 1
         },
         "not_judged": 0
       }
@@ -131,7 +139,7 @@
       "passed": false,
       "answerable": true,
       "retrieval_hit": null,
-      "rerank_hit": false,
+      "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": false,
       "refused_by_grounding": false,
@@ -144,23 +152,23 @@
       "answerable": true,
       "retrieval_hit": null,
       "rerank_hit": true,
-      "rerank_top1": true,
+      "rerank_top1": false,
+      "sufficient": true,
+      "refused_by_grounding": false,
+      "cited_expected": true,
+      "answer_quality": false
+    },
+    "product-pol-beaten-in-custody": {
+      "suite": "product",
+      "passed": true,
+      "answerable": true,
+      "retrieval_hit": null,
+      "rerank_hit": true,
+      "rerank_top1": false,
       "sufficient": true,
       "refused_by_grounding": false,
       "cited_expected": true,
       "answer_quality": true
-    },
-    "product-pol-beaten-in-custody": {
-      "suite": "product",
-      "passed": false,
-      "answerable": true,
-      "retrieval_hit": null,
-      "rerank_hit": false,
-      "rerank_top1": false,
-      "sufficient": false,
-      "refused_by_grounding": false,
-      "cited_expected": false,
-      "answer_quality": null
     },
     "product-pol-held-two-days": {
       "suite": "product",
@@ -179,7 +187,7 @@
       "passed": false,
       "answerable": true,
       "retrieval_hit": null,
-      "rerank_hit": false,
+      "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": false,
       "refused_by_grounding": false,
@@ -188,15 +196,15 @@
     },
     "product-pol-property-seized": {
       "suite": "product",
-      "passed": false,
+      "passed": true,
       "answerable": true,
       "retrieval_hit": null,
-      "rerank_hit": false,
-      "rerank_top1": false,
+      "rerank_hit": true,
+      "rerank_top1": true,
       "sufficient": true,
       "refused_by_grounding": false,
-      "cited_expected": false,
-      "answer_quality": false
+      "cited_expected": true,
+      "answer_quality": true
     },
     "product-suc-leave-to-children": {
       "suite": "product",
@@ -292,7 +300,7 @@
       "sufficient": true,
       "refused_by_grounding": false,
       "cited_expected": true,
-      "answer_quality": true
+      "answer_quality": false
     },
     "product-fam-no-child-support": {
       "suite": "product",
@@ -312,7 +320,7 @@
       "answerable": true,
       "retrieval_hit": null,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": true,
       "refused_by_grounding": false,
       "cited_expected": true,
@@ -320,15 +328,15 @@
     },
     "product-env-land-for-road": {
       "suite": "product",
-      "passed": false,
+      "passed": true,
       "answerable": true,
       "retrieval_hit": null,
-      "rerank_hit": false,
+      "rerank_hit": true,
       "rerank_top1": false,
-      "sufficient": false,
+      "sufficient": true,
       "refused_by_grounding": false,
-      "cited_expected": false,
-      "answer_quality": null
+      "cited_expected": true,
+      "answer_quality": false
     },
     "product-con-tribe-discrimination": {
       "suite": "product",
@@ -336,7 +344,7 @@
       "answerable": true,
       "retrieval_hit": null,
       "rerank_hit": true,
-      "rerank_top1": false,
+      "rerank_top1": true,
       "sufficient": true,
       "refused_by_grounding": false,
       "cited_expected": true,
@@ -383,7 +391,7 @@
       "passed": false,
       "answerable": true,
       "retrieval_hit": null,
-      "rerank_hit": false,
+      "rerank_hit": true,
       "rerank_top1": false,
       "sufficient": false,
       "refused_by_grounding": false,

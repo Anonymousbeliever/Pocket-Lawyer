@@ -37,11 +37,24 @@ Retrieval → reranking → grounded generation works end to end over the
 without saying it expands agreed scope — `docs/project-plan.md` records what
 was cut and why.
 
-**Baselined 2026-09-23: 133 questions, 121 passing** — retrieval 116/118,
-rerank_hit 106/118, rerank_top1 74/118. The twelve failures sort into four
-classes and `docs/project-plan.md` names each; **nine of the twelve are the
-cross-encoder resemblance defect**, whose two proposed fixes were measured and
-rejected. Two of those nine are retrieved at rank **#1** and discarded.
+**Query rewriting is the pipeline since 2026-10-12** (`QUERY_REWRITE` on):
+the question is restated in legal register, retrieval searches with the
+rewrites, and the reranker reads them after the question. Measured against
+the pre-rewriting baselines: **statutory tier 1 121 → 130/133** (reach the
+LLM 106 → 115/118, first place 74 → 93); **product 15 → 20/22** reach the
+LLM; **product tier 2 19 → 22 and 23/32** over two runs, **0 false answers**,
+no regressions anywhere. Three statutory failures remain, all the reranker
+preferring a resembling section: `employment-notice`,
+`children-adoption-eligibility`, `succession-grant-application`.
+**Tier 2 is now limited by the answering model, not retrieval:** in 7 of 10
+product failures the right law reached it and it refused, because the
+sources did not answer the whole question. Full account in
+`docs/project-plan.md`, *Measured: rewrite the question — and let the
+reranker read the rewrite*.
+
+Two question suites, reported separately and never combined: **statutory**
+(133, worded like the statute - a retrieval regression test) and **product**
+(32, worded like people - whether anyone is served).
 
 **FastAPI now serves it.** Models load once at startup and are reused across
 requests, and a semantic router answers conversational input without touching
@@ -64,7 +77,10 @@ backend/app/ai/
                            dense + lexical fused with RRF
   rewrite.py               QueryRewriter   — Phase B: the question restated as
                            legal-register search phrases; never names a
-                           provision; NOT yet wired into rag.py
+                           provision or states a number. rerank_query() is
+                           Phase C: what the reranker reads
+  rag.py (rewriting)       QUERY_REWRITE turns on BOTH phases in answer();
+                           ON by default since 2026-10-12
   reranker.py              LegalReranker   — cross-encoder, top 30 → top 5,
                            capped so one document cannot take every slot
   llm.py                   LegalLLM        — OPENAI_MODEL (gpt-6-luna) + grounding
@@ -126,7 +142,7 @@ What that exercise corrected is the cost estimate. A new document needs:
 
 ```bash
 docker compose up -d              # Qdrant on localhost:6333
-pytest                            # 234 tests, no Qdrant or API key needed
+pytest                            # 436 tests, no Qdrant or API key needed
 
 python -m uvicorn backend.app.main:app --reload   # the API, models load once
 python -m backend.app.ai.intent                   # routing accuracy + margins
@@ -190,6 +206,7 @@ Environment: Windows, PowerShell, `.venv`, Python 3.14. Qdrant collection is
 | Reranker | `BAAI/bge-reranker-v2-m3` cross-encoder |
 | Generation | `gpt-6-luna` (`OPENAI_MODEL` in `.env`) via the OpenAI **Responses** API (`client.responses.create`) |
 | Answer judge (evaluation only) | follows `OPENAI_MODEL`, so `gpt-6-luna` for now; `--model` overrides it per run |
+| Query rewriting | `OPENAI_MODEL` via `rewrite.py`; on by `QUERY_REWRITE` (default true) |
 | Vector store | Qdrant (Docker, local) |
 | Backend | FastAPI |
 | Mobile (later) | Flutter |
@@ -335,6 +352,23 @@ product baseline.
   all resolve to LEGAL. `CONVERSATIONAL_MARGIN` is measured, not chosen — raise
   it if an unseen legal question ever scores positive, never lower it to rescue
   a greeting.
+- **Query rewriting translates; it never answers.** The rewriter may not name
+  a provision or state a number - both enforced in `rewrite.clean()`, because
+  the first prompt's rewrites carried recalled law ("twenty-one working days")
+  and recalled law can be wrong. Rewrites reach retrieval and the reranker,
+  **never the answering model**, so a poor rewrite costs a retrieval, never a
+  citation. Rewriting and Phase C are ONE change: rewriting alone gained
+  nothing after reranking and broke one question.
+  **`evaluation/rewrites/` is a committed record, not a cache** - the
+  rewriter varies between calls, so deleting it changes results. A changed
+  prompt starts new records automatically (keyed on the instructions).
+  Serving stores nothing: that would write users' questions to disk.
+- **Qdrant's fusion scores 1/(position + 1) in each list**, observed in the
+  stored scores. Candidates therefore tie EXACTLY - first place in any list
+  is 0.5 - and Qdrant returned tied ones in no fixed order between identical
+  runs. The retriever breaks ties by chunk id. It also means a rewrite
+  branch's top hit counts exactly as much as the question's own:
+  `REWRITE_TOP_K` limits how many candidates a rewrite adds, not their weight.
 - **Retrieval is hybrid, and the two budgets are deliberately unequal.**
   Dense encodes meaning and handles paraphrase; it blurs exact terms. Asked
   *"What is the sentence for murder in Kenya?"*, section 204 — eleven words
@@ -370,8 +404,17 @@ product baseline.
   remaining failures are ever worth fixing, it needs a different
   cross-encoder, not a blend.
 - **The cross-encoder ranks by resemblance, not by answerhood — and no
-  tuning fixes that. This is now the single largest source of failure in the
-  system.** Five evaluation failures across four documents are this one
+  tuning fixes that.**
+  **Corrected 2026-10-12, read this first:** what follows was written before
+  query rewriting, and its conclusion that "the limit is legal domain
+  knowledge, not model class" was too strong. Giving the reranker the
+  rewritten legal terms (Phase C) FIXED `penal-murder-sentence`,
+  `succession-left-out-of-will` and `divorce-process` below, plus the two
+  retrieved at #1 and discarded. For many questions the limit was the
+  vocabulary the reranker was handed. The defect itself is real and remains:
+  `employment-notice` survives Phase C with s.36 and s.35 at retrieval #1
+  and #2 and s.78 still first. It is now three failures, not twelve.
+  Five evaluation failures across four documents were this one
   defect: `employment-notice`, `penal-murder-sentence`,
   `succession-left-out-of-will`, `succession-grant-application` and
   `divorce-process` — the last confirmed to fail at retrieval breadths of 30,

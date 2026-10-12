@@ -870,9 +870,78 @@ def test_once_rewriting_is_the_pipeline_a_run_without_it_is_refused():
 
 
 def test_once_rewriting_is_the_pipeline_its_runs_may_be_promoted():
-    adopted = {**complete(), "rewrite": True, "pipeline_rewrite": True}
+    adopted = {
+        **complete(),
+        "rewrite": True,
+        "pipeline_rewrite": True,
+        "rerank_rewrites": True,
+    }
 
     assert promotion_refusal(run(metadata=adopted)) is None
+
+
+def test_once_adopted_a_retrieval_only_rewrite_run_is_refused():
+    """
+    QUERY_REWRITE means both phases. A tier-1 run whose reranker did not
+    read the rewrites measured something the pipeline does not do.
+    """
+
+    retrieval_only = {
+        **complete(),
+        "rewrite": True,
+        "pipeline_rewrite": True,
+        "rerank_rewrites": False,
+    }
+
+    assert "reranker did not read" in promotion_refusal(
+        run(metadata=retrieval_only)
+    )
+
+
+def test_at_tier_0_rewriting_retrieval_is_the_whole_pipeline():
+    """No reranker runs at tier 0, so there is no Phase C to be missing."""
+
+    tier0 = {**complete(tier=0), "rewrite": True, "pipeline_rewrite": True}
+
+    assert promotion_refusal(run(tier=0, metadata=tier0)) is None
+
+
+def test_tier_2_records_the_rewrites_the_pipeline_used():
+    from evaluation.run import evaluate_tier2
+    from backend.app.ai.answer import LegalAnswer
+
+    refusal = LegalAnswer(
+        sufficient=False,
+        question_type="open",
+        verdict="not_applicable",
+        missing="Silent.",
+    )
+
+    rag = SimpleNamespaceRag(
+        {
+            "answer": "Refused.",
+            "structured": refusal,
+            "sources": [],
+            "considered": [],
+            "rewrites": ["seizure of property"],
+        }
+    )
+
+    (recorded,) = evaluate_tier2(
+        [Question(id="q", question="Q?", answerable=False)], rag
+    )
+
+    assert recorded.rewrites == ["seizure of property"]
+
+
+class SimpleNamespaceRag:
+    """A pipeline that always returns the same outcome."""
+
+    def __init__(self, outcome):
+        self.outcome = outcome
+
+    def answer(self, question):
+        return self.outcome
 
 
 def test_a_rewrite_run_is_compared_as_a_measurement_not_a_regression():

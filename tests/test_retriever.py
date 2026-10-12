@@ -203,6 +203,48 @@ def test_dense_only_retrieval_fuses_the_question_with_its_rewrites(
     assert request["query"] == FusionQuery(fusion=Fusion.RRF)
 
 
+# ---------------------------------------------------------
+# A FIXED ORDER FOR EXACT TIES
+# ---------------------------------------------------------
+
+def point(chunk_id: str, score: float):
+    return SimpleNamespace(payload={"chunk_id": chunk_id}, score=score)
+
+
+def retriever_returning(points):
+    retriever = fake_retriever()
+    retriever.client = SimpleNamespace(
+        query_points=lambda **request: SimpleNamespace(points=list(points))
+    )
+    return retriever
+
+
+def test_tied_candidates_always_come_back_in_the_same_order():
+    """
+    Qdrant's fusion produces exact ties - 0.5 for first place in any list -
+    and returned them in a different order on two runs of the same day.
+    """
+
+    one_way = [point("b", 0.5), point("a", 0.5), point("c", 0.333)]
+    other_way = [point("a", 0.5), point("b", 0.5), point("c", 0.333)]
+
+    first = retriever_returning(one_way).retrieve(QUESTION, top_k=30)
+    second = retriever_returning(other_way).retrieve(QUESTION, top_k=30)
+
+    assert [c["chunk_id"] for c in first] == ["a", "b", "c"]
+    assert [c["chunk_id"] for c in second] == ["a", "b", "c"]
+
+
+def test_only_ties_move():
+    """A higher score is never placed below a lower one by the tie-break."""
+
+    results = retriever_returning(
+        [point("z", 0.9), point("a", 0.5), point("m", 0.2)]
+    ).retrieve(QUESTION, top_k=30)
+
+    assert [c["chunk_id"] for c in results] == ["z", "a", "m"]
+
+
 def test_a_rewrite_budget_never_exceeds_the_question_budget():
     retriever = fake_retriever()
 

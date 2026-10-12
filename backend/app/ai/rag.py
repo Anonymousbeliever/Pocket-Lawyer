@@ -8,7 +8,28 @@ from backend.app.ai.answer import (
 from backend.app.ai.retriever import LegalRetriever
 from backend.app.ai.reranker import LegalReranker
 from backend.app.ai.llm import LegalLLM
-from backend.app.core.config import RERANK_TOP_K, RETRIEVAL_TOP_K
+from backend.app.ai.rewrite import QueryRewriter, rerank_query
+from backend.app.core.config import QUERY_REWRITE, RERANK_TOP_K, RETRIEVAL_TOP_K
+
+
+def resolve_rewriter(rewriter=None):
+    """
+    The rewriter the pipeline uses: the one given, else a fresh one when
+    QUERY_REWRITE is on, else none.
+
+    The serving rewriter is built with NO store, deliberately: storing
+    rewrites would write users' questions to disk. The evaluation passes
+    its own rewriter, backed by the committed store, so tier 2 answers from
+    exactly the rewrites tier 1 measured.
+    """
+
+    if rewriter is not None:
+        return rewriter
+
+    if QUERY_REWRITE:
+        return QueryRewriter(cache_dir=None)
+
+    return None
 
 
 def _no_sources_answer(reason: str) -> LegalAnswer:
@@ -30,18 +51,24 @@ class LegalRAG:
 
         User Question
               ↓
-        Semantic Retrieval
+        Rewriting          (when QUERY_REWRITE is on)
+              ↓
+        Semantic Retrieval (the question + its rewrites)
               ↓
         Qdrant
               ↓
-        Reranking
+        Reranking          (reads the question + its rewrites)
               ↓
-        LLM
+        LLM                (reads the question alone)
               ↓
         Grounded Answer
+
+    The rewrites only decide which law is FOUND. The answering model never
+    sees them - it answers the person's own words from real retrieved text,
+    so a poor rewrite can cost a retrieval, never a citation.
     """
 
-    def __init__(self):
+    def __init__(self, rewriter=None):
         print("Initializing Pocket Lawyer RAG...")
         print()
 
@@ -74,6 +101,20 @@ class LegalRAG:
         self.llm = LegalLLM()
 
         print()
+
+        # -------------------------------------------------
+        # REWRITER
+        # -------------------------------------------------
+
+        self.rewriter = resolve_rewriter(rewriter)
+
+        if self.rewriter is not None:
+            print(
+                f"[PASS] Query rewriting on "
+                f"({self.rewriter.model_name})"
+            )
+            print()
+
         print("[PASS] RAG components initialized")
 
     # -----------------------------------------------------
@@ -92,12 +133,34 @@ class LegalRAG:
             structured  the LegalAnswer object
             sources     only the sources the answer actually cited
             considered  every source that reached the LLM
+            rewrites    the search phrases used besides the question -
+                        empty when rewriting is off or produced nothing
         """
 
         if not question.strip():
             raise ValueError(
                 "Question cannot be empty."
             )
+
+        # -------------------------------------------------
+        # STEP 0 — REWRITING
+        # -------------------------------------------------
+
+        # Empty when rewriting is off, and empty when it fails - the
+        # rewriter degrades to [], and with [] every step below is exactly
+        # what it was before rewriting existed.
+        rewrites: list[str] = []
+
+        if self.rewriter is not None:
+            print()
+            print("Rewriting the question into legal terms...")
+
+            rewrites = self.rewriter.rewrite(question)
+
+            if rewrites:
+                print(f"[PASS] {len(rewrites)} search phrase(s)")
+            else:
+                print("[WARN] no rewrites - searching with the question alone")
 
         # -------------------------------------------------
         # STEP 1 — RETRIEVAL
@@ -109,6 +172,7 @@ class LegalRAG:
         retrieved = self.retriever.retrieve(
             query=question,
             top_k=RETRIEVAL_TOP_K,
+            extra_queries=rewrites or None,
         )
 
         print(
@@ -126,6 +190,7 @@ class LegalRAG:
                 "structured": answer,
                 "sources": [],
                 "considered": [],
+                "rewrites": rewrites,
             }
 
         # -------------------------------------------------
@@ -134,8 +199,12 @@ class LegalRAG:
 
         print("Reranking legal sources...")
 
+        # Phase C: the reranker reads the question followed by its
+        # rewrites. With no rewrites this is the question itself, exactly as
+        # before. Measured at tier 1 before being wired in: product 15 ->
+        # 20/22 and statutory 106 -> 115/118 reach the LLM, no regressions.
         reranked = self.reranker.rerank(
-            query=question,
+            query=rerank_query(question, rewrites),
             documents=retrieved,
             top_k=RERANK_TOP_K,
         )
@@ -155,6 +224,7 @@ class LegalRAG:
                 "structured": answer,
                 "sources": [],
                 "considered": [],
+                "rewrites": rewrites,
             }
 
         # -------------------------------------------------
@@ -187,6 +257,7 @@ class LegalRAG:
             "structured": answer,
             "sources": cited_sources(answer, reranked),
             "considered": reranked,
+            "rewrites": rewrites,
         }
 
 
@@ -296,6 +367,10 @@ def answer_one(rag: LegalRAG, question: str) -> None:
         f"cited {len(result['sources'])} of "
         f"{len(result['considered'])} sources considered"
     )
+
+    if result.get("rewrites"):
+        print(f"searched with: {result['rewrites']}")
+
     print("-" * 60)
 
     # -----------------------------------------------------
